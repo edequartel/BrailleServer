@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>BrailleStudio – Trainingsmodules</title>
+
+  <script src="https://unpkg.com/navigo"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #f5f5f7;
+      color: #222;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 680px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    p.subtitle {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e5e5;
+    }
+
+    .card a {
+      text-decoration: none;
+      font-size: 1.1rem;
+      color: #2b4fff;
+      font-weight: 600;
+    }
+
+    .card a:hover {
+      text-decoration: underline;
+    }
+
+    .module-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .module-desc {
+      font-size: 1rem;
+      color: #444;
+      margin-bottom: 20px;
+    }
+
+    .start-btn {
+      display: inline-block;
+      padding: 10px 18px;
+      background: #2b4fff;
+      color: white;
+      border-radius: 10px;
+      font-size: 1rem;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .start-btn:hover {
+      background: #1e39cc;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.85rem;
+      color: #777;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <h1>BrailleStudio – Trainingsmodules</h1>
+  <p class="subtitle">Kies een oefening hieronder om te starten.</p>
+
+  <!-- Dynamic content -->
+  <div id="app"></div>
+
+  <footer>
+    © 2025 BrailleStudio – TastenBraille.com  
+  </footer>
+</div>
+
+<script>
+  const app = document.getElementById("app");
+
+  // All modules with title, file link and description
+  const MODULES = {
+    "all-sounds": {
+      title: "🎧 Alle geluiden in map afspelen",
+      file: "playAllSoundsInFolder.html",
+      desc: "Speel automatisch alle geluiden uit een map achter elkaar."
+    },
+    "char-to-braille": {
+      title: "🔡 Letter → Brailleleesregel (met geluid)",
+      file: "playSoundCharToBrailledisplay.html",
+      desc: "Klik een letter; hij verschijnt op de brailleleesregel én wordt uitgesproken."
+    },
+    "braille-to-char": {
+      title: "🔁 Brailleleesregel → Letter (geluid bij selectie)",
+      file: "playSoundCharToBrailledisplayReverse.html",
+      desc: "Druk op een routingtoets en hoor welke letter is geselecteerd."
+    },
+    "oe-sch": {
+      title: "🗣️ Klanken: OE & SCH",
+      file: "playSounds_OE_SCH.html",
+      desc: "Train specifieke klanken zoals ‘oe’ en ‘sch’."
+    },
+    "sequence": {
+      title: "🔊 Geluiden achter elkaar (rijtjes oefenen)",
+      file: "playSoundsInSequence.html",
+      desc: "Speel een reeks geluiden als oefening of dictee."
+    },
+    "alfabet": {
+      title: "🔠 Alfabet oefenen (A–Z)",
+      file: "playAlfabet.html",
+      desc: "Doorloop het alfabet met audio en braille."
+    }
+  };
+
+  // Render list of cards
+  function renderHome() {
+    app.innerHTML = `
+      <div class="card"><a href="#/all-sounds">${MODULES["all-sounds"].title}</a></div>
+      <div class="card"><a href="#/char-to-braille">${MODULES["char-to-braille"].title}</a></div>
+      <div class="card"><a href="#/braille-to-char">${MODULES["braille-to-char"].title}</a></div>
+      <div class="card"><a href="#/oe-sch">${MODULES["oe-sch"].title}</a></div>
+      <div class="card"><a href="#/sequence">${MODULES["sequence"].title}</a></div>
+      <div class="card"><a href="#/alfabet">${MODULES["alfabet"].title}</a></div>
+    `;
+  }
+
+  // Render module detail screen
+  function renderModule(key) {
+    const m = MODULES[key];
+    if (!m) {
+      renderHome();
+      return;
+    }
+    app.innerHTML = `
+      <div class="card">
+        <div class="module-title">${m.title}</div>
+        <div class="module-desc">${m.desc}</div>
+        <a class="start-btn" href="${m.file}">Start oefening ▶</a>
+      </div>
+
+      <div class="card">
+        <a href="#/">← Terug naar overzicht</a>
+      </div>
+    `;
+  }
+
+  // Setup Navigo
+  const router = new Navigo("/", { hash: true });
+
+  router
+    .on("/", () => renderHome())
+    .on("/:module", (params) => {
+      renderModule(params.data.module);
+    })
+    .resolve();
+</script>
+
+</body>
+</html>
