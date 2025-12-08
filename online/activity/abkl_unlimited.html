@@ -1,0 +1,267 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+	  <link rel="stylesheet" href="../style/style.css">
+    <title>Braille Letter Game – a b k l</title>
+	
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      #top {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+      #connectionStatus {
+        font-weight: bold;
+      }
+      #targetInfo {
+        margin-top: 10px;
+        font-size: 20px;
+        text-align: center;
+      }
+      #statusBar {
+        margin-top: 10px;
+        font-size: 16px;
+        text-align: center;
+      }
+      #brailleLine {
+        margin-top: 20px;
+        text-align: center;
+      }
+      #cells {
+        display: inline-flex;
+        border: 1px solid #ccc;
+        padding: 6px;
+        border-radius: 6px;
+        background: #f9f9f9;
+      }
+      .cell {
+        width: 18px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: monospace;
+        margin: 1px;
+        font-size: 16px;
+      }
+      .cell.highlight {
+        background: #d7ecff;
+        outline: 2px solid #0078d4;
+      }
+      #buttons {
+        margin-top: 15px;
+        text-align: center;
+      }
+      button {
+        padding: 6px 12px;
+        margin: 4px;
+        font-size: 14px;
+      }
+      #log {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #bbb;
+        padding: 6px;
+        background: #fafafa;
+        font-size: 12px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="top">
+      <div>Braille Letter Game (a, b, k, l)</div>
+      <div id="connectionStatus">WS: disconnected</div>
+    </div>
+
+    <div id="targetInfo">Starting…</div>
+    <div id="statusBar"></div>
+
+    <div id="brailleLine">
+      <div>Visual 40-cell braille line:</div>
+      <div id="cells"></div>
+    </div>
+
+    <div id="buttons">
+      <button id="newRoundBtn">New round</button>
+      <button id="clearBtn">Clear braille</button>
+    </div>
+
+    <div id="log"></div>
+
+    <script>
+      const WS_URL = "ws://localhost:5000/ws";
+      const httpBase = "http://localhost:5000";
+      const MAX_CELLS = 40;
+      const LETTERS = ["a", "b", "k", "l"];
+
+      let currentLine = " ".repeat(MAX_CELLS);
+      let targetLetter = null;
+      let letterPositions = {};
+      let ws = null;
+
+      // Unlimited attempts → only ends when correct
+      let roundActive = false;
+
+      function logEvent(msg) {
+        const log = document.getElementById("log");
+        const div = document.createElement("div");
+        div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        log.prepend(div);
+      }
+
+      function updateConnectionStatus(msg, ok) {
+        const el = document.getElementById("connectionStatus");
+        el.textContent = msg;
+        el.style.color = ok ? "green" : "red";
+      }
+
+      function setStatus(msg) {
+        document.getElementById("statusBar").textContent = msg;
+      }
+
+      function shuffle(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      async function sendToBraille(text) {
+        let line = text.padEnd(MAX_CELLS, " ").substring(0, MAX_CELLS);
+        await fetch(httpBase + "/braille", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: line,
+        });
+      }
+
+      async function clearBraille() {
+        await fetch(httpBase + "/clear");
+      }
+
+      function updateLineDisplay() {
+        const box = document.getElementById("cells");
+        box.innerHTML = "";
+
+        for (let i = 0; i < MAX_CELLS; i++) {
+          const span = document.createElement("span");
+          span.className = "cell";
+          span.dataset.index = i;
+          span.textContent = currentLine[i] === " " ? " " : currentLine[i];
+          box.appendChild(span);
+        }
+
+        sendToBraille(currentLine);
+      }
+
+      function clearHighlight() {
+        document.querySelectorAll(".cell").forEach((c) =>
+          c.classList.remove("highlight")
+        );
+      }
+
+      function highlightCell(i) {
+        clearHighlight();
+        const cell = document.querySelector(`.cell[data-index="${i}"]`);
+        if (cell) cell.classList.add("highlight");
+      }
+
+      function newRound() {
+        const order = shuffle([...LETTERS]);
+        targetLetter = order[Math.floor(Math.random() * order.length)];
+
+        const arr = Array(MAX_CELLS).fill(" ");
+        let pos = 0;
+        order.forEach((letter) => {
+          arr[pos] = letter;
+          letterPositions[pos] = letter;
+          pos += 4;
+        });
+
+        currentLine = arr.join("");
+        updateLineDisplay();
+
+        roundActive = true;
+
+        document.getElementById("targetInfo").textContent =
+          "Find letter: " + targetLetter;
+
+        logEvent("New round target: " + targetLetter);
+      }
+
+      function handleCursor(idx) {
+        if (!roundActive) {
+          setStatus("Round finished. Start new round.");
+          return;
+        }
+
+        highlightCell(idx);
+        const letter = currentLine[idx];
+
+        if (!letter.trim()) {
+          setStatus("Empty cell");
+          return;
+        }
+
+        if (letter === targetLetter) {
+          setStatus("Correct! " + letter);
+          sendToBraille("Correct: " + letter);
+          roundActive = false;
+          setTimeout(newRound, 1500);
+        } else {
+          setStatus("Wrong: " + letter + ". Try again!");
+          sendToBraille("Wrong: " + letter);
+        }
+      }
+
+      function handleThumb(name) {
+        if (name === "LeftThumb") newRound();
+        if (name === "MiddleLeftThumb") clearBraille();
+      }
+
+      function wsMessage(evt) {
+        let m;
+        try {
+          m = JSON.parse(evt.data);
+        } catch {
+          return;
+        }
+
+        if (!m.IsPress) return;
+
+        if (m.Kind === 1) handleCursor(m.CursorIndex);
+        if (m.Kind === 2) handleThumb(m.Name);
+      }
+
+      function connectWS() {
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => updateConnectionStatus("WS connected", true);
+        ws.onclose = () => {
+          updateConnectionStatus("WS disconnected", false);
+          setTimeout(connectWS, 2000);
+        };
+        ws.onerror = () =>
+          updateConnectionStatus("WS error", false);
+        ws.onmessage = wsMessage;
+      }
+
+      document.getElementById("newRoundBtn").onclick = newRound;
+      document.getElementById("clearBtn").onclick = clearBraille;
+
+      window.onload = () => {
+        updateLineDisplay();
+        connectWS();
+        newRound();
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+    <link rel="stylesheet" href="../style/style.css">
+  <title>Braille Bridge Monitor</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 1rem 1.5rem;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .status {
+      margin-bottom: 1rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      display: inline-block;
+      font-size: 0.9rem;
+    }
+
+    .status.connected {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status.disconnected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    button {
+      padding: 0.4rem 0.8rem;
+      margin-right: 0.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 4rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 0.5rem;
+      box-sizing: border-box;
+      margin: 0.25rem 0 0.5rem 0;
+    }
+
+    #events {
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #ffffff;
+      border-radius: 4px;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      font-family: monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+    }
+
+    .event-line {
+      margin-bottom: 0.25rem;
+      border-bottom: 1px dotted #eee;
+      padding-bottom: 0.15rem;
+    }
+
+    .event-raw {
+      color: #4b5563;
+    }
+
+    .event-mapped {
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .event-time {
+      color: #6b7280;
+    }
+
+    .panel {
+      background: #ffffff;
+      padding: 0.75rem;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.3rem 0.4rem;
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Braille Bridge Monitor</h1>
+
+  <div class="panel">
+    <div id="status" class="status disconnected">
+      WebSocket: disconnected
+    </div>
+    <div style="margin-top:0.5rem;">
+      <button id="btnConnect">Connect</button>
+      <button id="btnDisconnect">Disconnect</button>
+    </div>
+    <div style="margin-top:0.5rem;">
+      <label for="wsUrl">WebSocket URL</label>
+      <input type="text" id="wsUrl" value="ws://localhost:5000/ws" />
+    </div>
+  </div>
+
+  <div class="panel">
+    <label for="brailleText">Send text to braille display (HTTP POST /braille)</label>
+    <textarea id="brailleText">Hallo braille via HTML!</textarea>
+    <button id="btnSendText">Send to Braille</button>
+    <span id="sendResult" style="font-size:0.85rem; margin-left:0.5rem;"></span>
+  </div>
+
+  <div class="panel">
+    <strong>Incoming key events (raw + mapped)</strong>
+    <div id="events"></div>
+  </div>
+
+  <script>
+    let socket = null;
+
+    const statusEl = document.getElementById("status");
+    const eventsEl = document.getElementById("events");
+    const btnConnect = document.getElementById("btnConnect");
+    const btnDisconnect = document.getElementById("btnDisconnect");
+    const wsUrlInput = document.getElementById("wsUrl");
+    const brailleTextInput = document.getElementById("brailleText");
+    const btnSendText = document.getElementById("btnSendText");
+    const sendResult = document.getElementById("sendResult");
+
+    function setStatus(connected, message) {
+      statusEl.classList.toggle("connected", connected);
+      statusEl.classList.toggle("disconnected", !connected);
+      statusEl.textContent = message;
+    }
+
+    function kindToName(kind) {
+      // Match your BrailleLogicalEventKind enum from C#:
+      // Unknown = 0, CursorRouting = 1, ThumbKey = 2
+      switch (kind) {
+        case 1: return "CursorRouting";
+        case 2: return "ThumbKey";
+        default: return "Unknown";
+      }
+    }
+
+    function addEventLine(msgObj) {
+      const line = document.createElement("div");
+      line.className = "event-line";
+
+      const time = new Date().toLocaleTimeString();
+      const logicalKind = kindToName(msgObj.Kind);
+
+      const rawText =
+        `msgType=${msgObj.MsgType} unit=${msgObj.UnitId} ` +
+        `strip=${msgObj.Strip} btn=${msgObj.ButtonIndex} ` +
+        `press=${msgObj.IsPress}`;
+
+      const mappedText =
+        `Kind=${logicalKind}` +
+        (msgObj.Name ? ` Name=${msgObj.Name}` : "") +
+        (msgObj.CursorIndex >= 0 ? ` CursorIndex=${msgObj.CursorIndex}` : "");
+
+      line.innerHTML =
+        `<span class="event-time">[${time}]</span> ` +
+        `<span class="event-raw">${rawText}</span> ` +
+        `<span class="event-mapped"> → ${mappedText}</span>`;
+
+      eventsEl.insertBefore(line, eventsEl.firstChild);
+
+      // Keep it to a reasonable number of lines
+      while (eventsEl.childElementCount > 200) {
+        eventsEl.removeChild(eventsEl.lastChild);
+      }
+    }
+
+    function connect() {
+      const url = wsUrlInput.value.trim();
+      if (!url) {
+        alert("Please enter a WebSocket URL.");
+        return;
+      }
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        setStatus(true, "WebSocket: already connected");
+        return;
+      }
+
+      setStatus(false, "WebSocket: connecting...");
+      socket = new WebSocket(url);
+
+      socket.onopen = () => {
+        setStatus(true, "WebSocket: connected");
+      };
+
+      socket.onclose = () => {
+        setStatus(false, "WebSocket: disconnected");
+      };
+
+      socket.onerror = (ev) => {
+        console.error("WebSocket error:", ev);
+        setStatus(false, "WebSocket: error (see console)");
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          // Expected structure:
+          // {
+          //   "MsgType": number,
+          //   "UnitId": number,
+          //   "Strip": number,
+          //   "ButtonIndex": number,
+          //   "IsPress": boolean,
+          //   "Kind": number,
+          //   "CursorIndex": number,
+          //   "Name": string | null
+          // }
+          addEventLine(data);
+        } catch (err) {
+          console.error("Error parsing message:", err, event.data);
+        }
+      };
+    }
+
+    function disconnect() {
+      if (socket) {
+        socket.close();
+        socket = null;
+      }
+    }
+
+    async function sendToBraille() {
+      const text = brailleTextInput.value || "";
+      sendResult.textContent = "Sending...";
+      try {
+        const resp = await fetch("http://localhost:5000/braille", {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8"
+          },
+          body: text
+        });
+
+        if (resp.ok) {
+          sendResult.textContent = "OK";
+        } else {
+          sendResult.textContent = "Error: HTTP " + resp.status;
+        }
+      } catch (e) {
+        console.error(e);
+        sendResult.textContent = "Error: " + e.message;
+      }
+    }
+
+    btnConnect.addEventListener("click", connect);
+    btnDisconnect.addEventListener("click", disconnect);
+    btnSendText.addEventListener("click", sendToBraille);
+
+    // Optional: auto-connect on load
+    // connect();
+  </script>
+</body>
+</html>

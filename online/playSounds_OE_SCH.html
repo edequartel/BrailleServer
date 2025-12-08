@@ -1,0 +1,63 @@
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Howler.js Custom Sound Player</title>
+
+  <!-- Load Howler.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .letter-btn {
+      font-size: 20px;
+      padding: 10px 18px;
+      margin: 6px;
+      cursor: pointer;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Custom Alphabet Sound Player</h1>
+  <p>Click a sound to play its MP3 file:</p>
+
+  <div id="buttons"></div>
+
+  <script>
+    // 🔊 DEFINE ALL SOUNDS HERE (comma separated)
+    // You can add: oe, ee, aa, sch, ng, etc.
+    const letterList = "a,b,k,l,oe,ee,aa,oo,sch,ng".split(",");
+
+    // Path to your custom alphabet sounds folder
+    const basePath = "sounds/alfabet/";
+
+    // Store Howl objects
+    const sounds = {};
+
+    // Build UI and load sounds
+    const container = document.getElementById("buttons");
+
+    letterList.forEach(soundName => {
+      const trimmed = soundName.trim(); // remove spaces
+
+      // Create Howler sound
+      sounds[trimmed] = new Howl({
+        src: [basePath + trimmed + ".mp3"]
+      });
+
+      // Create button
+      const btn = document.createElement("button");
+      btn.className = "letter-btn";
+      btn.textContent = trimmed.toUpperCase();
+      btn.onclick = () => sounds[trimmed].play();
+
+      container.appendChild(btn);
+    });
+  </script>
+
+</body>
+</html>

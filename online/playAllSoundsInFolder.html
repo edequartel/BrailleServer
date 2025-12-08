@@ -1,0 +1,106 @@
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Play Folder Sounds Sequentially</title>
+
+  <!-- Load Howler.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    button {
+      font-size: 20px;
+      padding: 12px 20px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 15px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Play All Sounds in Online Folder</h1>
+  <p>Click the button to play all MP3 files one after another.</p>
+
+  <button onclick="startSequence()">▶ Play Sequence</button>
+
+  <div id="status"></div>
+
+  <script>
+    // 🔊 1. ALL FILE NAMES (without .mp3)
+    const soundFiles = [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h",
+      "i"
+    ];
+
+    // 🔊 2. FULL ONLINE BASE URL
+    const basePath = "https://www.tastenbraille.com/braillestudio/sounds/instructions/character_true_false/";
+
+    let index = 0;
+    let currentSound;
+
+    const statusEl = document.getElementById("status");
+
+    function log(msg) {
+      console.log(msg);
+      statusEl.textContent += msg + "\n";
+    }
+
+    function startSequence() {
+      index = 0;
+      statusEl.textContent = "";
+      log("Starting sequence…");
+      playNext();
+    }
+
+    function playNext() {
+      if (index >= soundFiles.length) {
+        log("✅ Finished all sounds!");
+        return;
+      }
+
+      const name = soundFiles[index];
+      const src = basePath + name + ".mp3";
+
+      log(`Loading: ${src}`);
+
+      currentSound = new Howl({
+        src: [src],
+        html5: true, // use HTML5 audio for remote URLs
+        onload: () => {
+          log(`▶ Playing: ${src}`);
+          currentSound.play();
+        },
+        onend: () => {
+          log(`✅ Finished: ${src}`);
+          index++;
+          playNext();
+        },
+        onloaderror: (id, error) => {
+          log(`❌ Load error for ${src} (error: ${error})`);
+          index++;
+          playNext();
+        },
+        onplayerror: (id, error) => {
+          log(`❌ Play error for ${src} (error: ${error})`);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

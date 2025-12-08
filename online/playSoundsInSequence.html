@@ -1,0 +1,115 @@
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Play Folder Sounds Sequentially</title>
+
+  <!-- Load Howler.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    button {
+      font-size: 20px;
+      padding: 12px 20px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 15px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Play All Sounds in Folder</h1>
+  <p>Click the button to play all MP3 files one after another.</p>
+
+  <button onclick="startSequence()">▶ Play Sequence</button>
+
+  <div id="status"></div>
+
+  <script>
+    // 🔊 1. DEFINE ALL FILE NAMES (without .mp3)
+    // These must match files in sounds/instructions/character_true_false/
+    const soundFiles = [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h",
+      "i"
+    ];
+
+    // Folder path RELATIVE TO THIS HTML FILE
+    const basePath = "sounds/instructions/character_true_false/";
+
+    let index = 0;      // which file is currently playing
+    let currentSound;   // current Howl instance
+
+    const statusEl = document.getElementById("status");
+
+    function log(msg) {
+      console.log(msg);
+      statusEl.textContent += msg + "\n";
+    }
+
+    function startSequence() {
+      index = 0;
+      statusEl.textContent = "";
+      log("Starting sequence…");
+      playNext();
+    }
+
+    function playNext() {
+      // Finished all sounds
+      if (index >= soundFiles.length) {
+        log("✅ Finished all sounds!");
+        return;
+      }
+
+      const name = soundFiles[index];
+      const src = basePath + name + ".mp3";
+
+      log(`Loading: ${src}`);
+
+      // Create Howl for this file
+      currentSound = new Howl({
+        src: [src],
+        html5: true, // force HTML5 audio (often more reliable for file paths)
+        onload: function () {
+          log(`▶ Playing: ${src}`);
+          currentSound.play();
+        },
+        onend: function () {
+          log(`✅ Finished: ${src}`);
+          index++;
+          playNext();
+        },
+        onloaderror: function (id, error) {
+          log(`❌ Load error for ${src} (error code: ${error})`);
+          // Skip this file and try next
+          index++;
+          playNext();
+        },
+        onplayerror: function (id, error) {
+          log(`❌ Play error for ${src} (error code: ${error})`);
+          // Try to unlock audio on user gesture if needed
+          currentSound.once("unlock", function () {
+            log(`🔓 Audio unlocked, retrying: ${src}`);
+            currentSound.play();
+          });
+        }
+      });
+    }
+  </script>
+</body>
+</html>

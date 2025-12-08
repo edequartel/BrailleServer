@@ -1,0 +1,59 @@
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Howler.js Alphabet Player</title>
+
+  <!-- Load Howler.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .letter-btn {
+      font-size: 20px;
+      padding: 10px 18px;
+      margin: 6px;
+      cursor: pointer;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Alphabet Sound Player</h1>
+  <p>Click a letter to play its sound:</p>
+
+  <div id="buttons"></div>
+
+  <script>
+    // Path to your alphabet sounds
+    const basePath = "sounds/alfabet/";
+
+    // List of letters a–z
+    const letters = "abcdefghijklmnopqrstuvwxyz".split("");
+
+    // Store Howl objects here
+    const sounds = {};
+
+    // Create buttons and sounds
+    const container = document.getElementById("buttons");
+
+    letters.forEach(letter => {
+      // Create Howler sound for each letter
+      sounds[letter] = new Howl({
+        src: [basePath + letter + ".mp3"]
+      });
+
+      // Create button
+      const btn = document.createElement("button");
+      btn.className = "letter-btn";
+      btn.textContent = letter.toUpperCase();
+      btn.onclick = () => sounds[letter].play();
+
+      container.appendChild(btn);
+    });
+  </script>
+</body>
+</html>

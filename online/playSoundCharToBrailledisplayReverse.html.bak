@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Brailleletter Luistertrainer</title>
+  <style>
+    :root {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f7;
+      color: #222;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app {
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.10);
+      padding: 24px 28px 28px;
+      max-width: 640px;
+      width: 100%;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.6rem;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      font-size: 0.95rem;
+      color: #666;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: #f1f1f3;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #d22;
+      box-shadow: 0 0 0 3px rgba(210, 34, 34, 0.15);
+      flex-shrink: 0;
+    }
+
+    .status-indicator.connected {
+      background: #1ba64a;
+      box-shadow: 0 0 0 3px rgba(27, 166, 74, 0.2);
+    }
+
+    .status-text {
+      flex: 1;
+    }
+
+    .status-extra {
+      font-size: 0.8rem;
+      color: #777;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef5ff;
+      font-size: 0.75rem;
+      color: #3456aa;
+    }
+
+    .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3456aa;
+    }
+
+    .main-row {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .letters-card {
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: #f8f8ff;
+      border: 1px solid #e0e3ff;
+    }
+
+    .letters-label {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .letters-line {
+      font-size: 1.3rem;
+      letter-spacing: 0.6rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: #e4ecff;
+    }
+
+    .big-letter-card {
+      padding: 18px 20px;
+      border-radius: 14px;
+      background: #fdf7eb;
+      border: 1px solid #f1d8a0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 4px;
+    }
+
+    .big-letter-label {
+      font-size: 0.9rem;
+      color: #7a5a1a;
+    }
+
+    .big-letter-display {
+      font-size: 3rem;
+      font-weight: 700;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    .log-container {
+      margin-top: 14px;
+    }
+
+    .log-title {
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+      color: #666;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .log {
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.8rem;
+      background: #0b1020;
+      color: #d6e2ff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .log.hidden {
+      display: none;
+    }
+
+    .logging-toggle {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: none;
+      background: #e8e8ff;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .logging-toggle.off {
+      background: #fbe3e3;
+    }
+
+    .info-value {
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Brailleletter luistertrainer">
+    <header>
+      <h1>Brailleletter Luistertrainer</h1>
+      <p class="subtitle">
+        De letters staan op de brailleleesregel. Druk op een cursor-routingtoets en je hoort de letter in het Nederlands.
+      </p>
+    </header>
+
+    <!-- Connection status -->
+    <section class="status-bar" aria-live="polite">
+      <div id="statusIndicator" class="status-indicator"></div>
+      <div class="status-text">
+        <div id="statusLine">Verbinding maken met BrailleBridge…</div>
+        <div id="deviceLine" class="status-extra"></div>
+      </div>
+      <div class="tag">
+        <span class="tag-dot"></span>
+        <span>localhost:5000</span>
+      </div>
+    </section>
+
+    <section class="main-row">
+      <!-- Letters on display -->
+      <div class="letters-card">
+        <div class="letters-label">Letters op de brailleleesregel</div>
+        <div id="lettersLine" class="letters-line"></div>
+
+        <div class="controls-row">
+          <button id="sendLettersBtn" class="btn">
+            Opnieuw naar leesregel sturen
+          </button>
+          <button id="toggleLoggingBtn" class="logging-toggle">
+            Logging: ON
+          </button>
+        </div>
+      </div>
+
+      <!-- Last selected letter -->
+      <div class="big-letter-card">
+        <div>
+          <div class="big-letter-label">Laatste gekozen letter (via leesregel)</div>
+          <div id="lastInfo" class="info-value">—</div>
+        </div>
+        <div id="bigLetter" class="big-letter-display">–</div>
+      </div>
+    </section>
+
+    <!-- Log -->
+    <section class="log-container" aria-label="BrailleBridge log">
+      <div class="log-title">
+        <span>Bridge log (WebSocket events, fouten, etc.)</span>
+        <span id="loggingStatusLabel">(zichtbaar)</span>
+      </div>
+      <div id="log" class="log"></div>
+    </section>
+  </main>
+
+  <script>
+    const statusIndicator      = document.getElementById("statusIndicator");
+    const statusLine           = document.getElementById("statusLine");
+    const deviceLine           = document.getElementById("deviceLine");
+    const logEl                = document.getElementById("log");
+    const toggleLoggingBtn     = document.getElementById("toggleLoggingBtn");
+    const loggingStatusLabel   = document.getElementById("loggingStatusLabel");
+    const sendLettersBtn       = document.getElementById("sendLettersBtn");
+    const lettersLineEl        = document.getElementById("lettersLine");
+    const bigLetterEl          = document.getElementById("bigLetter");
+    const lastInfoEl           = document.getElementById("lastInfo");
+
+    const BRIDGE_HTTP = "http://localhost:5000";
+    const BRIDGE_WS   = "ws://localhost:5000/ws";
+
+    // ---- Letters configuration ----
+    const LETTERS = "abkl";  // pas aan naar wens
+
+    lettersLineEl.textContent = LETTERS.split("").join(" ");
+
+    // --- Logging toggle ---
+    let loggingEnabled = true;
+
+    function updateLoggingUI() {
+      if (loggingEnabled) {
+        toggleLoggingBtn.textContent = "Logging: ON";
+        toggleLoggingBtn.classList.remove("off");
+        logEl.classList.remove("hidden");
+        loggingStatusLabel.textContent = "(zichtbaar)";
+      } else {
+        toggleLoggingBtn.textContent = "Logging: OFF";
+        toggleLoggingBtn.classList.add("off");
+        logEl.classList.add("hidden");
+        loggingStatusLabel.textContent = "(verborgen)";
+      }
+    }
+
+    toggleLoggingBtn.addEventListener("click", () => {
+      loggingEnabled = !loggingEnabled;
+      updateLoggingUI();
+    });
+
+    function log(msg) {
+      if (!loggingEnabled) return;
+      const ts = new Date().toLocaleTimeString();
+      logEl.textContent = `[${ts}] ${msg}\n` + logEl.textContent;
+    }
+
+    function setConnected(connected, reason = "") {
+      if (connected) {
+        statusIndicator.classList.add("connected");
+        statusLine.textContent = "BrailleBridge: verbonden";
+        if (reason) log(`Verbonden: ${reason}`);
+      } else {
+        statusIndicator.classList.remove("connected");
+        statusLine.textContent = "BrailleBridge: niet verbonden";
+        if (reason) log(`Verbinding verbroken: ${reason}`);
+      }
+    }
+
+    async function fetchDevices() {
+      try {
+        const res = await fetch(`${BRIDGE_HTTP}/devices`, { method: "GET" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (Array.isArray(json) && json.length > 0) {
+          deviceLine.textContent = "Leesregels: " + json.join(" | ");
+        } else {
+          deviceLine.textContent = "Geen leesregels gevonden.";
+        }
+      } catch (err) {
+        deviceLine.textContent = "Kan /devices niet lezen.";
+        log("Fout bij /devices: " + err.message);
+      }
+    }
+
+    async function pingBridge() {
+      try {
+        const res = await fetch(`${BRIDGE_HTTP}/ping`, { method: "GET" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        log(`Ping: ${text.trim()}`);
+      } catch (err) {
+        log("Ping mislukt: " + err.message);
+      }
+    }
+
+    // --- Audio setup ---
+    const charSounds = {
+      a: new Audio("sounds/alfabet/a.mp3"),
+      b: new Audio("sounds/alfabet/b.mp3"),
+      k: new Audio("sounds/alfabet/k.mp3"),
+      l: new Audio("sounds/alfabet/l.mp3")
+    };
+
+    function playCharSound(character) {
+      const key = String(character).toLowerCase();
+      log(`playCharSound aangeroepen voor letter: "${key}"`);
+
+      const audio = charSounds[key];
+      if (!audio) {
+        log(`GEEN audio-object gevonden voor "${key}"`);
+        return;
+      }
+
+      log(`Audio-object gevonden voor "${key}", bron: ${audio.src}`);
+      audio.currentTime = 0;
+      audio.play()
+        .then(() => {
+          log(`Audio wordt afgespeeld voor "${key}"`);
+        })
+        .catch(err => {
+          log(`Audio play error voor "${key}": ${err.message}`);
+        });
+    }
+
+    // Stuur alle letters naar de brailleleesregel
+    async function sendLettersToBraille() {
+      log(`sendLettersToBraille: versturen "${LETTERS}" naar /braille`);
+      try {
+        const res = await fetch(`${BRIDGE_HTTP}/braille`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8"
+          },
+          body: LETTERS
+        });
+
+        const text = await res.text().catch(() => "");
+        if (res.ok) {
+          lastInfoEl.textContent = `Letters verstuurd: "${LETTERS}"`;
+          log(`Letters naar /braille: "${LETTERS}" → ${res.status} ${text}`);
+        } else {
+          lastInfoEl.textContent = `Fout bij versturen (${res.status})`;
+          log(`Fout bij /braille: ${res.status} ${text}`);
+        }
+      } catch (err) {
+        lastInfoEl.textContent = "Netwerkfout bij versturen";
+        log("Netwerkfout /braille: " + err.message);
+      }
+    }
+
+    sendLettersBtn.addEventListener("click", () => {
+      sendLettersToBraille();
+    });
+
+    // WebSocket for key events + connection state
+    let ws;
+    function connectWebSocket() {
+      log("WebSocket openen…");
+      try {
+        ws = new WebSocket(BRIDGE_WS);
+
+        ws.addEventListener("open", () => {
+          setConnected(true, "WebSocket open");
+          pingBridge();
+          fetchDevices();
+          // Direct de letters sturen als de verbinding er is
+          sendLettersToBraille();
+        });
+
+        ws.addEventListener("message", evt => {
+          try {
+            const data = JSON.parse(evt.data);
+            log("WS event ontvangen: " + JSON.stringify(data));
+
+            // Verwacht: { kind: "CursorRoutingStrip", cursorIndex: 0..n, isPress: true }
+            if (data.kind === "CursorRoutingStrip" && data.isPress) {
+              const idx = data.cursorIndex ?? data.cursorindex;
+              log(`CursorRoutingStrip: isPress=true, index=${idx}`);
+
+              if (typeof idx === "number" && idx >= 0 && idx < LETTERS.length) {
+                const ch = LETTERS[idx];
+                log(`Index ${idx} hoort bij letter "${ch}" → playCharSound`);
+                bigLetterEl.textContent = ch;
+                lastInfoEl.textContent = `Index ${idx} → letter "${ch}"`;
+                playCharSound(ch);
+              } else {
+                log("CursorIndex buiten bereik of ongeldig: " + idx);
+              }
+            }
+
+          } catch {
+            log("WS tekst (geen JSON): " + evt.data);
+          }
+        });
+
+        ws.addEventListener("close", () => {
+          setConnected(false, "WebSocket gesloten");
+        });
+
+        ws.addEventListener("error", () => {
+          setConnected(false, "WebSocket error");
+          log("WebSocket error");
+        });
+      } catch (err) {
+        log("WebSocket init mislukt: " + err.message);
+        setConnected(false, "WS init failed");
+      }
+    }
+
+    // Init
+    window.addEventListener("load", () => {
+      updateLoggingUI();
+      setConnected(false);
+      statusLine.textContent = "Verbinding maken met BrailleBridge…";
+      connectWebSocket();
+    });
+  </script>
+</body>
+</html>

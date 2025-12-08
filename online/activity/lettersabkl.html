@@ -1,0 +1,136 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+	  <link rel="stylesheet" href="../style/style.css">
+    <title>Letter Game – a b k l</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 30px;
+      }
+      #letters {
+        margin-top: 40px;
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+      }
+      .card {
+        width: 80px;
+        height: 80px;
+        font-size: 40px;
+        background: #eee;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: 0.2s;
+      }
+      .card:hover {
+        background: #ddd;
+      }
+      #msg {
+        margin-top: 20px;
+        font-size: 22px;
+      }
+      #status {
+        font-size: 14px;
+        margin-top: 10px;
+        color: #555;
+      }
+      button {
+        margin-top: 20px;
+        padding: 8px 16px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Choose the correct letter</h1>
+    <p id="task">...</p>
+
+    <div id="letters"></div>
+
+    <div id="msg"></div>
+    <div id="status">Braille line: synced via http://localhost:5000/braille</div>
+    <button id="clearBtn">Clear braille display</button>
+
+    <script>
+      const httpBase = "http://localhost:5000";
+      const choices = ["a", "b", "k", "l"];
+      const MAX_CELLS = 40;
+
+      async function sendToBraille(text) {
+        let line = text || "";
+        if (line.length > MAX_CELLS) {
+          line = line.substring(0, MAX_CELLS);
+        } else if (line.length < MAX_CELLS) {
+          line = line.padEnd(MAX_CELLS, " ");
+        }
+
+        try {
+          await fetch(httpBase + "/braille", {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: line,
+          });
+        } catch (e) {
+          console.error("Error sending to braille:", e);
+          document.getElementById("status").innerText =
+            "Error talking to braille bridge (is it running?)";
+        }
+      }
+
+      async function clearBraille() {
+        try {
+          await fetch(httpBase + "/clear", { method: "GET" });
+        } catch (e) {
+          console.error("Error clearing braille:", e);
+        }
+      }
+
+      function newRound() {
+        const target = choices[Math.floor(Math.random() * choices.length)];
+        const taskText = "Click the letter: " + target;
+
+        document.getElementById("task").innerText = taskText;
+
+        sendToBraille(taskText);
+
+        const container = document.getElementById("letters");
+        container.innerHTML = "";
+
+        choices.forEach((letter) => {
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerText = letter;
+
+          div.onclick = () => {
+            if (letter === target) {
+              showMessage("Correct!");
+              sendToBraille("Correct: " + letter);
+            } else {
+              showMessage("Wrong, try again.");
+              sendToBraille("Wrong: " + letter + " (target " + target + ")");
+            }
+            setTimeout(newRound, 1000);
+          };
+
+          container.appendChild(div);
+        });
+      }
+
+      function showMessage(t) {
+        document.getElementById("msg").innerText = t;
+      }
+
+      document.getElementById("clearBtn").addEventListener("click", () => {
+        clearBraille();
+        showMessage("Braille display cleared.");
+      });
+
+      newRound();
+    </script>
+  </body>
+</html>
