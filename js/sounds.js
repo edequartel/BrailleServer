@@ -1,61 +1,75 @@
-play(lang, category, name) {
-  if (!this.config) {
-    logMessage("❌ ERROR: Sounds not loaded.");
-    return;
-  }
+let Sounds = {
+  config: null,
 
-  const relativePath = this.config.languages[lang][category][name];
-  const fullUrl = this.getUrl(relativePath);
+  async loadConfig() {
+    const jsonPath = "config/sounds.json";
+    logMessage("📄 Loading config from: " + jsonPath);
+	
+	
+	    // Detect the root URL where index.html is running
+    const rootPath = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "/");
 
-  logMessage("▶️ Playing file: " + relativePath);
-  logMessage("🌐 Full URL:     " + fullUrl);
+    logMessage("🌐 Root path: " + rootPath);
+    logMessage("📄 Loading config from: " + jsonPath);
+    logMessage("➡️ Full request URL: " + rootPath + jsonPath);
+	
 
-  const sound = new Howl({
-    src: [fullUrl],
-    html5: true, // better for cross-domain streaming
-    onload: () => {
-      logMessage("✅ Audio loaded OK.");
-    },
-    onloaderror: (id, err) => {
-      logMessage("❌ onloaderror: " + err);
-      console.error("Howler onloaderror", id, err);
-    },
-    onplayerror: (id, err) => {
-      logMessage("❌ onplayerror: " + err);
-      console.error("Howler onplayerror", id, err);
+    try {
+      const response = await fetch(jsonPath);
+
+      logMessage("↩️ Response status: " + response.status + " " + response.statusText);
+
+      if (!response.ok) {
+        logMessage("❌ ERROR: Could not load sounds.json from " + response.url);
+        return;
+      }
+
+      this.config = await response.json();
+      logMessage("✅ sounds.json loaded successfully.");
+      logMessage("🔗 baseUrl: " + this.config.baseUrl);
+
+    } catch (error) {
+      logMessage("❌ ERROR reading sounds.json: " + error);
     }
-  });
+  },
 
-  sound.play();
-},
+  getUrl(path) {
+    return this.config.baseUrl + path;
+  },
 
-playShared(name) {
-  if (!this.config) {
-    logMessage("❌ ERROR: Sounds not loaded.");
-    return;
-  }
-
-  const relativePath = this.config.shared[name];
-  const fullUrl = this.getUrl(relativePath);
-
-  logMessage("▶️ Playing shared: " + relativePath);
-  logMessage("🌐 Full URL:       " + fullUrl);
-
-  const sound = new Howl({
-    src: [fullUrl],
-    html5: true,
-    onload: () => {
-      logMessage("✅ Shared audio loaded OK.");
-    },
-    onloaderror: (id, err) => {
-      logMessage("❌ Shared onloaderror: " + err);
-      console.error("Howler shared onloaderror", id, err);
-    },
-    onplayerror: (id, err) => {
-      logMessage("❌ Shared onplayerror: " + err);
-      console.error("Howler shared onplayerror", id, err);
+  play(lang, category, name) {
+    if (!this.config) {
+      logMessage("❌ ERROR: Sounds not loaded.");
+      return;
     }
-  });
 
-  sound.play();
-}
+    const relativePath = this.config.languages[lang][category][name];
+    const fullUrl = this.getUrl(relativePath);
+
+    logMessage("▶️ Playing file: " + relativePath);
+    logMessage("🌐 Full URL:     " + fullUrl);
+
+    const sound = new Howl({ src: [fullUrl] });
+    sound.play();
+  },
+
+  playShared(name) {
+    if (!this.config) {
+      logMessage("❌ ERROR: Sounds not loaded.");
+      return;
+    }
+
+    const relativePath = this.config.shared[name];
+    const fullUrl = this.getUrl(relativePath);
+
+    logMessage("▶️ Playing shared: " + relativePath);
+    logMessage("🌐 Full URL:       " + fullUrl);
+
+    const sound = new Howl({ src: [fullUrl] });
+    sound.play();
+  }
+};
+
+(async () => {
+  await Sounds.loadConfig();
+})();
