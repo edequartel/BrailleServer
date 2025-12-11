@@ -40,7 +40,6 @@
     <button id="btnRepeatWord">Herhaal woord</button>
     <button id="btnRepeatLine">Herhaal braille</button>
     <button id="btnClear">Maak braille leeg</button>
-    <button id="btnToggleLog">Toon log</button>
   </div>
 
   <h2>Ronde</h2>
@@ -64,8 +63,10 @@
     <button type="button" data-thumb="RightThumb">RightThumb (WEL hetzelfde)</button>
   </div>
 
-  <div id="logContainer" hidden>
-    <h2>Log</h2>
+  <button id="btnToggleLog" class="secondary">Toon log</button>
+
+  <div id="logContainer">
+    <h2>Logging</h2>
     <div id="logBox" class="log-box" aria-live="polite"></div>
   </div>
 
@@ -80,8 +81,10 @@
   let currentBrailleWord = null; // woord dat op de regel staat
   let isMatch = null;           // true als gelijk, false als verschillend
   let logVisible = false;
+  let soundsReady = false;
 
   const ui = window.BrailleUI || null;
+  const currentLineBoxEl = document.getElementById("currentLineBox");
 
   function pageLog(message, level = "info", source = "Game") {
     if (!window.Logging) {
@@ -111,7 +114,7 @@
     const container = document.getElementById("logContainer");
     const btn = document.getElementById("btnToggleLog");
     if (container) {
-      container.hidden = !logVisible;
+      container.classList.toggle("visible", logVisible);
     }
     btn.textContent = logVisible ? "Verberg log" : "Toon log";
   }
@@ -157,31 +160,50 @@
       `Nieuwe ronde: audioWord="${currentAudioWord}", brailleWord="${currentBrailleWord}", match=${isMatch}`
     );
 
-    // speel het woord
-    Sounds.playWord("nl", currentAudioWord);
+    // speel het woord (alleen als sounds geladen zijn)
+    if (soundsReady) {
+      pageLog("Play word audio: destination=browser, word=" + currentAudioWord, "debug", "Sounds");
+      Sounds.playWord("nl", currentAudioWord);
+    } else {
+      pageLog("Sounds niet beschikbaar; klik op 'Herhaal woord' zodra ze geladen zijn.", "warn", "Sounds");
+    }
 
-    // stuur naar brailleleesregel via BrailleUI
-    try {
-      await ui.setText(padded);
-      pageLog("Braille-regel verzonden via BrailleUI", "debug", "BrailleUI");
-    } catch (e) {
-      pageLog("setText error: " + e, "error", "BrailleUI");
+    // stuur naar brailleleesregel via BrailleUI (of fallback naar DOM)
+    if (ui) {
+      try {
+        await ui.setText(padded);
+        pageLog("Braille-regel verzonden via BrailleUI", "debug", "BrailleUI");
+      } catch (e) {
+        pageLog("setText error: " + e, "error", "BrailleUI");
+      }
+    } else if (currentLineBoxEl) {
+      currentLineBoxEl.textContent = padded || "(leeg)";
     }
   }
 
   function repeatWord() {
     if (!currentAudioWord) return;
+    if (!soundsReady) {
+      pageLog("Sounds nog niet klaar; wacht even of ververs de pagina.", "warn", "Sounds");
+      return;
+    }
+    pageLog("Play word audio (repeat): destination=browser, word=" + currentAudioWord, "debug", "Sounds");
     Sounds.playWord("nl", currentAudioWord);
     pageLog("Woord opnieuw afgespeeld: " + currentAudioWord);
   }
 
   async function repeatLine() {
     if (!currentBrailleWord) return;
-    try {
-      await ui.repeatLine();
-      pageLog("Braille-regel opnieuw verzonden: " + currentBrailleWord);
-    } catch (err) {
-      pageLog("repeatLine error: " + err, "error", "BrailleUI");
+    if (ui) {
+      try {
+        await ui.repeatLine();
+        pageLog("Braille-regel opnieuw verzonden: " + currentBrailleWord);
+      } catch (err) {
+        pageLog("repeatLine error: " + err, "error", "BrailleUI");
+      }
+    } else if (currentLineBoxEl) {
+      currentLineBoxEl.textContent = currentBrailleWord;
+      pageLog("Braille-regel lokaal bijgewerkt.", "info", "UI");
     }
   }
 
@@ -195,10 +217,16 @@
 
     if (correct) {
       setLastAnswer(`Goed! ${word} is juist.`);
-      Sounds.playUI("nl", "correct");
+      if (soundsReady) {
+        pageLog("Play UI audio: destination=browser, key=correct", "debug", "Sounds");
+        Sounds.playUI("nl", "correct");
+      }
     } else {
       setLastAnswer(`Fout! ${word} is niet juist.`);
-      Sounds.playUI("nl", "mistake");
+      if (soundsReady) {
+        pageLog("Play UI audio: destination=browser, key=mistake", "debug", "Sounds");
+        Sounds.playUI("nl", "mistake");
+      }
     }
 
     setTimeout(startNewRound, NEXT_ROUND_DELAY);
@@ -245,7 +273,14 @@
     }
 
     // Sounds
-    await Sounds.init("../config/sounds.json", (msg) => pageLog(msg, "info", "Sounds"));
+    try {
+      await Sounds.init("../config/sounds.json", (msg) => pageLog(msg, "info", "Sounds"));
+      soundsReady = true;
+      pageLog("Sounds geladen.", "info", "Sounds");
+    } catch (err) {
+      soundsReady = false;
+      pageLog("Sounds niet geladen: " + err, "warn", "Sounds");
+    }
 
     // BrailleBridge configureren
     BrailleBridge.setConfig({
@@ -277,11 +312,16 @@
     document.getElementById("btnRepeatWord").onclick = repeatWord;
     document.getElementById("btnRepeatLine").onclick = repeatLine;
     document.getElementById("btnClear").onclick = async () => {
-      try {
-        await ui.clear();
-        pageLog("Display leeggemaakt", "info", "BrailleUI");
-      } catch (err) {
-        pageLog("Clear error: " + err, "error", "BrailleUI");
+      if (ui) {
+        try {
+          await ui.clear();
+          pageLog("Display leeggemaakt", "info", "BrailleUI");
+        } catch (err) {
+          pageLog("Clear error: " + err, "error", "BrailleUI");
+        }
+      } else if (currentLineBoxEl) {
+        currentLineBoxEl.textContent = "(leeg)";
+        pageLog("Braille-regel lokaal gewist.", "info", "UI");
       }
     };
     document.getElementById("btnToggleLog").onclick = toggleLog;
@@ -294,9 +334,12 @@
       });
     });
 
-    // optioneel eerste ronde pas na enige actie;
-    // maar als autoplay ok is, kun je deze direct laten starten:
-    // startNewRound();
+    // Start direct een ronde zodat het braillevak gevuld wordt
+    try {
+      await startNewRound();
+    } catch (err) {
+      pageLog("Kon ronde niet starten: " + err, "error", "Game");
+    }
   });
 </script>
 
