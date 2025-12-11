@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Braille Game – Komt het dier overeen?</title>
+
+  <!-- Jouw globale stijl -->
+  <link rel="stylesheet" href="../css/style.css" />
+
+  <!-- Howler -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <!-- Frameworks -->
+  <script src="../js/braillebridge.js"></script>
+  <script src="../js/sounds.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 20px;
+      background: #f5f5f7;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 22px 22px 18px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.7rem;
+    }
+    .button-row button {
+      margin: 4px;
+    }
+    .status {
+      border: 1px solid #ddd;
+      padding: 8px;
+      margin: 6px 0;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    #currentLineBox {
+      font-family: "Consolas", monospace;
+      font-size: 20px;
+      letter-spacing: 2px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    #logContainer {
+      display: none; /* standaard verborgen */
+      margin-top: 10px;
+    }
+    #log {
+      border: 1px solid #888;
+      padding: 10px;
+      height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      background: #111827;
+      color: #e5e7eb;
+      font-family: Consolas, monospace;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+    .connection-ok {
+      color: #15803d;
+    }
+    .connection-bad {
+      color: #b91c1c;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <h1>Braille Game – Komt het dier overeen?</h1>
+
+  <p>
+    Je hoort een dier (kat, paard, koe, hond, vogel).<br>
+    Op de brailleleesregel staat óók een diernaam.<br>
+    <strong>Vraag:</strong> Is het <em>dezelfde</em> diernaam als die je hoort?
+  </p>
+
+  <ul>
+    <li><strong>LeftThumb</strong> → <strong>NIET</strong> hetzelfde dier.</li>
+    <li><strong>RightThumb</strong> → <strong>WEL</strong> hetzelfde dier.</li>
+  </ul>
+
+  <div id="connectionStatus" class="connection-bad">WebSocket: nog niet verbonden…</div>
+
+  <h2>Bediening</h2>
+  <div class="button-row">
+    <button id="btnStartRound">Nieuwe ronde</button>
+    <button id="btnRepeatWord">Herhaal woord</button>
+    <button id="btnRepeatLine">Herhaal braille</button>
+    <button id="btnClear">Maak braille leeg</button>
+    <button id="btnToggleLog">Toon log</button>
+  </div>
+
+  <h2>Ronde</h2>
+  <div class="status" id="roundInfo">Nog geen ronde gestart.</div>
+
+  <h2>Woord op brailleleesregel</h2>
+  <div class="status" id="currentLineBox">(leeg)</div>
+
+  <h2>Laatste antwoord</h2>
+  <div class="status" id="lastAnswerBox">Nog geen antwoord.</div>
+
+  <div id="logContainer">
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+
+</div>
+
+<script>
+  const MAX_CELLS = 40;
+  const NEXT_ROUND_DELAY = 3000; // ms
+  const WORDS = ["kat", "paard", "koe", "hond", "vogel"];
+
+  let currentAudioWord = null;  // woord dat je hoort
+  let currentBrailleWord = null; // woord dat op de regel staat
+  let isMatch = null;           // true als gelijk, false als verschillend
+  let logVisible = false;
+
+  function pageLog(msg) {
+    const log = document.getElementById("log");
+    const t = new Date().toLocaleTimeString();
+    log.textContent += `[${t}] ${msg}\n`;
+    log.scrollTop = log.scrollHeight;
+    console.log(msg);
+  }
+
+  function toggleLog() {
+    logVisible = !logVisible;
+    const container = document.getElementById("logContainer");
+    const btn = document.getElementById("btnToggleLog");
+    container.style.display = logVisible ? "block" : "none";
+    btn.textContent = logVisible ? "Verberg log" : "Toon log";
+  }
+
+  function setConnectionStatus(text, ok) {
+    const el = document.getElementById("connectionStatus");
+    el.textContent = "WebSocket: " + text;
+    el.className = ok ? "connection-ok" : "connection-bad";
+  }
+
+  function setRoundInfo(text) {
+    document.getElementById("roundInfo").textContent = text;
+  }
+
+  function setCurrentLineDisplay(text) {
+    if (!text) {
+      document.getElementById("currentLineBox").textContent = "(leeg)";
+      return;
+    }
+    document.getElementById("currentLineBox").textContent = text;
+  }
+
+  function setLastAnswer(text) {
+    document.getElementById("lastAnswerBox").textContent = text;
+  }
+
+  function randomFrom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function startNewRound() {
+    currentAudioWord = randomFrom(WORDS);
+
+    if (Math.random() < 0.5) {
+      currentBrailleWord = currentAudioWord;
+      isMatch = true;
+    } else {
+      const others = WORDS.filter(w => w !== currentAudioWord);
+      currentBrailleWord = randomFrom(others);
+      isMatch = false;
+    }
+
+    const padded = currentBrailleWord.padEnd(MAX_CELLS, " ").substring(0, MAX_CELLS);
+
+    setRoundInfo(
+      `Nieuwe ronde: hoor je hetzelfde dier als op de braille-regel? (audio: ?)`
+    );
+    setLastAnswer("Nog geen antwoord.");
+    setCurrentLineDisplay(currentBrailleWord);
+
+    pageLog(
+      `Nieuwe ronde: audioWord="${currentAudioWord}", brailleWord="${currentBrailleWord}", match=${isMatch}`
+    );
+
+    // speel het woord
+    Sounds.playWord("nl", currentAudioWord);
+
+    // stuur naar brailleleesregel
+    BrailleBridge.sendText(padded, { pad: false, cells: MAX_CELLS })
+      .then(r => pageLog("sendText → " + (r && r.status)))
+      .catch(e => pageLog("sendText error: " + e));
+  }
+
+  function repeatWord() {
+    if (!currentAudioWord) return;
+    Sounds.playWord("nl", currentAudioWord);
+    pageLog("Woord opnieuw afgespeeld: " + currentAudioWord);
+  }
+
+  function repeatLine() {
+    if (!currentBrailleWord) return;
+    const padded = currentBrailleWord.padEnd(MAX_CELLS, " ").substring(0, MAX_CELLS);
+    BrailleBridge.sendText(padded, { pad: false, cells: MAX_CELLS });
+    pageLog("Braille-regel opnieuw verzonden: " + currentBrailleWord);
+  }
+
+  function handleUserAnswer(userSaysMatch, src) {
+    if (!currentAudioWord || !currentBrailleWord) return;
+
+    const correct = (userSaysMatch === isMatch);
+    const word = userSaysMatch ? "JA (zelfde)" : "NEE (anders)";
+
+    pageLog(`${src}: ${word} → correct=${correct}`);
+
+    if (correct) {
+      setLastAnswer(`Goed! ${word} is juist.`);
+      Sounds.playUI("nl", "correct");
+    } else {
+      setLastAnswer(`Fout! ${word} is niet juist.`);
+      Sounds.playUI("nl", "mistake");
+    }
+
+    setTimeout(startNewRound, NEXT_ROUND_DELAY);
+  }
+
+  function handleThumbKey(name) {
+    pageLog("Thumbkey: " + name);
+
+    const n = name.toLowerCase();
+    if (n === "leftthumb") {
+      handleUserAnswer(false, "LeftThumb");
+    } else if (n === "rightthumb" || n === "rightthumbkey") {
+      handleUserAnswer(true, "RightThumb");
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    // Sounds
+    await Sounds.init("../config/sounds.json", pageLog);
+
+    // BrailleBridge configureren
+    BrailleBridge.setConfig({
+      baseUrl: "http://localhost:5000",
+      wsUrl: "ws://localhost:5000/ws",
+      displayCells: MAX_CELLS,
+      debug: true
+    });
+
+    BrailleBridge.on("connected", () => setConnectionStatus("verbonden", true));
+    BrailleBridge.on("disconnected", () => setConnectionStatus("verbroken", false));
+    BrailleBridge.on("thumbkey", evt => handleThumbKey(evt.nameLower));
+    BrailleBridge.on("cursor", evt => pageLog("Cursor index=" + evt.index));
+    BrailleBridge.on("error", err => pageLog("ERROR: " + err.error));
+
+    BrailleBridge.connect();
+
+    document.getElementById("btnStartRound").onclick = startNewRound;
+    document.getElementById("btnRepeatWord").onclick = repeatWord;
+    document.getElementById("btnRepeatLine").onclick = repeatLine;
+    document.getElementById("btnClear").onclick = () => {
+      BrailleBridge.clearDisplay();
+      pageLog("Display leeggemaakt");
+    };
+    document.getElementById("btnToggleLog").onclick = toggleLog;
+
+    // optioneel eerste ronde pas na enige actie;
+    // maar als autoplay ok is, kun je deze direct laten starten:
+    // startNewRound();
+  });
+</script>
+
+</body>
+</html>

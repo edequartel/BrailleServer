@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Braille Sound Game – Letters & Words</title>
+
+  <!-- Shared stylesheet -->
+  <link rel="stylesheet" href="../css/style.css" />
+
+  <!-- Howler.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <!-- Frameworks -->
+  <script src="../js/braillebridge.js"></script>
+  <script src="../js/sounds.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Braille Sound Game – Letters & Words</h1>
+    <p class="small">
+      De regel met letters of woorden wordt op de brailleleesregel gezet.<br>
+      Druk met de cursor boven een letter of woord → het geluid wordt afgespeeld.
+    </p>
+
+    <!-- STATUS -->
+    <div id="connectionStatus">WebSocket: nog niet verbonden…</div>
+
+    <h2>Instellingen</h2>
+    <div class="button-row">
+      <label>
+        Taal:
+        <select id="languageSelect">
+          <option value="nl">Nederlands</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+
+      <label>
+        Type:
+        <select id="modeSelect">
+          <option value="letters">Letters</option>
+          <option value="words">Woorden</option>
+          <option value="mixed">Gemengd</option>
+        </select>
+      </label>
+
+      <button id="btnNewLine">Nieuwe brailleregel</button>
+      <button id="btnRepeatLine">Herhaal regel</button>
+      <button id="btnClear">Maak braille leeg</button>
+    </div>
+
+    <p class="small">
+      Tip: gebruik de duimtoetsen (optioneel):<br>
+      • LeftThumb → nieuwe regel<br>
+      • RightThumb → regel opnieuw sturen<br>
+    </p>
+
+    <!-- CURRENT LINE -->
+    <h2>Huidige regel (visueel)</h2>
+    <div id="currentLineBox" class="status"></div>
+
+    <!-- LAST HIT -->
+    <h2>Laatste keuze</h2>
+    <div id="lastChoice" class="status">
+      Niets gekozen.
+    </div>
+
+    <!-- LOG -->
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    // ------------------------------------------------------------------------
+    // CONSTANTEN: letters en woorden per taal
+    // ------------------------------------------------------------------------
+    const LETTER_KEYS = {
+      nl: ["a", "b", "k", "l"],
+      en: ["a", "b", "k"]
+    };
+
+    const WORD_KEYS = {
+      nl: ["bal", "kam"],
+      en: ["ball", "comb"]
+    };
+
+    const MAX_CELLS = 40;
+
+    // ------------------------------------------------------------------------
+    // STATE
+    // ------------------------------------------------------------------------
+    let currentLang = "nl";
+    let currentMode = "letters"; // letters | words | mixed
+    let currentLine = "";        // string die naar de brailleleesregel gaat
+    let indexToToken = {};       // mapping: cursorIndex → token (letter/woord)
+
+    // ------------------------------------------------------------------------
+    // DOM HELPERS
+    // ------------------------------------------------------------------------
+    function pageLog(msg) {
+      const log = document.getElementById("log");
+      const time = new Date().toLocaleTimeString();
+      log.textContent += `[${time}] ${msg}\n`;
+      log.scrollTop = log.scrollHeight;
+      console.log(msg);
+    }
+
+    function setConnectionStatus(text, ok) {
+      const el = document.getElementById("connectionStatus");
+      el.textContent = "WebSocket: " + text;
+      el.style.color = ok ? "green" : "red";
+    }
+
+    function setCurrentLineDisplay(text) {
+      const el = document.getElementById("currentLineBox");
+      if (el) el.textContent = text || "(leeg)";
+    }
+
+    function setLastChoice(text) {
+      const el = document.getElementById("lastChoice");
+      if (el) el.textContent = text;
+    }
+
+    // ------------------------------------------------------------------------
+    // LIJN GENEREREN (letters/woorden op 40 cellen)
+    // ------------------------------------------------------------------------
+    function buildTokens(lang, mode) {
+      const letters = LETTER_KEYS[lang] || [];
+      const words   = WORD_KEYS[lang] || [];
+
+      if (mode === "letters") return letters;
+      if (mode === "words")   return words;
+
+      // mixed
+      return [...letters, ...words];
+    }
+
+    function createBrailleLine(tokens) {
+      // We bouwen een regel zoals: "a b k l" of "bal kam bal"
+      // en stoppen voordat we > MAX_CELLS worden.
+      let line = "";
+      let map = {}; // index → token
+
+      for (let t of tokens) {
+        // toe te voegen met eventueel spatie
+        let toAdd = (line.length === 0) ? t : " " + t;
+
+        if (line.length + toAdd.length > MAX_CELLS) {
+          break;
+        }
+
+        const startIndex = line.length + (line.length === 0 ? 0 : 1);
+        line += toAdd;
+
+        // alle non-space posities koppelen aan deze token
+        for (let i = 0; i < t.length; i++) {
+          map[startIndex + i] = t; // token t (letter of woord)
+        }
+      }
+
+      // pad naar 40 cellen zodat braille regel mooi gevuld is
+      if (line.length < MAX_CELLS) {
+        line = line.padEnd(MAX_CELLS, " ");
+      }
+
+      return { line, indexToToken: map };
+    }
+
+    function generateNewLine() {
+      const tokens = shuffle(buildTokens(currentLang, currentMode));
+      const { line, indexToToken: map } = createBrailleLine(tokens);
+
+      currentLine = line;
+      indexToToken = map;
+
+      setCurrentLineDisplay(line.trimEnd());
+      setLastChoice("Nog niets gekozen.");
+
+      // Stuur naar brailleleesregel
+      BrailleBridge.sendText(currentLine)
+        .then(r => pageLog("sendText → status=" + r.status))
+        .catch(e => pageLog("sendText error: " + e));
+    }
+
+    function repeatLine() {
+      if (!currentLine) {
+        pageLog("Geen huidige regel om te herhalen.");
+        return;
+      }
+      BrailleBridge.sendText(currentLine)
+        .then(r => pageLog("repeat sendText → status=" + r.status))
+        .catch(e => pageLog("repeat sendText error: " + e));
+    }
+
+    // simpele shuffle
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // ------------------------------------------------------------------------
+    // CURSOR HANDLING: index → token → geluid
+    // ------------------------------------------------------------------------
+    function handleCursorIndex(idx) {
+      const token = indexToToken[idx];
+
+      pageLog("Cursor index=" + idx + " → token=" + (token || "(none)"));
+
+      if (!token) {
+        setLastChoice("Lege of onbekende positie (" + idx + ")");
+        return;
+      }
+
+      // Bepaal of dit een letter of woord is
+      if (token.length === 1) {
+        // letter
+        setLastChoice("Letter: " + token.toUpperCase() + " (lang=" + currentLang + ")");
+        Sounds.playLetter(currentLang, token);
+      } else {
+        // woord
+        setLastChoice("Woord: " + token + " (lang=" + currentLang + ")");
+        Sounds.playWord(currentLang, token);
+      }
+    }
+
+    function handleThumb(nameLower) {
+      pageLog("Thumbkey: " + nameLower);
+
+      if (nameLower === "leftthumb") {
+        generateNewLine();
+      } else if (nameLower === "rightthumb") {
+        repeatLine();
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // INIT
+    // ------------------------------------------------------------------------
+    window.addEventListener("DOMContentLoaded", async () => {
+      // 1. Sounds.init
+      try {
+        await Sounds.init("../config/sounds.json", pageLog);
+        pageLog("Sounds framework klaar.");
+      } catch (e) {
+        pageLog("❌ Fout bij laden Sounds-config: " + e);
+      }
+
+      // 2. BrailleBridge config
+      BrailleBridge.setConfig({
+        baseUrl: "http://localhost:5000",
+        wsUrl: "ws://localhost:5000/ws",
+        displayCells: MAX_CELLS,
+        debug: true
+      });
+
+      BrailleBridge.on("connected", () => {
+        setConnectionStatus("verbonden", true);
+        pageLog("BrailleBridge connected.");
+      });
+
+      BrailleBridge.on("disconnected", info => {
+        setConnectionStatus("verbinding verbroken", false);
+        pageLog("BrailleBridge disconnected (" + (info.reason || "") + ")");
+      });
+
+      BrailleBridge.on("cursor", evt => {
+        handleCursorIndex(evt.index);
+      });
+
+      BrailleBridge.on("thumbkey", evt => {
+        handleThumb(evt.nameLower);
+      });
+
+      BrailleBridge.on("error", err => {
+        pageLog("ERROR: " + (err.error || err));
+      });
+
+      BrailleBridge.connect();
+
+      // 3. UI events
+      const langSelect = document.getElementById("languageSelect");
+      const modeSelect = document.getElementById("modeSelect");
+
+      langSelect.onchange = () => {
+        currentLang = langSelect.value;
+        pageLog("Taal gewijzigd naar: " + currentLang);
+        generateNewLine();
+      };
+
+      modeSelect.onchange = () => {
+        currentMode = modeSelect.value;
+        pageLog("Mode gewijzigd naar: " + currentMode);
+        generateNewLine();
+      };
+
+      document.getElementById("btnNewLine").onclick = generateNewLine;
+      document.getElementById("btnRepeatLine").onclick = repeatLine;
+      document.getElementById("btnClear").onclick = () => {
+        BrailleBridge.clearDisplay()
+          .then(r => pageLog("clearDisplay → status=" + r.status))
+          .catch(e => pageLog("clearDisplay error: " + e));
+      };
+
+      // start met een eerste regel
+      generateNewLine();
+    });
+  </script>
+</body>
+</html>

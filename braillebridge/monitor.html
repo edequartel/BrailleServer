@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>BrailleBridge Test</title>
+
+  <!-- JOUW eigen stylesheet -->
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+<div class="container">
+
+  <h1>BrailleBridge Test</h1>
+  <p class="subtitle">
+    Test de lokale BrailleBridge via <strong>HTTP</strong> en <strong>WebSocket</strong>.
+  </p>
+
+  <div class="grid-2">
+    <!-- ----------------------------------------------- -->
+    <!-- LEFT COLUMN – CONTROLS                          -->
+    <!-- ----------------------------------------------- -->
+    <div class="card">
+      <h2>HTTP testen</h2>
+      <p>Stuur test- of eigen tekst naar <code>/braille</code>.</p>
+
+      <div class="button-row">
+        <button id="btnHello" class="btn primary">Stuur testtekst</button>
+        <button id="btnEcho" class="btn secondary">Eigen tekst…</button>
+      </div>
+
+      <h2 style="margin-top:20px;">WebSocket testen</h2>
+      <p>Verbind, stuur berichten en zie output live in het log.</p>
+
+      <div class="button-row">
+        <button id="btnWSConnect" class="btn primary">WS verbinden</button>
+        <button id="btnWSSend" class="btn secondary">WS bericht…</button>
+        <button id="btnWSDisconnect" class="btn danger">WS verbreken</button>
+      </div>
+
+      <div class="status-bar">
+        <span id="wsStatusBadge" class="badge grey">WS: Niet verbonden</span>
+      </div>
+
+      <div class="endpoint-list">
+        <span class="endpoint">HTTP → http://localhost:5000</span>
+        <span class="endpoint">WS → ws://localhost:5000/ws</span>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------- -->
+    <!-- RIGHT COLUMN – LOG WINDOW                       -->
+    <!-- ----------------------------------------------- -->
+    <div class="card">
+      <div class="flex-between">
+        <h2>Logging</h2>
+        <button id="btnClearLog" class="btn secondary small">Wissen</button>
+      </div>
+
+      <div id="log" class="log-area"></div>
+    </div>
+
+  </div> <!-- grid -->
+
+</div> <!-- container -->
+
+
+<script>
+  const baseUrl = "http://localhost:5000";
+  const wsUrl   = "ws://localhost:5000/ws";
+
+  let ws = null;
+  const logBox = document.getElementById("log");
+  const wsStatusBadge = document.getElementById("wsStatusBadge");
+
+  function setWsStatus(text, type = "grey") {
+    wsStatusBadge.textContent = text;
+    wsStatusBadge.className = "badge " + type; // uses your style.css
+  }
+
+  function log(type, message) {
+    const line = document.createElement("div");
+    line.classList.add("log-line", "log-" + type);
+
+    const time = new Date().toLocaleTimeString();
+    line.innerHTML = `<span class="time">[${time}]</span> <strong>${type.toUpperCase()}</strong> ${message}`;
+
+    logBox.appendChild(line);
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  // ----------------------------------------------------
+  // HTTP TEST BUTTONS
+  // ----------------------------------------------------
+  document.getElementById("btnHello").onclick = async () => {
+    try {
+      log("http", "POST /braille → 'Hallo vanaf HTML'");
+      const res = await fetch(`${baseUrl}/braille`, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: "Hallo vanaf HTML!"
+      });
+
+      const txt = await res.text();
+      log("info", `Response (${res.status}): ${txt}`);
+    } catch (err) {
+      log("error", "HTTP fout: " + err);
+    }
+  };
+
+  document.getElementById("btnEcho").onclick = async () => {
+    const text = prompt("Stuur naar brailleleesregel:", "Hallo braille!");
+    if (!text) return;
+
+    try {
+      log("http", "POST /braille → '" + text + "'");
+      const res = await fetch(`${baseUrl}/braille`, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: text
+      });
+
+      const txt = await res.text();
+      log("info", `Response (${res.status}): ${txt}`);
+    } catch (err) {
+      log("error", "HTTP fout: " + err);
+    }
+  };
+
+  // ----------------------------------------------------
+  // WEBSOCKET TEST BUTTONS
+  // ----------------------------------------------------
+  document.getElementById("btnWSConnect").onclick = () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      log("ws", "Al verbonden.");
+      return;
+    }
+
+    log("ws", "Verbinding maken…");
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      log("ws", "Verbonden met " + wsUrl);
+      setWsStatus("WS: Verbonden", "green");
+    };
+
+    ws.onclose = evt => {
+      log("ws", "Verbinding gesloten (code " + evt.code + ")");
+      setWsStatus("WS: Niet verbonden", "grey");
+    };
+
+    ws.onerror = err => {
+      log("error", "WS fout: " + err);
+      setWsStatus("WS: Fout", "red");
+    };
+
+    ws.onmessage = evt => {
+      log("ws", "Ontvangen: " + evt.data);
+    };
+  };
+
+  document.getElementById("btnWSSend").onclick = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      log("error", "WS niet verbonden.");
+      return;
+    }
+
+    const text = prompt("WS bericht:", "Hallo via WebSocket!");
+    if (!text) return;
+
+    ws.send(text);
+    log("ws", "Verstuurd: " + text);
+  };
+
+  document.getElementById("btnWSDisconnect").onclick = () => {
+    if (ws) {
+      ws.close();
+      log("ws", "Verbinding wordt verbroken…");
+    }
+  };
+
+  document.getElementById("btnClearLog").onclick = () => {
+    logBox.innerHTML = "";
+  };
+</script>
+
+</body>
+</html>

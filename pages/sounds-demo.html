@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sounds Demo – tastenbraille.com</title>
+
+  <!-- Shared stylesheet -->
+  <link rel="stylesheet" href="../css/style.css" />
+
+  <!-- Howler.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <!-- Sounds framework -->
+  <script src="../js/sounds.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Geluiden demo BrailleStudio</h1>
+    <p class="small">
+      Testpagina voor het <strong>Sounds</strong>-framework.<br>
+      Geluiden komen van <code>https://www.tastenbraille.com/braillestudio</code>
+      volgens <code>config/sounds.json</code>.
+    </p>
+
+    <!-- STATUS -->
+    <h2>Status</h2>
+    <div id="statusBox" class="status">
+      Sounds framework wordt geladen…
+    </div>
+
+    <!-- LETTERS NL -->
+    <h2>Letters (NL)</h2>
+    <div class="button-row">
+      <button data-letter="a">NL letter A</button>
+      <button data-letter="b">NL letter B</button>
+      <button data-letter="k">NL letter K</button>
+    </div>
+
+    <!-- WORDS NL -->
+    <h2>Woorden (NL)</h2>
+    <div class="button-row">
+      <button data-word="bal">woord: bal</button>
+      <button data-word="kam">woord: kam</button>
+    </div>
+
+
+    <!-- LOG -->
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    // Simple page logger, wired into Sounds.init(...)
+    function pageLog(msg) {
+      const log = document.getElementById("log");
+      const time = new Date().toLocaleTimeString();
+      log.textContent += `[${time}] ${msg}\n`;
+      log.scrollTop = log.scrollHeight;
+      console.log(msg);
+    }
+
+    function setStatus(text) {
+      const el = document.getElementById("statusBox");
+      if (!el) return;
+      el.textContent = text;
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      try {
+        // We are in /page → config is in ../config/sounds.json
+        await Sounds.init("../config/sounds.json", pageLog);
+        setStatus("✅ Sounds framework is geladen en klaar.");
+      } catch (e) {
+        setStatus("❌ Fout bij laden van sounds.json: " + e);
+        pageLog("ERROR loading sounds config: " + e);
+        return;
+      }
+
+      // NL letters
+      document.querySelectorAll("button[data-letter]").forEach(btn => {
+        btn.onclick = () => {
+          const letter = btn.getAttribute("data-letter");
+          Sounds.playLetter("nl", letter);
+        };
+      });
+
+      // NL words
+      document.querySelectorAll("button[data-word]").forEach(btn => {
+        btn.onclick = () => {
+          const wordKey = btn.getAttribute("data-word");
+          Sounds.playWord("nl", wordKey);
+        };
+      });
+
+      // EN letters
+      document.querySelectorAll("button[data-letter-en]").forEach(btn => {
+        btn.onclick = () => {
+          const letter = btn.getAttribute("data-letter-en");
+          Sounds.playLetter("en", letter);
+        };
+      });
+
+      // UI
+      document.getElementById("btnNlClick").onclick = () => {
+        Sounds.playUI("nl", "click");
+      };
+
+      document.getElementById("btnNlError").onclick = () => {
+        Sounds.playUI("nl", "error");
+      };
+
+      document.getElementById("btnEnClick").onclick = () => {
+        Sounds.playUI("en", "click");
+      };
+
+      // Shared
+      document.getElementById("btnSharedCorrect").onclick = () => {
+        Sounds.playShared("correct");
+      };
+    });
+  </script>
+</body>
+</html>

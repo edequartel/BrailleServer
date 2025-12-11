@@ -1,0 +1,71 @@
+// js/router.js
+// Navigo-based router that switches the iframe src
+// between your three pages in /pages.
+
+(function () {
+  const logEl = document.getElementById("log");
+  const frame = document.getElementById("contentFrame");
+
+  function log(msg) {
+    if (!logEl) return;
+    const time = new Date().toLocaleTimeString();
+    logEl.textContent += `[${time}] ${msg}\n`;
+    logEl.scrollTop = logEl.scrollHeight;
+    console.log("[ROUTER]", msg);
+  }
+
+  function setActiveButton(path) {
+    document.querySelectorAll("button[data-route]").forEach((btn) => {
+      const r = btn.getAttribute("data-route");
+      if (r === path) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
+
+  // Map routes → actual HTML files in /pages
+  const routeToPage = {
+    "/": "pages/braillebridge-demo.html",
+    "/bridge": "pages/braillebridge-demo.html",
+    "/sounds": "pages/sounds-demo.html",
+    "/game": "pages/braille-sound-game.html",
+  };
+
+  function loadPage(path) {
+    const page = routeToPage[path] || routeToPage["/"];
+    if (frame) {
+      frame.src = page;
+      log("Load page: " + path + " → " + page);
+    }
+    setActiveButton(path);
+  }
+
+  // Init Navigo (hash mode so it works from file or simple hosting)
+  const router = new Navigo("/", { hash: true });
+
+  router
+    .on({
+      "/": () => loadPage("/"),
+      "/bridge": () => loadPage("/bridge"),
+      "/sounds": () => loadPage("/sounds"),
+      "/game": () => loadPage("/game"),
+    })
+    .notFound(() => {
+      log("Route not found, going to /");
+      loadPage("/");
+    })
+    .resolve();
+
+  // Connect menu buttons
+  document.querySelectorAll("button[data-route]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const route = btn.getAttribute("data-route");
+      router.navigate(route);
+    });
+  });
+
+  // Optional: load default on first open
+  loadPage("/bridge");
+})();

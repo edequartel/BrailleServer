@@ -1,41 +1,24 @@
 {
   "baseUrl": "https://www.tastenbraille.com/braillestudio",
 
+  "defaultExtension": ".mp3",
+
   "languages": {
     "nl": {
-      "letters": {
-        "a": "/sounds/alfabet/a.mp3",
-        "b": "/sounds/alfabet/b.mp3",
-        "k": "/sounds/alfabet/k.mp3"
-      },
-      "words": {
-        "bal": "/sounds/nl/words/bal.mp3",
-        "kam": "/sounds/nl/words/kam.mp3"
-      },
-      "ui": {
-        "click": "/sounds/nl/ui/click.mp3",
-        "error": "/sounds/nl/ui/error.mp3"
-      }
+      "lettersPath": "/sounds/nl/alfabet",
+      "wordsPath":   "/sounds/nl/words",
+      "uiPath":      "/sounds/nl/ui",
+	  "stories":     "/sounds/nl/stories" 
     },
-
     "en": {
-      "letters": {
-        "a": "/sounds/en/letters/a.mp3",
-        "b": "/sounds/en/letters/b.mp3",
-        "k": "/sounds/en/letters/k.mp3"
-      },
-      "words": {
-        "ball": "/sounds/en/words/ball.mp3",
-        "comb": "/sounds/en/words/comb.mp3"
-      },
-      "ui": {
-        "click": "/sounds/en/ui/click.mp3",
-        "error": "/sounds/en/ui/error.mp3"
-      }
+      "lettersPath": "/sounds/en/letters",
+      "wordsPath":   "/sounds/en/words",
+      "uiPath":      "/sounds/en/ui",
+	  "stories":     "/sounds/nl/stories" 
     }
   },
 
   "shared": {
-    "correct": "/sounds/shared/correct.mp3"
+    "basePath": "/sounds/shared"
   }
 }

@@ -1,56 +1,229 @@
-body {
-  font-family: system-ui, Arial, sans-serif;
-  background: #f5f5f7;
+/* -------------------------------------------------------
+   Global layout
+------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
   margin: 0;
-  padding: 40px;
-  display: flex;
-  justify-content: center;
+  padding: 0;
 }
 
+/* Soft gradient background */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Arial, sans-serif;
+  background: linear-gradient(135deg, #f0f4ff, #fdf7ff);
+  color: #222;
+  min-height: 100vh;
+}
+
+/* Centered container card */
 .container {
-  background: white;
-  padding: 30px 40px;
+  max-width: 960px;
+  margin: 20px auto 40px auto;
+  padding: 24px 20px 32px 20px;
+  background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15);
 }
 
+/* -------------------------------------------------------
+   Headings & basic text
+------------------------------------------------------- */
 h1 {
   margin-top: 0;
-  font-size: 2rem;
-  text-align: center;
+  margin-bottom: 0.3em;
+  font-size: 1.8rem;
+  color: #1f2937;
 }
 
-button {
-  font-size: 24px;
-  padding: 14px 26px;
-  margin: 10px;
-  border: none;
+h2 {
+  margin-top: 1.6em;
+  margin-bottom: 0.5em;
+  font-size: 1.2rem;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+h2::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2563eb, #a855f7);
+}
+
+p {
+  margin-top: 0.2em;
+  margin-bottom: 0.6em;
+}
+
+/* Smaller helper text */
+.small {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* -------------------------------------------------------
+   Status boxes
+------------------------------------------------------- */
+.status,
+#connectionStatus,
+#currentLineBox,
+#lastChoice {
+  margin-top: 10px;
+  padding: 10px 14px;
   border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(248, 250, 252, 0.8);
+  font-size: 0.95rem;
+}
+
+/* Connection status gets a subtle gradient */
+#connectionStatus {
+  display: inline-block;
+  background: linear-gradient(90deg, #eff6ff, #f5f3ff);
+  border-color: #93c5fd;
+  font-weight: 500;
+}
+
+/* The current line and last choice more pronounced */
+#currentLineBox {
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-color: #1e293b;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+#lastChoice {
+  border-color: #bbf7d0;
+  background: #ecfdf3;
+}
+
+/* -------------------------------------------------------
+   Button rows & controls
+------------------------------------------------------- */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 15px 0;
+  align-items: center;
+}
+
+/* Basic button styling */
+button {
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  border-radius: 999px;
+  border: none;
   cursor: pointer;
-  background: #007aff;
-  color: white;
-  transition: background 0.2s;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #ffffff;
+  font-weight: 500;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+  transition: transform 0.08s ease-out, box-shadow 0.12s ease-out,
+    filter 0.15s ease-out;
 }
 
+/* Secondary buttons (if needed) */
+button.secondary {
+  background: #e5e7eb;
+  color: #111827;
+  box-shadow: 0 2px 6px rgba(148, 163, 184, 0.6);
+}
+
+/* Hover / active effects */
 button:hover {
-  background: #005bbb;
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.45);
 }
 
-.info {
-  margin-top: 20px;
-  text-align: center;
-  color: #555;
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.5);
+}
+
+/* Disabled buttons */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Selects inside button row */
+.button-row select {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #cbd5f5;
+  background: #f9fafb;
   font-size: 0.9rem;
 }
 
-.log-box {
-  margin-top: 20px;
-  background: #222;
-  color: #0f0;
-  padding: 10px;
-  height: 150px;
+/* Label styling */
+.button-row label {
+  font-size: 0.9rem;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* -------------------------------------------------------
+   Log window
+------------------------------------------------------- */
+#log {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #020617;
+  color: #e5e7eb;
+  border-radius: 10px;
+  border: 1px solid #1f2937;
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: 0.8rem;
+  height: 260px;
   overflow-y: auto;
-  font-family: monospace;
-  font-size: 14px;
-  border-radius: 8px;
+  white-space: pre-wrap;
+}
+
+/* -------------------------------------------------------
+   Responsive tweaks
+------------------------------------------------------- */
+@media (max-width: 700px) {
+  .container {
+    margin: 10px;
+    padding: 16px 12px 24px 12px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .button-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  button,
+  .button-row select {
+    width: 100%;
+  }
+
+  #log {
+    height: 210px;
+  }
+}
+
+button.active {
+  outline: 2px solid #22c55e;
+  outline-offset: 2px;
 }

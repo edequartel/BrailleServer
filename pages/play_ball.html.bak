@@ -4,16 +4,14 @@
   <meta charset="UTF-8">
   <title>Luisterverhaal – bal</title>
 
-  <!-- Jouw globale stijl -->
+  <!-- Jouw standaard stijl -->
   <link rel="stylesheet" href="../css/style.css">
 
-  <!-- Howler.js -->
+  <!-- Howler.js voor audio -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-  <!-- Sounds-framework -->
-  <script src="../js/sounds.js"></script>
 
   <style>
-    /* Extra aankleding bovenop style.css */
+    /* Extra aankleding bovenop jouw style.css */
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
@@ -29,10 +27,10 @@
     }
 
     .story-card {
-      background: rgba(255,255,255,0.97);
+      background: rgba(255,255,255,0.96);
       border-radius: 20px;
       box-shadow:
-        0 18px 40px rgba(15, 23, 42, 0.18),
+        0 18px 40px rgba(15, 23, 42, 0.16),
         0 0 0 1px rgba(148, 163, 184, 0.18);
       padding: 24px 22px 20px;
       position: relative;
@@ -77,7 +75,7 @@
       margin: 0 0 4px;
     }
 
-    .subtitle {
+    .story-subtitle {
       margin: 0;
       color: #6b7280;
       font-size: 0.95rem;
@@ -94,11 +92,10 @@
 
     .controls-row {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 10px;
-      margin-top: 6px;
-      margin-bottom: 10px;
+      gap: 12px;
+      margin-top: 4px;
+      margin-bottom: 8px;
       position: relative;
       z-index: 1;
     }
@@ -124,7 +121,7 @@
     }
 
     .play-button:hover {
-      filter: brightness(1.05);
+      filter: brightness(1.04);
     }
 
     .play-button:active {
@@ -137,26 +134,12 @@
       outline-offset: 3px;
     }
 
-    .pill {
+    .story-meta-pill {
       font-size: 0.8rem;
       padding: 4px 10px;
       border-radius: 999px;
       background: rgba(148, 163, 184, 0.18);
       color: #4b5563;
-    }
-
-    .secondary-button {
-      border-radius: 999px;
-      border: none;
-      padding: 7px 12px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      background: #e5e7eb;
-      color: #374151;
-    }
-
-    .secondary-button:hover {
-      background: #d4d4d8;
     }
 
     .timeline {
@@ -172,6 +155,7 @@
       border-radius: 999px;
       background: #e5e7eb;
       overflow: hidden;
+      position: relative;
     }
 
     .timeline-progress {
@@ -191,8 +175,16 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .status-text {
+    .hint-line {
       margin-top: 8px;
+      font-size: 0.8rem;
+      color: #6b7280;
+      position: relative;
+      z-index: 1;
+    }
+
+    .status-text {
+      margin-top: 6px;
       font-size: 0.85rem;
       color: #4b5563;
       display: flex;
@@ -206,15 +198,21 @@
       border-radius: 999px;
       background: #9ca3af;
     }
-    .status-dot.playing { background: #22c55e; }
-    .status-dot.paused  { background: #f97316; }
-    .status-dot.idle    { background: #9ca3af; }
-    .status-dot.error   { background: #ef4444; }
 
-    .hint-line {
-      margin-top: 6px;
-      font-size: 0.8rem;
-      color: #6b7280;
+    .status-dot.playing {
+      background: #22c55e;
+    }
+
+    .status-dot.paused {
+      background: #f97316;
+    }
+
+    .status-dot.idle {
+      background: #9ca3af;
+    }
+
+    .status-dot.error {
+      background: #ef4444;
     }
 
     .debug-mini {
@@ -252,36 +250,34 @@
   <div class="page-wrapper">
     <div class="story-card" aria-live="polite">
       <div class="story-header">
-        <div class="story-icon" aria-hidden="true">🎧</div>
+        <div class="story-icon" aria-hidden="true">▶</div>
         <div>
-          <h1 id="storyTitle">Luisterverhaal – bal</h1>
-          <p class="subtitle" id="storySubtitle">
-            Het woord “bal” als luisterverhaal uit de stories-map.
+          <h1 id="storyTitle">Luisterverhaal: bal</h1>
+          <p id="storySubtitle" class="story-subtitle">
+            Een kort luisterverhaal voor braille-leerlingen.
           </p>
         </div>
       </div>
 
       <div class="story-body" id="storyDescription">
-        Druk op afspelen om het verhaal <strong>bal</strong> te horen. De audio wordt
-        geladen via <code>sounds.json</code> en <code>sounds.js</code> (categorie <em>stories</em>).
+        Het verhaal wordt geladen vanuit <code>stories.json</code> en daarna afgespeeld.
+        Druk op de knop hieronder om te luisteren.
       </div>
 
       <div class="controls-row">
-        <button id="btnPlay" type="button" class="play-button">
-          <span id="playIcon" class="icon">▶</span>
+        <button id="playButton" class="play-button" type="button">
+          <span class="icon" id="playIcon">▶</span>
           <span id="playLabel">Afspelen</span>
         </button>
 
-        <button id="btnRestart" type="button" class="secondary-button">
-          Opnieuw vanaf begin
-        </button>
-
-        <span class="pill" id="metaPill">Verhaal “bal” · NL</span>
+        <span class="story-meta-pill" id="storyMeta">
+          Verhaal “bal” · NL
+        </span>
       </div>
 
-      <div class="timeline">
+      <div class="timeline" aria-hidden="false">
         <div class="timeline-bar">
-          <div id="timelineProgress" class="timeline-progress"></div>
+          <div class="timeline-progress" id="timelineProgress"></div>
         </div>
         <div class="timeline-time">
           <span id="currentTime">00:00</span>
@@ -290,43 +286,49 @@
       </div>
 
       <p class="hint-line">
-        Tip: gebruik de <strong>spatiebalk</strong> om te pauzeren of hervatten.
+        Tip: gebruik de spatiebalk om te pauzeren / hervatten.
       </p>
 
       <div class="status-text">
         <span id="statusDot" class="status-dot idle"></span>
-        <span id="statusText">Voorbereiden…</span>
+        <span id="statusText">Klaar om te starten…</span>
       </div>
 
-      <div id="debugArea" class="debug-mini"></div>
+      <div class="debug-mini" id="debugArea"></div>
     </div>
   </div>
 
   <script>
-    const STORY_LANG = "nl";
-    const STORY_KEY  = "bal";
+    const STORY_KEY = "bal";
+    const STORIES_CONFIG_URL = "../config/stories.json";
 
-    let storyHowl = null;
+    let player = null;
     let progressTimer = null;
+    let storyLoaded = false;
+    let audioUrl = null;
 
-    const elPlayBtn  = document.getElementById("btnPlay");
-    const elRestart  = document.getElementById("btnRestart");
+    const elTitle = document.getElementById("storyTitle");
+    const elSubtitle = document.getElementById("storySubtitle");
+    const elDescription = document.getElementById("storyDescription");
+    const elMeta = document.getElementById("storyMeta");
+
+    const btnPlay = document.getElementById("playButton");
     const elPlayIcon = document.getElementById("playIcon");
     const elPlayLabel = document.getElementById("playLabel");
 
     const elProgress = document.getElementById("timelineProgress");
-    const elCurTime  = document.getElementById("currentTime");
-    const elTotTime  = document.getElementById("totalTime");
+    const elCurTime = document.getElementById("currentTime");
+    const elTotalTime = document.getElementById("totalTime");
 
-    const elStatusDot  = document.getElementById("statusDot");
+    const elStatusDot = document.getElementById("statusDot");
     const elStatusText = document.getElementById("statusText");
-    const elDebug      = document.getElementById("debugArea");
+    const elDebug = document.getElementById("debugArea");
 
     function debug(msg) {
-      const t = new Date().toLocaleTimeString();
-      elDebug.textContent += `[${t}] ${msg}\n`;
+      const time = new Date().toLocaleTimeString();
+      elDebug.textContent += `[${time}] ${msg}\n`;
       elDebug.scrollTop = elDebug.scrollHeight;
-      console.log("[story-bal]", msg);
+      console.log("[story-debug]", msg);
     }
 
     function setStatus(mode, text) {
@@ -338,11 +340,11 @@
       if (!isFinite(sec) || sec < 0) sec = 0;
       const m = Math.floor(sec / 60);
       const s = Math.floor(sec % 60);
-      return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+      return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
     }
 
-    function updatePlayButtonUI(playing) {
-      if (playing) {
+    function updatePlayButtonUI(isPlaying) {
+      if (isPlaying) {
         elPlayIcon.textContent = "⏸";
         elPlayLabel.textContent = "Pauzeer";
       } else {
@@ -351,123 +353,153 @@
       }
     }
 
-    function startProgress() {
-      stopProgress();
+    function startProgressTimer() {
+      stopProgressTimer();
       progressTimer = setInterval(() => {
-        if (!storyHowl) return;
+        if (!player) return;
+
         let pos = 0;
-        let dur = 0;
         try {
-          pos = storyHowl.seek() || 0;
-          dur = storyHowl.duration() || 0;
-        } catch { /* ignore */ }
+          pos = player.seek() || 0;
+        } catch {
+          pos = 0;
+        }
+        const dur = player.duration() || 0;
 
         elCurTime.textContent = formatTime(pos);
-        elTotTime.textContent = formatTime(dur);
+        elTotalTime.textContent = formatTime(dur);
+
         const pct = dur > 0 ? (pos / dur) * 100 : 0;
         elProgress.style.width = pct.toFixed(1) + "%";
       }, 200);
     }
 
-    function stopProgress() {
+    function stopProgressTimer() {
       if (progressTimer) {
         clearInterval(progressTimer);
         progressTimer = null;
       }
     }
 
-    async function initSounds() {
-      try {
-        await Sounds.init("../config/sounds.json", debug);
-        debug("Sounds.init klaar. baseUrl=" + Sounds._config.baseUrl);
+    async function loadStoriesConfig() {
+      debug("Laden van stories-config: " + STORIES_CONFIG_URL);
 
-        // Gebruik de bestaande URL-logica uit sounds.js
-        const url = Sounds._buildUrl(STORY_LANG, "stories", STORY_KEY);
-        debug("URL voor verhaal: " + url);
+      const res = await fetch(STORIES_CONFIG_URL);
+      if (!res.ok) {
+        throw new Error(`Kan stories.json niet laden (${res.status} ${res.statusText})`);
+      }
 
-        // Haal (of maak) de Howl via de cache-laag van Sounds
-        storyHowl = Sounds._getHowl(url);
+      const cfg = await res.json();
+      const baseUrl = (cfg.baseUrl || "").replace(/\/+$/, "");
+      const ext = cfg.defaultExtension || ".mp3";
 
-        // Extra event handlers toevoegen voor UI
-        storyHowl.on("load", () => {
-          const dur = storyHowl.duration() || 0;
-          elTotTime.textContent = formatTime(dur);
+      const story = cfg.stories && cfg.stories[STORY_KEY];
+      if (!story) {
+        throw new Error(`Verhaal-key '${STORY_KEY}' niet gevonden in stories.json`);
+      }
+
+      const title = story.title || `Luisterverhaal: ${STORY_KEY}`;
+      const description = story.description || "Luisterverhaal uit stories.json.";
+      const path = (story.path || "/sounds/nl/stories").replace(/\\/g, "/");
+      const fileName = story.file || STORY_KEY;
+      const lang = story.lang || "NL";
+
+      audioUrl = `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}/${fileName}${ext}`;
+
+      elTitle.textContent = title;
+      elDescription.textContent = description;
+      elMeta.textContent = `Verhaal “${STORY_KEY}” · ${lang}`;
+      elSubtitle.textContent = "Afspelen vanaf " + audioUrl;
+
+      debug("Verhaal geladen: " + JSON.stringify({ title, path, fileName, audioUrl }, null, 2));
+
+      return audioUrl;
+    }
+
+    function initPlayer(url) {
+      if (player) {
+        player.unload();
+        player = null;
+      }
+
+      debug("Initialiseer Howler met URL: " + url);
+
+      player = new Howl({
+        src: [url],
+        html5: true,
+        preload: true,
+        onload: () => {
+          storyLoaded = true;
+          const dur = player.duration() || 0;
+          elTotalTime.textContent = formatTime(dur);
           debug("Audio geladen, duur = " + dur.toFixed(2) + "s");
-          setStatus("idle", "Klaar om af te spelen.");
-        });
-
-        storyHowl.on("play", () => {
+          setStatus("idle", "Verhaal klaar om af te spelen.");
+        },
+        onplay: () => {
           updatePlayButtonUI(true);
           setStatus("playing", "Afspelen…");
-          startProgress();
-        });
-
-        storyHowl.on("pause", () => {
+          startProgressTimer();
+          debug("Afspelen gestart.");
+        },
+        onpause: () => {
           updatePlayButtonUI(false);
           setStatus("paused", "Gepauzeerd.");
-        });
-
-        storyHowl.on("stop", () => {
+          debug("Afspelen gepauzeerd.");
+        },
+        onstop: () => {
           updatePlayButtonUI(false);
           setStatus("idle", "Gestopt.");
-          stopProgress();
-          elProgress.style.width = "0%";
-          elCurTime.textContent = "00:00";
-        });
-
-        storyHowl.on("end", () => {
+          debug("Afspelen gestopt.");
+          stopProgressTimer();
+        },
+        onend: () => {
           updatePlayButtonUI(false);
-          setStatus("idle", "Verhaal afgelopen.");
-          stopProgress();
+          setStatus("idle", "Verhaal is afgelopen.");
+          debug("Verhaal afgelopen.");
+          stopProgressTimer();
           elProgress.style.width = "100%";
-        });
-
-        storyHowl.on("loaderror", (id, err) => {
+        },
+        onloaderror: (id, err) => {
           setStatus("error", "Fout bij laden van audio.");
-          debug("loaderror: " + err);
-        });
+          debug("Load error: " + err);
+        },
+        onplayerror: (id, err) => {
+          setStatus("error", "Fout bij afspelen (play error).");
+          debug("Play error: " + err);
+        }
+      });
+    }
 
-        storyHowl.on("playerror", (id, err) => {
-          setStatus("error", "Fout bij afspelen.");
-          debug("playerror: " + err);
-        });
+    async function ensurePlayerReady() {
+      if (player && storyLoaded) return;
 
-        setStatus("idle", "Verhaal wordt voorbereid… (eventueel buffer)");
+      try {
+        setStatus("idle", "Verhaal wordt geladen…");
+        const url = audioUrl || await loadStoriesConfig();
+        initPlayer(url);
       } catch (err) {
-        setStatus("error", "Fout bij het laden van sounds.json");
-        debug("Sounds.init error: " + err);
+        setStatus("error", "Fout: " + err.message);
+        debug("CONFIG ERROR: " + err.message);
       }
     }
 
-    function togglePlay() {
-      if (!storyHowl) {
-        debug("Geen storyHowl beschikbaar.");
-        return;
-      }
+    async function togglePlay() {
+      await ensurePlayerReady();
+      if (!player) return;
+
       try {
-        if (storyHowl.playing()) {
-          storyHowl.pause();
+        if (player.playing()) {
+          player.pause();
         } else {
-          storyHowl.play();
+          player.play();
         }
       } catch (err) {
-        setStatus("error", "Kon niet afspelen.");
-        debug("togglePlay error: " + err);
+        setStatus("error", "Kan niet afspelen.");
+        debug("PLAY ERROR: " + err);
       }
     }
 
-    function restartStory() {
-      if (!storyHowl) return;
-      try {
-        storyHowl.seek(0);
-        storyHowl.play();
-      } catch (err) {
-        debug("restart error: " + err);
-      }
-    }
-
-    elPlayBtn.addEventListener("click", togglePlay);
-    elRestart.addEventListener("click", restartStory);
+    btnPlay.addEventListener("click", togglePlay);
 
     window.addEventListener("keydown", ev => {
       if (ev.code === "Space") {
@@ -477,8 +509,14 @@
     });
 
     window.addEventListener("DOMContentLoaded", () => {
-      setStatus("idle", "Sounds worden geladen…");
-      initSounds();
+      setStatus("idle", "Verhaal wordt voorbereid…");
+      // We beginnen alvast met het laden van stories.json op de achtergrond:
+      loadStoriesConfig().then(url => {
+        initPlayer(url);
+      }).catch(err => {
+        setStatus("error", "Fout bij laden stories.json");
+        debug("INIT ERROR: " + err.message);
+      });
     });
   </script>
 </body>

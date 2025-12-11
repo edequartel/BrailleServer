@@ -1,75 +1,164 @@
-let Sounds = {
-  config: null,
+// js/sounds.js
+// Requires Howler.js to be loaded before this script.
 
-  async loadConfig() {
-    const jsonPath = "config/sounds.json";
-    logMessage("📄 Loading config from: " + jsonPath);
-	
-	
-	    // Detect the root URL where index.html is running
-    const rootPath = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "/");
+const Sounds = {
+  _config: null,
+  _cache: {},
+  _ready: false,
+  _loading: null,
+  _logFn: null,
 
-    logMessage("🌐 Root path: " + rootPath);
-    logMessage("📄 Loading config from: " + jsonPath);
-    logMessage("➡️ Full request URL: " + rootPath + jsonPath);
-	
+  async init(configUrl = "config/sounds.json", logFn = null) {
+    if (this._loading) return this._loading;
 
-    try {
-      const response = await fetch(jsonPath);
+    this._logFn = typeof logFn === "function" ? logFn : null;
 
-      logMessage("↩️ Response status: " + response.status + " " + response.statusText);
+    this._loading = (async () => {
+      this._log("🔊 Sounds.init → loading config:", configUrl);
 
-      if (!response.ok) {
-        logMessage("❌ ERROR: Could not load sounds.json from " + response.url);
-        return;
+      const res = await fetch(configUrl);
+      if (!res.ok) {
+        throw new Error(`Failed to load sounds config: ${res.status} ${res.statusText}`);
       }
 
-      this.config = await response.json();
-      logMessage("✅ sounds.json loaded successfully.");
-      logMessage("🔗 baseUrl: " + this.config.baseUrl);
+      this._config = await res.json();
+      this._ready = true;
 
-    } catch (error) {
-      logMessage("❌ ERROR reading sounds.json: " + error);
+      this._log("✅ sounds.json loaded");
+      this._log("   baseUrl =", this._config.baseUrl);
+      this._log("   defaultExtension =", this._config.defaultExtension);
+    })();
+
+    return this._loading;
+  },
+
+  _log(...args) {
+    if (this._logFn) this._logFn(args.map(a => String(a)).join(" "));
+    else console.log("[Sounds]", ...args);
+  },
+
+  /**
+   * Build full URL for any category:
+   *   letters | words | ui | stories
+   */
+  _buildUrl(lang, category, key) {
+    if (!this._config) throw new Error("Sounds not initialized.");
+
+    const cfg = this._config;
+    const baseUrl = (cfg.baseUrl || "").replace(/\/+$/, "");
+    const ext = cfg.defaultExtension || ".mp3";
+
+    const langCfg = cfg.languages?.[lang];
+    if (!langCfg) throw new Error(`Unknown language '${lang}'`);
+
+    let folderPath = "";
+
+    switch (category) {
+      case "letters": folderPath = langCfg.lettersPath; break;
+      case "words":   folderPath = langCfg.wordsPath;   break;
+      case "ui":      folderPath = langCfg.uiPath;      break;
+      case "stories": folderPath = langCfg.stories;     break;
+      default:
+        throw new Error(`Unknown category '${category}'`);
     }
+
+    if (!folderPath) {
+      throw new Error(
+        `No path configured for lang='${lang}', category='${category}'`
+      );
+    }
+
+    folderPath = folderPath.replace(/\\/g, "/");
+    if (!folderPath.startsWith("/")) folderPath = "/" + folderPath;
+
+    const fileName = String(key).toLowerCase();
+
+    return `${baseUrl}${folderPath}/${fileName}${ext}`;
   },
 
-  getUrl(path) {
-    return this.config.baseUrl + path;
+  _buildSharedUrl(key) {
+    if (!this._config) throw new Error("Sounds not initialized.");
+
+    const cfg = this._config;
+    const baseUrl = (cfg.baseUrl || "").replace(/\/+$/, "");
+    const ext = cfg.defaultExtension || ".mp3";
+
+    let sharedPath = cfg.shared?.basePath || "/sounds/shared";
+    sharedPath = sharedPath.replace(/\\/g, "/");
+    if (!sharedPath.startsWith("/")) sharedPath = "/" + sharedPath;
+
+    const fileName = String(key).toLowerCase();
+    return `${baseUrl}${sharedPath}/${fileName}${ext}`;
   },
 
-  play(lang, category, name) {
-    if (!this.config) {
-      logMessage("❌ ERROR: Sounds not loaded.");
+  _getHowl(fullUrl) {
+    if (this._cache[fullUrl]) return this._cache[fullUrl];
+
+    this._log("🎧 Creating Howl for", fullUrl);
+
+    const howl = new Howl({
+      src: [fullUrl],
+      html5: true,
+      onload: () => this._log("   ▶ loaded:", fullUrl),
+      onloaderror: (id, err) => this._log("   ❌ loaderror:", fullUrl, err),
+      onplayerror: (id, err) => this._log("   ❌ playerror:", fullUrl, err)
+    });
+
+    this._cache[fullUrl] = howl;
+    return howl;
+  },
+
+  play(lang, category, key) {
+    if (!this._ready) {
+      this._log("⚠ Sounds.play called before init() finished.");
       return;
     }
 
-    const relativePath = this.config.languages[lang][category][name];
-    const fullUrl = this.getUrl(relativePath);
-
-    logMessage("▶️ Playing file: " + relativePath);
-    logMessage("🌐 Full URL:     " + fullUrl);
-
-    const sound = new Howl({ src: [fullUrl] });
-    sound.play();
+    try {
+      const url = this._buildUrl(lang, category, key);
+      const howl = this._getHowl(url);
+      this._log(`▶ play: lang=${lang}, cat=${category}, key=${key} → ${url}`);
+      howl.play();
+    } catch (e) {
+      this._log("❌ play error:", e);
+    }
   },
 
-  playShared(name) {
-    if (!this.config) {
-      logMessage("❌ ERROR: Sounds not loaded.");
+  // Convenience helpers
+  playLetter(lang, letter) {
+    this.play(lang, "letters", letter);
+  },
+
+  playWord(lang, wordKey) {
+    this.play(lang, "words", wordKey);
+  },
+
+  playUI(lang, uiKey) {
+    this.play(lang, "ui", uiKey);
+  },
+
+  /**
+   * NEW → Play long audio stories / texts
+   * Example:
+   *   Sounds.playStory("nl", "hoofdstuk1");
+   */
+  playStory(lang, storyKey) {
+    this.play(lang, "stories", storyKey);
+  },
+
+  playShared(key) {
+    if (!this._ready) {
+      this._log("⚠ Sounds.playShared called before init()");
       return;
     }
 
-    const relativePath = this.config.shared[name];
-    const fullUrl = this.getUrl(relativePath);
-
-    logMessage("▶️ Playing shared: " + relativePath);
-    logMessage("🌐 Full URL:       " + fullUrl);
-
-    const sound = new Howl({ src: [fullUrl] });
-    sound.play();
+    try {
+      const url = this._buildSharedUrl(key);
+      const howl = this._getHowl(url);
+      this._log(`▶ playShared: key=${key} → ${url}`);
+      howl.play();
+    } catch (e) {
+      this._log("❌ playShared error:", e);
+    }
   }
 };
-
-(async () => {
-  await Sounds.loadConfig();
-})();
