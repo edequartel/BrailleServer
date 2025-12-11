@@ -4,78 +4,19 @@
   <meta charset="UTF-8" />
   <title>Braille Game – Komt het dier overeen?</title>
 
-  <!-- Jouw globale stijl -->
   <link rel="stylesheet" href="../css/style.css" />
 
   <!-- Howler -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
 
   <!-- Frameworks -->
+  <script src="../js/logging.js"></script>
   <script src="../js/braillebridge.js"></script>
+  <script src="../js/brailleui.js"></script>
   <script src="../js/sounds.js"></script>
-
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      padding: 20px;
-      background: #f5f5f7;
-    }
-    .container {
-      max-width: 760px;
-      margin: 0 auto;
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 22px 22px 18px;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
-    }
-    h1 {
-      margin-top: 0;
-      font-size: 1.7rem;
-    }
-    .button-row button {
-      margin: 4px;
-    }
-    .status {
-      border: 1px solid #ddd;
-      padding: 8px;
-      margin: 6px 0;
-      border-radius: 8px;
-      background: #fafafa;
-    }
-    #currentLineBox {
-      font-family: "Consolas", monospace;
-      font-size: 20px;
-      letter-spacing: 2px;
-      background: #fff;
-      padding: 10px;
-      border-radius: 6px;
-    }
-    #logContainer {
-      display: none; /* standaard verborgen */
-      margin-top: 10px;
-    }
-    #log {
-      border: 1px solid #888;
-      padding: 10px;
-      height: 200px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      background: #111827;
-      color: #e5e7eb;
-      font-family: Consolas, monospace;
-      font-size: 0.8rem;
-      border-radius: 6px;
-    }
-    .connection-ok {
-      color: #15803d;
-    }
-    .connection-bad {
-      color: #b91c1c;
-    }
-  </style>
 </head>
 
-<body>
+<body class="game-page game-page--dier-match">
 <div class="container">
 
   <h1>Braille Game – Komt het dier overeen?</h1>
@@ -91,7 +32,7 @@
     <li><strong>RightThumb</strong> → <strong>WEL</strong> hetzelfde dier.</li>
   </ul>
 
-  <div id="connectionStatus" class="connection-bad">WebSocket: nog niet verbonden…</div>
+  <div id="connectionStatus">WebSocket: nog niet verbonden…</div>
 
   <h2>Bediening</h2>
   <div class="button-row">
@@ -114,9 +55,9 @@
   <h2>Laatste antwoord</h2>
   <div class="status" id="lastAnswerBox">Nog geen antwoord.</div>
 
-  <div id="logContainer">
+  <div id="logContainer" hidden>
     <h2>Log</h2>
-    <div id="log"></div>
+    <div id="logBox" class="log-box" aria-live="polite"></div>
   </div>
 
 </div>
@@ -131,38 +72,49 @@
   let isMatch = null;           // true als gelijk, false als verschillend
   let logVisible = false;
 
-  function pageLog(msg) {
-    const log = document.getElementById("log");
-    const t = new Date().toLocaleTimeString();
-    log.textContent += `[${t}] ${msg}\n`;
-    log.scrollTop = log.scrollHeight;
-    console.log(msg);
+  const ui = window.BrailleUI || null;
+
+  function pageLog(message, level = "info", source = "Game") {
+    if (!window.Logging) {
+      console.log(`[${source}] ${message}`);
+      return;
+    }
+
+    const lvl = String(level).toLowerCase();
+    switch (lvl) {
+      case "debug":
+        Logging.debug(source, message);
+        break;
+      case "warn":
+        Logging.warn(source, message);
+        break;
+      case "error":
+        Logging.error(source, message);
+        break;
+      default:
+        Logging.info(source, message);
+        break;
+    }
   }
 
   function toggleLog() {
     logVisible = !logVisible;
     const container = document.getElementById("logContainer");
     const btn = document.getElementById("btnToggleLog");
-    container.style.display = logVisible ? "block" : "none";
+    if (container) {
+      container.hidden = !logVisible;
+    }
     btn.textContent = logVisible ? "Verberg log" : "Toon log";
   }
 
   function setConnectionStatus(text, ok) {
     const el = document.getElementById("connectionStatus");
     el.textContent = "WebSocket: " + text;
-    el.className = ok ? "connection-ok" : "connection-bad";
+    el.dataset.state = ok ? "connected" : "disconnected";
   }
 
   function setRoundInfo(text) {
     document.getElementById("roundInfo").textContent = text;
-  }
-
-  function setCurrentLineDisplay(text) {
-    if (!text) {
-      document.getElementById("currentLineBox").textContent = "(leeg)";
-      return;
-    }
-    document.getElementById("currentLineBox").textContent = text;
   }
 
   function setLastAnswer(text) {
@@ -173,7 +125,7 @@
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
-  function startNewRound() {
+  async function startNewRound() {
     currentAudioWord = randomFrom(WORDS);
 
     if (Math.random() < 0.5) {
@@ -191,7 +143,6 @@
       `Nieuwe ronde: hoor je hetzelfde dier als op de braille-regel? (audio: ?)`
     );
     setLastAnswer("Nog geen antwoord.");
-    setCurrentLineDisplay(padded);
 
     pageLog(
       `Nieuwe ronde: audioWord="${currentAudioWord}", brailleWord="${currentBrailleWord}", match=${isMatch}`
@@ -200,10 +151,13 @@
     // speel het woord
     Sounds.playWord("nl", currentAudioWord);
 
-    // stuur naar brailleleesregel
-    BrailleBridge.sendText(padded, { pad: false, cells: MAX_CELLS })
-      .then(r => pageLog("sendText → " + (r && r.status)))
-      .catch(e => pageLog("sendText error: " + e));
+    // stuur naar brailleleesregel via BrailleUI
+    try {
+      await ui.setText(padded);
+      pageLog("Braille-regel verzonden via BrailleUI", "debug", "BrailleUI");
+    } catch (e) {
+      pageLog("setText error: " + e, "error", "BrailleUI");
+    }
   }
 
   function repeatWord() {
@@ -212,11 +166,14 @@
     pageLog("Woord opnieuw afgespeeld: " + currentAudioWord);
   }
 
-  function repeatLine() {
+  async function repeatLine() {
     if (!currentBrailleWord) return;
-    const padded = currentBrailleWord.padEnd(MAX_CELLS, " ").substring(0, MAX_CELLS);
-    BrailleBridge.sendText(padded, { pad: false, cells: MAX_CELLS });
-    pageLog("Braille-regel opnieuw verzonden: " + currentBrailleWord);
+    try {
+      await ui.repeatLine();
+      pageLog("Braille-regel opnieuw verzonden: " + currentBrailleWord);
+    } catch (err) {
+      pageLog("repeatLine error: " + err, "error", "BrailleUI");
+    }
   }
 
   function handleUserAnswer(userSaysMatch, src) {
@@ -239,7 +196,7 @@
   }
 
   function handleThumbKey(name) {
-    pageLog("Thumbkey: " + name);
+    pageLog("Thumbkey: " + name, "debug", "BrailleBridge");
 
     const n = name.toLowerCase();
     if (n === "leftthumb") {
@@ -250,8 +207,31 @@
   }
 
   window.addEventListener("DOMContentLoaded", async () => {
+    if (window.Logging) {
+      Logging.setLevel("debug");
+      Logging.addSink(
+        Logging.createDomSink("logBox", {
+          maxEntries: 400,
+          newestOnTop: false
+        })
+      );
+    }
+
+    if (ui) {
+      ui.setOptions({
+        displayCells: MAX_CELLS,
+        debug: false
+      });
+      ui.attachMonitor("currentLineBox");
+      ui.on("lineChanged", (evt) => {
+        pageLog(`BrailleUI lineChanged: '${evt.line}'`, "debug", "BrailleUI");
+      });
+    } else {
+      pageLog("BrailleUI niet beschikbaar, monitor werkt niet.", "error", "BrailleUI");
+    }
+
     // Sounds
-    await Sounds.init("../config/sounds.json", pageLog);
+    await Sounds.init("../config/sounds.json", (msg) => pageLog(msg, "info", "Sounds"));
 
     // BrailleBridge configureren
     BrailleBridge.setConfig({
@@ -261,20 +241,34 @@
       debug: true
     });
 
-    BrailleBridge.on("connected", () => setConnectionStatus("verbonden", true));
-    BrailleBridge.on("disconnected", () => setConnectionStatus("verbroken", false));
-    BrailleBridge.on("thumbkey", evt => handleThumbKey(evt.nameLower));
-    BrailleBridge.on("cursor", evt => pageLog("Cursor index=" + evt.index));
-    BrailleBridge.on("error", err => pageLog("ERROR: " + err.error));
+    BrailleBridge.on("connected", () => {
+      setConnectionStatus("verbonden", true);
+      pageLog("WebSocket connected", "info", "BrailleBridge");
+    });
+    BrailleBridge.on("disconnected", () => {
+      setConnectionStatus("verbroken", false);
+      pageLog("WebSocket disconnected", "warn", "BrailleBridge");
+    });
+    BrailleBridge.on("thumbkey", (evt) => handleThumbKey(evt.nameLower));
+    BrailleBridge.on("cursor", (evt) =>
+      pageLog("Cursor index=" + evt.index, "debug", "BrailleBridge")
+    );
+    BrailleBridge.on("error", (err) =>
+      pageLog("Bridge error: " + err.error, "error", "BrailleBridge")
+    );
 
     BrailleBridge.connect();
 
     document.getElementById("btnStartRound").onclick = startNewRound;
     document.getElementById("btnRepeatWord").onclick = repeatWord;
     document.getElementById("btnRepeatLine").onclick = repeatLine;
-    document.getElementById("btnClear").onclick = () => {
-      BrailleBridge.clearDisplay();
-      pageLog("Display leeggemaakt");
+    document.getElementById("btnClear").onclick = async () => {
+      try {
+        await ui.clear();
+        pageLog("Display leeggemaakt", "info", "BrailleUI");
+      } catch (err) {
+        pageLog("Clear error: " + err, "error", "BrailleUI");
+      }
     };
     document.getElementById("btnToggleLog").onclick = toggleLog;
 
