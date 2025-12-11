@@ -106,7 +106,10 @@
   <div class="status" id="roundInfo">Nog geen ronde gestart.</div>
 
   <h2>Woord op brailleleesregel</h2>
-  <div class="status" id="currentLineBox">(leeg)</div>
+  <div class="braille-monitor-label">
+    Volledige 40 braillecellen (inclusief spaties).
+  </div>
+  <div class="braille-monitor" id="currentLineBox">(leeg)</div>
 
   <h2>Laatste antwoord</h2>
   <div class="status" id="lastAnswerBox">Nog geen antwoord.</div>
@@ -188,7 +191,7 @@
       `Nieuwe ronde: hoor je hetzelfde dier als op de braille-regel? (audio: ?)`
     );
     setLastAnswer("Nog geen antwoord.");
-    setCurrentLineDisplay(currentBrailleWord);
+    setCurrentLineDisplay(padded);
 
     pageLog(
       `Nieuwe ronde: audioWord="${currentAudioWord}", brailleWord="${currentBrailleWord}", match=${isMatch}`
