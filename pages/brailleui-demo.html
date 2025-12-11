@@ -88,12 +88,19 @@
         font-size: 0.95rem;
       }
 
-      .demo-actions {
-        margin-top: 8px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
+.demo-actions button {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #e5e7eb;
+  border-color: #cbd5f5;
+  opacity: 0.75;          /* tone down visibility */
+}
+
+.demo-actions button:hover {
+  opacity: 1;
+}
+
 
       .demo-actions button {
         font-size: 0.85rem;
@@ -106,10 +113,10 @@
           transform 0.05s ease;
       }
 
-      .demo-actions button:hover {
+      /* .demo-actions button:hover {
         background: #e5e7eb;
         box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
-      }
+      } */
 
       .demo-actions button:active {
         transform: translateY(1px);
