@@ -1,4 +1,4 @@
-# BrailleServer – Uitgebreide Handleiding
+# BrailleServer
 
 BrailleServer is de online omgeving voor **BrailleStudio**.  
 Het is een volledig statische webomgeving (HTML, CSS, JavaScript) die communiceert met **BrailleBridge** — een lokale Windows-applicatie die de brailleleesregel aanstuurt via SAM32.dll, USB-communicatie en websockets.
