@@ -168,11 +168,15 @@
       });
     }
 
-    _updateMonitor() {
-      if (!this._monitorEl) return;
-      const visible = this._line.replace(/\s+$/g, "") || "(leeg)";
-      this._monitorEl.textContent = visible;
-    }
+_updateMonitor() {
+  if (!this._monitorEl) return;
+
+  // Laat de volledige interne braille-regel zien, 1:1 met de display.
+  // Als er nog niets is, toon "(leeg)".
+  const visible = (this._line && this._line.length > 0) ? this._line : "(leeg)";
+
+  this._monitorEl.textContent = visible;
+}
 
     _buildLineFromTokens(tokens) {
       const cells = this._options.displayCells;
