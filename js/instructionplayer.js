@@ -1,20 +1,22 @@
-// instructionPlayer.js
-// Audio-only script engine (Howler.js required)
+// /js/instructionplayer.js
+// Audio-only instruction player with path logging
 
 class InstructionPlayer {
-  constructor(config, options = {}) {
+  constructor(config, { log } = {}) {
     this.config = config;
-    this.base = config.audioBase || "";
+
+    // support both casings, but keep lowercase in json
+    this.audiobase = config.audiobase || config.audioBase || "";
     this.snippets = config.snippets || {};
-    this.varAudioMap = config.varAudioMap || {};
-    this.log = options.log || (() => {});
+    this.varaudiomap = config.varaudiomap || config.varAudioMap || {};
+
+    this.log = typeof log === "function" ? log : (() => {});
   }
 
-  // --- public ---
   async runInstructionById(id, context = {}) {
-    const instr = (this.config.instructions || []).find(x => x.id === id);
+    const instr = (this.config.instructions || []).find(i => i.id === id);
     if (!instr) throw new Error(`Instruction not found: ${id}`);
-    return this.runInstruction(instr, context);
+    await this.runInstruction(instr, context);
   }
 
   async runInstruction(instr, context = {}) {
@@ -32,7 +34,6 @@ class InstructionPlayer {
     await this._runSteps(instr.script || [], env);
   }
 
-  // --- core ---
   async _runSteps(steps, env) {
     for (const step of steps) {
       await this._runStep(step, env);
@@ -43,86 +44,76 @@ class InstructionPlayer {
     const t = step.type;
 
     if (t === "audio") {
-      const path = this._snippetPath(step.name);
-      this.log("[audio]", { name: step.name, path });
-      await this._play(path);
+      const file = this.snippets[step.name];
+      if (!file) throw new Error(`Unknown snippet: ${step.name}`);
+      await this._play(this.audiobase + file);
       return;
     }
 
-    // audioVar: plays a variable via varAudioMap
-    // example: { type:"audioVar", var:"TARGET" } -> vars.TARGET -> "<b>" -> "letter-b.mp3"
-    if (t === "audioVar") {
-      const v = step.var;
-      const token = env.vars[v];
-      const file = this.varAudioMap[token];
-      if (!file) throw new Error(`No varAudioMap entry for token '${token}' (var ${v})`);
-      const path = this.base + file;
-      this.log("[audioVar]", { var: v, token, path });
-      await this._play(path);
+    if (t === "audiovar") {
+      const token = env.vars[step.var];
+      const file = this.varaudiomap[token];
+      if (!file) throw new Error(`No audio for token ${token}`);
+      await this._play(this.audiobase + file);
       return;
     }
 
-    // set: compute vars[var] from expression
     if (t === "set") {
-      const varName = step.var;
-      const value = this._evalExpr(step.expr, env);
-      env.vars[varName] = value;
-      this.log("[set]", { var: varName, value, expr: step.expr });
+      env.vars[step.var] = this._evalExpr(step.expr, env);
       return;
     }
 
-    // choice: chooses then/else based on expr
     if (t === "choice") {
       const ok = Boolean(this._evalExpr(step.expr, env));
-      this.log("[choice]", { expr: step.expr, result: ok });
       const branch = ok ? (step.then || []) : (step.else || []);
       await this._runSteps(branch, env);
       return;
     }
 
-    // pause
     if (t === "pause") {
-      const ms = Number(step.ms ?? 0);
-      this.log("[pause]", { ms });
-      await new Promise(r => setTimeout(r, ms));
+      await new Promise(r => setTimeout(r, step.ms || 0));
       return;
     }
 
     throw new Error(`Unknown step type: ${t}`);
   }
 
-  // --- helpers ---
-  _snippetPath(name) {
-    const file = this.snippets[name];
-    if (!file) throw new Error(`Unknown snippet: ${name}`);
-    return this.base + file;
-  }
-
   _evalExpr(expr, env) {
+    if (!expr) return undefined;
     const display = env.context.display ?? "";
     const vars = env.vars;
     const includes = env.includes;
-    if (!expr) return undefined;
-
-    // trusted JSON only
+    // trusted json only
     // eslint-disable-next-line no-new-func
-    const fn = new Function("display", "vars", "includes", `return (${expr});`);
-    return fn(display, vars, includes);
+    return new Function("display", "vars", "includes", `return (${expr});`)(
+      display, vars, includes
+    );
   }
 
   _play(path) {
+    const resolvedUrl = new URL(path, window.location.href).href;
+    this.log("AUDIO PLAY", { path, resolvedUrl });
+
     return new Promise((resolve, reject) => {
       if (typeof Howl === "undefined") {
-        reject(new Error("Howler.js not loaded (Howl is undefined)"));
+        reject(new Error("Howler.js not loaded"));
         return;
       }
+
       const sound = new Howl({
         src: [path],
         html5: true,
         onend: resolve,
-        onloaderror: (_, err) => reject(err),
-        onplayerror: (_, err) => reject(err)
+        onloaderror: (_, err) => {
+          this.log("AUDIO LOAD ERROR", { path, resolvedUrl, err });
+          reject(err);
+        },
+        onplayerror: (_, err) => {
+          this.log("AUDIO PLAY ERROR", { path, resolvedUrl, err });
+          reject(err);
+        }
       });
+
       sound.play();
     });
   }
