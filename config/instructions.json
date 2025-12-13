@@ -1,6 +1,6 @@
 {
   "version": "1.1", 
-  "audioBase": "https://www.tastenbraille.com/sounds/nl/alfabet/",
+  "audioBase": "https://www.tastenbraille.com/braillestudio/sounds/nl/alfabet/",
   "snippets": {
     "kijk_naar_leesregel": "kijk-naar-de-leesregel.mp3",
     "komt_er": "komt-er.mp3",
