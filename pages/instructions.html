@@ -60,12 +60,12 @@
 </div>
 
 <!-- Engine -->
-<script src="/js/instructionPlayer.js"></script>
+<script src="/js/instructionplayer.js"></script>
 
 <script>
   async function loadConfig() {
     const res = await fetch("/config/instructions.json");
-    if (!res.ok) throw new Error("Kan /config/instructions.json niet laden");
+    if (!res.ok) throw new Error("Kan ../config/instructions.json niet laden");
     return res.json();
   }
 
