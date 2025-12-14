@@ -41,10 +41,20 @@
   width: 100%;
 }
 
+/* Taller thumbkey buttons */
 .thumb-key {
-  flex: 1 1 0;      /* equal widths */
-  min-width: 0;     /* allow shrinking */
-  text-align: center;
+  min-height: 3rem;          /* increase button height */
+  padding: 0.6rem 0.75rem;   /* more vertical padding */
+  font-size: 0.9rem;         /* slightly larger label */
+  line-height: 1.2;
+}
+
+/* Optional: even taller on touch devices */
+@media (pointer: coarse) {
+  .thumb-key {
+    min-height: 3.5rem;
+    font-size: 1rem;
+  }
 }
 
 .thumb-key.active {
