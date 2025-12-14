@@ -1,0 +1,55 @@
+.event-log {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #cfd6e4;
+  border-radius: 8px;
+  background: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Cascadia Code", "Fira Code", monospace;
+  font-size: 0.85rem;
+}
+
+.event-log__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: #f4f6fb;
+  border-bottom: 1px solid #e1e6f0;
+}
+
+.event-log__title {
+  font-weight: 600;
+}
+
+.event-log__controls button {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.event-log__body {
+  padding: 0.4rem;
+  overflow-y: auto;
+  max-height: 200px;
+  white-space: pre-wrap;
+}
+
+.event-log__entry {
+  line-height: 1.35;
+}
+
+.event-log__entry--key {
+  color: #1a4cff;
+}
+
+.event-log__entry--routing {
+  color: #0a7a3d;
+}
+
+.event-log__entry--audio {
+  color: #7a3d0a;
+}
+
+.event-log__entry--system {
+  color: #555;
+}
