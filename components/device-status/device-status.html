@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Device status demo</title>
+
+  <!-- CSS: same folder -->
+  <link rel="stylesheet" href="./device-status.css" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MUST exist -->
+  <div id="deviceStatus"></div>
+
+  <!-- JS: same folder -->
+  <script src="./device-status.js"></script>
+
+  <script>
+    // Safety check
+    if (typeof DeviceStatus === "undefined") {
+      document.getElementById("deviceStatus").textContent =
+        "ERROR: device-status.js not loaded";
+    } else {
+      const ds = new DeviceStatus({
+        containerId: "deviceStatus",
+        label: "Braille display",
+        initialState: "connecting",
+        initialText: "Connecting..."
+      });
+
+      // Visual proof it works
+      setTimeout(() => {
+        ds.setState("connected", "Focus 40 (USB)");
+      }, 1500);
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Feedback Badge – Dark Mode</title>
+
+  <style>
+    /* -------------------------------------------------------
+       Global theme variables
+    ------------------------------------------------------- */
+    :root {
+      --bg: #f5f7fb;
+      --fg: #1a1a1a;
+      --panel: #ffffff;
+      --border: #d0d4e0;
+      --accent: #4f6bed;
+    }
+
+    html[data-theme="dark"] {
+      --bg: #0f1117;
+      --fg: #e5e7eb;
+      --panel: #161a23;
+      --border: #2a2f3a;
+      --accent: #7aa2ff;
+      color-scheme: dark;
+    }
+
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    /* -------------------------------------------------------
+       Feedback badge – full adjusted CSS
+    ------------------------------------------------------- */
+
+    :root {
+      --fb-bg: var(--panel);
+      --fb-fg: var(--fg);
+      --fb-border: var(--border);
+      --fb-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      --fb-hover-bg: rgba(79, 107, 237, 0.10);
+      --fb-active-bg: rgba(79, 107, 237, 0.16);
+    }
+
+    html[data-theme="dark"] {
+      --fb-bg: #161a23;
+      --fb-fg: #e5e7eb;
+      --fb-border: #2a2f3a;
+      --fb-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      --fb-hover-bg: #1c2230;
+      --fb-active-bg: #141826;
+    }
+
+    .feedback-badge {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 9999;
+
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+
+      padding: 10px 14px;
+      border-radius: 999px;
+
+      background: var(--fb-bg);
+      color: var(--fb-fg);
+      border: 1px solid var(--fb-border);
+      box-shadow: var(--fb-shadow);
+
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+
+      transition:
+        transform 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
+    }
+
+    .feedback-badge:hover {
+      transform: translateY(-1px);
+      background: var(--fb-hover-bg);
+      border-color: var(--accent);
+    }
+
+    .feedback-badge:active {
+      transform: translateY(0);
+      background: var(--fb-active-bg);
+    }
+
+    .feedback-badge:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 4px;
+    }
+
+    .feedback-badge__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79, 107, 237, 0.22);
+    }
+
+    html[data-theme="dark"] .feedback-badge__dot {
+      box-shadow: 0 0 0 3px rgba(122, 162, 255, 0.25);
+    }
+
+    .feedback-badge__icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* -------------------------------------------------------
+       Demo controls
+    ------------------------------------------------------- */
+    .toolbar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    button.theme-toggle {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--fg);
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Feedback badge – dark mode</h1>
+  <p>This page demonstrates the fully adjusted feedback badge.</p>
+
+  <div class="toolbar">
+    <button class="theme-toggle" id="themeToggle">
+      Toggle dark mode
+    </button>
+  </div>
+
+  <!-- =====================================================
+       Feedback badge
+  ====================================================== -->
+  
+  <button
+    id="feedbackBadge"
+    class="feedback-badge"
+    type="button"
+    aria-label="Open feedback"
+    aria-haspopup="dialog"
+  >
+    <span class="feedback-badge__dot" aria-hidden="true"></span>
+
+    <svg
+      class="feedback-badge__icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+    </svg>
+
+    <span>Feedback</span>
+  </button>
+
+  <!-- =====================================================
+       JavaScript
+  ====================================================== -->
+  <script>
+    // Theme handling
+    const html = document.documentElement;
+    const toggleBtn = document.getElementById("themeToggle");
+
+    toggleBtn.addEventListener("click", () => {
+      html.dataset.theme =
+        html.dataset.theme === "dark" ? "light" : "dark";
+    });
+
+    // Feedback click hook
+    document.getElementById("feedbackBadge")
+      .addEventListener("click", () => {
+        alert("Open feedback panel / modal here");
+      });
+  </script>
+<button class="feedback-badge" type="button">FEEDBACK</button>
+</body>
+</html>

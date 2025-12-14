@@ -1,0 +1,51 @@
+.device-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #cfd6e4;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 0.9rem;
+}
+
+.device-status__left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 8rem;
+}
+
+.device-status__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #9aa6bd; /* default */
+}
+
+.device-status__title {
+  font-weight: 600;
+}
+
+.device-status__text {
+  opacity: 0.9;
+  text-align: right;
+}
+
+/* States */
+.device-status--unknown .device-status__dot { background: #9aa6bd; }
+.device-status--connecting .device-status__dot { background: #7aa2ff; }
+.device-status--connected .device-status__dot { background: #19b46a; }
+.device-status--disconnected .device-status__dot { background: #e0a100; }
+.device-status--error .device-status__dot { background: #e24b4b; }
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .device-status {
+    border-color: #2a3550;
+    background: #0f172a;
+    color: #e6eaf2;
+  }
+}

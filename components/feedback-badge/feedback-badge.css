@@ -1,0 +1,133 @@
+/* -------------------------------------------------------
+   Feedback badge – full adjusted CSS (light + dark)
+   Drop-in: put this in your shared CSS (e.g. style.css),
+   or in components/feedback/feedback-badge.css and include it.
+------------------------------------------------------- */
+
+/* Tokens (inherit your global theme variables: --bg, --fg, --panel, --border, --accent) */
+:root {
+  --fb-bg: var(--panel);
+  --fb-fg: var(--fg);
+  --fb-border: var(--border);
+  --fb-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --fb-hover-bg: rgba(79, 107, 237, 0.10);
+  --fb-active-bg: rgba(79, 107, 237, 0.16);
+  --fb-focus: var(--accent);
+}
+
+/* Dark-mode tuning */
+html[data-theme="dark"] {
+  --fb-bg: #161a23;
+  --fb-fg: #e5e7eb;
+  --fb-border: #2a2f3a;
+  --fb-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --fb-hover-bg: #1c2230;
+  --fb-active-bg: #141826;
+}
+
+/* Badge */
+.feedback-badge {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 9999;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  background: var(--fb-bg);
+  color: var(--fb-fg);
+  border: 1px solid var(--fb-border);
+  box-shadow: var(--fb-shadow);
+
+  font: 600 14px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.feedback-badge:hover {
+  transform: translateY(-1px);
+  background: var(--fb-hover-bg);
+  border-color: color-mix(in srgb, var(--fb-border) 70%, var(--accent));
+}
+
+.feedback-badge:active {
+  transform: translateY(0);
+  background: var(--fb-active-bg);
+}
+
+/* Keyboard focus (accessibility) */
+.feedback-badge:focus-visible {
+  outline: 3px solid var(--fb-focus);
+  outline-offset: 4px;
+}
+
+/* Optional dot indicator */
+.feedback-badge__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79, 107, 237, 0.22);
+}
+
+/* Slightly different glow in dark mode (optional but helps) */
+html[data-theme="dark"] .feedback-badge__dot {
+  box-shadow: 0 0 0 3px rgba(122, 162, 255, 0.25);
+}
+
+/* Optional: icon slot (if you use one) */
+.feedback-badge__icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+/* Optional: reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .feedback-badge {
+    transition: none;
+  }
+  .feedback-badge:hover,
+  .feedback-badge:active {
+    transform: none;
+  }
+}
+
+.feedback-badge {
+  position: fixed !important;
+  right: 16px !important;
+  bottom: 16px !important;
+  z-index: 2147483647 !important;
+
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  padding: 12px 16px !important;
+  border-radius: 999px !important;
+
+  background: #ff00ff !important; /* debug color */
+  color: #000 !important;
+  border: 3px solid #000 !important;
+
+  font: 700 16px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+}
+
+.feedback-badge {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+
+  right: left;   /* important: override previous right */
+}

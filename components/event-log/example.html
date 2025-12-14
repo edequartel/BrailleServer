@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Event log – dark mode</title>
+
+  <meta name="color-scheme" content="light dark" />
+  <link rel="stylesheet" href="event-log.css" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      background: #0b1220;
+      color: #e6eaf2;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Empty container: component renders itself -->
+  <div id="log"></div>
+
+  <!-- Load component JS -->
+  <script src="event-log.js"></script>
+
+  <!-- Use the component -->
+  <script>
+    const log = new EventLog(document.getElementById("log"));
+
+    log.log("Page loaded", "system");
+    log.log("Left thumb pressed", "key");
+    log.log("Routing button 8", "routing");
+    log.log("Playing audio: letter-a.mp3", "audio");
+    log.log("Example error", "error");
+  </script>
+
+</body>
+</html>

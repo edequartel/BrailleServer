@@ -1,63 +1,45 @@
 /*!
  * braillemonitor.js – Reusable Braille monitor + thumbkey component
  * -----------------------------------------------------------------
- * Usage in a page:
+ * UPDATED: integrates with the previous EventLog component.
  *
- *   <div id="brailleMonitorComponent"></div>
+ * If you pass `logger` (an EventLog instance), BrailleMonitor will log to it:
  *
+ *   const appLog = new EventLog(document.getElementById("log"));
  *   const monitor = BrailleMonitor.init({
  *     containerId: "brailleMonitorComponent",
- *
- *     mapping: {
- *       leftthumb:  () => document.getElementById("btnHello").click(),
- *       middleleftthumb:  () => document.getElementById("btnCustom").click(),
- *       middlerightthumb: () => document.getElementById("btnRepeat").click(),
- *       rightthumb: () => document.getElementById("btnClear").click()
- *     },
- *
- *     onCursorClick(info) {
- *       // info = { index, letter, word }
- *       console.log("UI cursor click", info);
- *     }
+ *     logger: appLog,
+ *     mapping: { ... },
+ *     onCursorClick(info) { ... }
  *   });
  *
- *   // keep monitor + braille synced:
- *   await BrailleUI.setText(text);
- *   monitor.setText(text);
+ * Log types used: system, key, routing, audio, error, debug, warn, info
  */
 
 (function (global) {
   "use strict";
 
-  function log(source, msg, level) {
-    if (global.Logging) {
-      const fn =
-        level === "error"
-          ? Logging.error
-          : level === "warn"
-          ? Logging.warn
-          : level === "debug"
-          ? Logging.debug
-          : Logging.info;
-      fn.call(Logging, source, msg);
-    } else if (console && console.log) {
-      console.log("[" + source + "] " + msg);
-    }
-  }
-
   function makeId(base, suffix) {
     return base + "_" + suffix;
   }
 
+  // Map BrailleMonitor/BrailleBridge log levels to EventLog types.
+  function toEventLogType(level) {
+    const lv = (level || "info").toLowerCase();
+    if (lv === "error") return "error";
+    if (lv === "warn") return "system";
+    if (lv === "debug") return "system";
+    return "system"; // info/default
+  }
+
   const BrailleMonitor = {
     /**
-     * Initialise a Braille monitor component inside the given container.
-     *
      * options:
-     *   - containerId: id of a <div> where markup will be injected (required)
+     *   - containerId: string (required)
      *   - mapping: { leftthumb, middleleftthumb, middlerightthumb, rightthumb }
      *   - onCursorClick: function({ index, letter, word })
      *   - showInfo: boolean (default true)
+     *   - logger: EventLog instance (optional)  <-- NEW
      */
     init(options) {
       const opts = Object.assign(
@@ -65,10 +47,40 @@
           containerId: null,
           mapping: {},
           onCursorClick: null,
-          showInfo: true
+          showInfo: true,
+          logger: null // NEW
         },
         options || {}
       );
+
+      // Local logger function: prefers EventLog instance, then global Logging, then console.
+      function log(source, msg, level) {
+        // 1) EventLog instance passed via opts.logger
+        if (opts.logger && typeof opts.logger.log === "function") {
+          const type = toEventLogType(level);
+          opts.logger.log(`${source}: ${msg}`, type);
+          return;
+        }
+
+        // 2) Existing global Logging (your repo)
+        if (global.Logging) {
+          const fn =
+            level === "error"
+              ? Logging.error
+              : level === "warn"
+              ? Logging.warn
+              : level === "debug"
+              ? Logging.debug
+              : Logging.info;
+          fn.call(Logging, source, msg);
+          return;
+        }
+
+        // 3) Fallback
+        if (global.console && console.log) {
+          console.log("[" + source + "] " + msg);
+        }
+      }
 
       if (!opts.containerId) {
         log("BrailleMonitor", "containerId is required", "error");
@@ -150,12 +162,8 @@
         let start = index;
         let end = index;
 
-        while (start > 0 && currentText[start - 1] !== " ") {
-          start--;
-        }
-        while (end < len - 1 && currentText[end + 1] !== " ") {
-          end++;
-        }
+        while (start > 0 && currentText[start - 1] !== " ") start--;
+        while (end < len - 1 && currentText[end + 1] !== " ") end++;
 
         return currentText.substring(start, end + 1).trim();
       }
@@ -190,19 +198,29 @@
         const letter = currentText[index] || " ";
         const word = computeWordAt(index);
 
-        log(
-          "BrailleMonitor",
-          "UI cursor click index=" + index + ' letter="' + letter + '" word="' + word + '"',
-          "info"
-        );
+        // Use "routing" type in EventLog for cursor routing actions
+        if (opts.logger && typeof opts.logger.log === "function") {
+          opts.logger.log(
+            `BrailleMonitor: Cursor routing index=${index} letter="${letter}" word="${word}"`,
+            "routing"
+          );
+        } else {
+          log(
+            "BrailleMonitor",
+            "UI cursor click index=" +
+              index +
+              ' letter="' +
+              letter +
+              '" word="' +
+              word +
+              '"',
+            "info"
+          );
+        }
 
         if (typeof opts.onCursorClick === "function") {
           try {
-            opts.onCursorClick({
-              index,
-              letter,
-              word
-            });
+            opts.onCursorClick({ index, letter, word });
           } catch (err) {
             log(
               "BrailleMonitor",
@@ -234,11 +252,7 @@
             );
           }
         } else {
-          log(
-            "BrailleMonitor",
-            "No mapping for thumbkey: " + nameLower,
-            "debug"
-          );
+          log("BrailleMonitor", "No mapping for thumbkey: " + nameLower, "debug");
         }
       }
 
@@ -256,20 +270,31 @@
       }
 
       // Click on simulator buttons
-      const buttons = thumbRow.querySelectorAll(".thumb-key");
-      buttons.forEach((btn) => {
+      thumbRow.querySelectorAll(".thumb-key").forEach((btn) => {
         const nameLower = (btn.dataset.thumb || "").toLowerCase();
         btn.addEventListener("click", () => {
+          // Use "key" type for simulated thumb presses
+          if (opts.logger && typeof opts.logger.log === "function") {
+            opts.logger.log(`BrailleMonitor: Thumbkey (sim) ${nameLower}`, "key");
+          }
+
           invokeThumbAction(nameLower);
           flashThumbButton(nameLower);
         });
       });
 
       // Listen to real thumbkeys from BrailleBridge
-      if (global.BrailleBridge && typeof BrailleBridge.on === "function") {
-        BrailleBridge.on("thumbkey", (evt) => {
+      if (global.BrailleBridge && typeof global.BrailleBridge.on === "function") {
+        global.BrailleBridge.on("thumbkey", (evt) => {
           const nameLower = (evt.nameLower || "").toLowerCase();
-          log("BrailleBridge", "Thumbkey event: " + nameLower, "info");
+
+          // Use "key" type for real thumb presses
+          if (opts.logger && typeof opts.logger.log === "function") {
+            opts.logger.log(`BrailleBridge: Thumbkey ${nameLower}`, "key");
+          } else {
+            log("BrailleBridge", "Thumbkey event: " + nameLower, "info");
+          }
+
           flashThumbButton(nameLower);
           invokeThumbAction(nameLower);
         });
@@ -282,18 +307,25 @@
       }
 
       // -------------------------------------------------------------------
-      // Public API for this instance
+      // Public API
       // -------------------------------------------------------------------
       function setText(text) {
         currentText = text != null ? String(text) : "";
         rebuildCells();
+
+        // Optional: log text changes as "system"
+        if (opts.logger && typeof opts.logger.log === "function") {
+          opts.logger.log(
+            `BrailleMonitor: setText (${currentText.length} chars)`,
+            "system"
+          );
+        }
       }
 
       function clear() {
         setText("");
       }
 
-      // initial state
       setText("");
 
       return {

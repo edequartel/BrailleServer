@@ -1,0 +1,82 @@
+<!doctype html>
+<!--
+  BrailleMonitor component – example.html
+  --------------------------------------
+  This file is a SELF-CONTAINED DEMO for the BrailleMonitor component.
+
+  PURPOSE
+  - Demonstrates how the BrailleMonitor renders itself
+  - Shows clickable braille cells (cursor routing simulation)
+  - Shows thumbkey simulator buttons
+  - Works WITHOUT BrailleBridge or EventLog
+
+  LOCATION
+  Place this file in:
+    /components/braille-monitor/example.html
+
+  REQUIRED FILES (same folder)
+    braillemonitor.js
+    braillemonitor.css
+
+  HOW IT WORKS
+  1. The page provides an empty <div> container.
+  2. braillemonitor.js injects all required HTML into that container.
+  3. braillemonitor.css styles the component (light + dark mode).
+  4. Calling monitor.setText(...) updates the visible braille cells.
+
+  NEXT STEPS
+  - Wire this component to EventLog
+  - Wire to BrailleBridge WebSocket events
+  - Reuse in /pages by changing relative paths
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BrailleMonitor component – example</title>
+
+  <meta name="color-scheme" content="light dark" />
+
+  <!-- Component CSS (same folder) -->
+  <link rel="stylesheet" href="braillemonitor.css" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #0b1220;
+      color: #e6eaf2;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      margin: 0 0 0.75rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>BrailleMonitor – component example</h1>
+
+  <!-- Host container (component injects markup here) -->
+  <div id="brailleMonitorComponent"></div>
+
+  <!-- Component JS (same folder) -->
+  <script src="braillemonitor.js"></script>
+
+  <script>
+    const monitor = BrailleMonitor.init({
+      containerId: "brailleMonitorComponent",
+      onCursorClick(info) {
+        // info = { index, letter, word }
+        console.log("Cursor click:", info);
+      },
+      showInfo: true
+    });
+
+    monitor.setText("dit is een braille monitor component voorbeeld");
+  </script>
+
+</body>
+</html>
