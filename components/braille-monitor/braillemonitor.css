@@ -41,12 +41,36 @@
   width: 100%;
 }
 
-/* Taller thumbkey buttons */
+/* Base thumb keys (already present) */
 .thumb-key {
-  min-height: 3rem;          /* increase button height */
-  padding: 0.6rem 0.75rem;   /* more vertical padding */
-  font-size: 0.9rem;         /* slightly larger label */
+  min-height: 3rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
   line-height: 1.2;
+}
+
+/* Middle thumb keys (both middle-left and middle-right) */
+.thumb-key[data-thumb="middleleftthumb"],
+.thumb-key[data-thumb="middlerightthumb"] {
+  background: #e6f0ff;       /* light blue */
+  border-color: #7aa2ff;
+  color: #0b1f4d;
+}
+
+/* Active state for middle buttons */
+.thumb-key[data-thumb="middleleftthumb"].active,
+.thumb-key[data-thumb="middlerightthumb"].active {
+  box-shadow: inset 0 0 0 2px rgba(26, 76, 255, 0.35);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .thumb-key[data-thumb="middleleftthumb"],
+  .thumb-key[data-thumb="middlerightthumb"] {
+    background: #1b2b52;     /* darker blue */
+    border-color: #7aa2ff;
+    color: #e6eaf2;
+  }
 }
 
 /* Optional: even taller on touch devices */
