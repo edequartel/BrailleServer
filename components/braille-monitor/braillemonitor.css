@@ -5,6 +5,7 @@
   gap: 0.6rem;
 }
 
+/* CHANGED: allow stacked (2-line) cells while keeping horizontal scroll */
 .mono-box.braille-monitor-cells {
   border: 1px solid #cfd6e4;
   border-radius: 10px;
@@ -13,25 +14,50 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Cascadia Code", "Fira Code", monospace;
   font-size: 0.95rem;
-  line-height: 1.35;
+
+  /* Two-line cell needs tighter line-height */
+  line-height: 1.05;
+
+  /* Keep single-row scroll like before */
   overflow-x: auto;
   white-space: nowrap;
 }
 
+/* CHANGED: cell is a vertical stack: braille above, print below */
 .braille-monitor-cells .monitor-cell {
-  display: inline-block;
-  min-width: 1ch;
-  padding: 0.08rem 0.16rem;
+  display: inline-flex;
+  flex-direction: column;     /* ABOVE, not next to */
+  align-items: center;
+  justify-content: center;
+
+  min-width: 1.2ch;           /* a bit wider for braille glyphs */
+  padding: 0.12rem 0.18rem;
   margin: 0 0.03rem;
+
   border-radius: 6px;
   cursor: pointer;
   user-select: none;
   border: 1px solid transparent;
+
+  /* Prevent inner lines from wrapping in odd ways */
+  vertical-align: top;
 }
 
 .braille-monitor-cells .monitor-cell:hover {
   background: #f1f5ff;
   border-color: #d7def2;
+}
+
+/* Braille line (top) and print line (bottom) */
+.monitor-cell__braille {
+  line-height: 1;
+  font-size: 0.95em;
+  opacity: 0.85;
+}
+
+.monitor-cell__print {
+  line-height: 1;
+  font-size: 0.95em;
 }
 
 /* Option B: Flex, but force equal-width buttons */
@@ -47,12 +73,13 @@
   padding: 0.6rem 0.75rem;
   font-size: 0.9rem;
   line-height: 1.2;
+  border-radius: 14px; /* round corners */
 }
 
 /* Middle thumb keys (both middle-left and middle-right) */
 .thumb-key[data-thumb="middleleftthumb"],
 .thumb-key[data-thumb="middlerightthumb"] {
-  background: #e6f0ff;       /* light blue */
+  background: #e6f0ff; /* light blue */
   border-color: #7aa2ff;
   color: #0b1f4d;
 }
@@ -67,7 +94,7 @@
 @media (prefers-color-scheme: dark) {
   .thumb-key[data-thumb="middleleftthumb"],
   .thumb-key[data-thumb="middlerightthumb"] {
-    background: #1b2b52;     /* darker blue */
+    background: #1b2b52; /* darker blue */
     border-color: #7aa2ff;
     color: #e6eaf2;
   }
@@ -121,27 +148,6 @@
   .small {
     color: #aab3c5;
   }
-}
-
-/* Optional but recommended for Unicode braille layout */
-.monitor-cell {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.monitor-cell__char {
-  line-height: 1;
-}
-
-.monitor-cell__braille {
-  line-height: 1;
-}
-
-/* Rounded thumbkey buttons */
-.thumb-key {
-  border-radius: 14px;   /* round corners */
 }
 
 /* Optional: pill-shaped buttons */

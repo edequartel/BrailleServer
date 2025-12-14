@@ -35,9 +35,8 @@
     }
 
     /* -------------------------------------------------------
-       Feedback badge – full adjusted CSS
+       Feedback badge – single badge at the TOP
     ------------------------------------------------------- */
-
     :root {
       --fb-bg: var(--panel);
       --fb-fg: var(--fg);
@@ -60,8 +59,11 @@
 
     .feedback-badge {
       position: fixed;
-      right: 16px;
-      bottom: 16px;
+      top: 16px;     /* TOP */
+      left: 16px;    /* TOP-LEFT */
+      right: auto;
+      bottom: auto;
+
       z-index: 9999;
 
       display: inline-flex;
@@ -118,6 +120,7 @@
     .feedback-badge__icon {
       width: 16px;
       height: 16px;
+      display: inline-block;
     }
 
     /* -------------------------------------------------------
@@ -152,9 +155,8 @@
   </div>
 
   <!-- =====================================================
-       Feedback badge
+       Feedback badge (ONLY ONE)
   ====================================================== -->
-  
   <button
     id="feedbackBadge"
     class="feedback-badge"
@@ -190,16 +192,14 @@
     const toggleBtn = document.getElementById("themeToggle");
 
     toggleBtn.addEventListener("click", () => {
-      html.dataset.theme =
-        html.dataset.theme === "dark" ? "light" : "dark";
+      html.dataset.theme = html.dataset.theme === "dark" ? "light" : "dark";
     });
 
     // Feedback click hook
-    document.getElementById("feedbackBadge")
-      .addEventListener("click", () => {
-        alert("Open feedback panel / modal here");
-      });
+    document.getElementById("feedbackBadge").addEventListener("click", () => {
+      alert("Open feedback panel / modal here");
+    });
   </script>
-<button class="feedback-badge" type="button">FEEDBACK</button>
+
 </body>
 </html>
