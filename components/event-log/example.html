@@ -1,14 +1,4 @@
 <!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Event log demo</title>
-  <link rel="stylesheet" href="event-log.css" />
-</head>
-<body>
-  <div id="log"></div>
-
-  <script src="event-log.js"></<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -29,9 +19,13 @@
 </head>
 <body>
 
+  <!-- Empty container: component renders itself -->
   <div id="log"></div>
 
+  <!-- Load component JS -->
   <script src="event-log.js"></script>
+
+  <!-- Use the component -->
   <script>
     const log = new EventLog(document.getElementById("log"));
 
@@ -42,15 +36,5 @@
     log.log("Example error", "error");
   </script>
 
-</body>
-</html>script>
-  <script>
-    const log = new EventLog(document.getElementById("log"));
-    log.log("Page loaded", "system");
-    log.log("Left thumb pressed", "key");
-    log.log("Routing 8", "routing");
-    log.log("Playing letter-a.mp3", "audio");
-    log.log("Example error", "error");
-  </script>
 </body>
 </html>
