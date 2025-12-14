@@ -1,3 +1,5 @@
+/* Base (light mode) */
+
 .event-log {
   display: flex;
   flex-direction: column;
@@ -7,7 +9,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Cascadia Code", "Fira Code", monospace;
   font-size: 0.85rem;
-  overflow: hidden; /* prevents header/body rounding glitches */
+  overflow: hidden;
 }
 
 .event-log__header {
@@ -27,6 +29,10 @@
 .event-log__controls button {
   font-size: 0.75rem;
   padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #cfd6e4;
+  background: #ffffff;
+  cursor: pointer;
 }
 
 .event-log__body {
@@ -40,25 +46,47 @@
   line-height: 1.35;
 }
 
-/* Increase specificity so global styles don't override component colors */
-.event-log .event-log__entry--key {
-  color: #1a4cff;
-}
+/* Light mode colors */
+.event-log .event-log__entry--key     { color: #1a4cff; }
+.event-log .event-log__entry--routing { color: #0a7a3d; }
+.event-log .event-log__entry--audio   { color: #7a3d0a; }
+.event-log .event-log__entry--system  { color: #555; }
+.event-log .event-log__entry--error   { color: #b00020; font-weight: 600; }
 
-.event-log .event-log__entry--routing {
-  color: #0a7a3d;
-}
+/* -----------------------------
+   Dark mode (system preference)
+------------------------------ */
 
-.event-log .event-log__entry--audio {
-  color: #7a3d0a;
-}
+@media (prefers-color-scheme: dark) {
 
-.event-log .event-log__entry--system {
-  color: #555;
-}
+  .event-log {
+    border-color: #2a3550;
+    background: #0f172a;
+  }
 
-/* Optional: include if you log errors */
-.event-log .event-log__entry--error {
-  color: #b00020;
-  font-weight: 600;
+  .event-log__header {
+    background: #111c36;
+    border-bottom-color: #2a3550;
+  }
+
+  .event-log__title {
+    color: #e6eaf2;
+  }
+
+  .event-log__controls button {
+    background: #162447;
+    color: #e6eaf2;
+    border-color: #2a3550;
+  }
+
+  .event-log__body {
+    color: #cfd6e4;
+  }
+
+  /* Dark mode colors */
+  .event-log .event-log__entry--key     { color: #7aa2ff; }
+  .event-log .event-log__entry--routing { color: #57d18b; }
+  .event-log .event-log__entry--audio   { color: #ffb26b; }
+  .event-log .event-log__entry--system  { color: #aab3c5; }
+  .event-log .event-log__entry--error   { color: #ff6b7a; }
 }

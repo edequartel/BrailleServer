@@ -1,57 +1,56 @@
-<!DOCTYPE html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Event log demo</title>
+  <link rel="stylesheet" href="event-log.css" />
+</head>
+<body>
+  <div id="log"></div>
+
+  <script src="event-log.js"></<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Event log example</title>
+  <meta charset="utf-8" />
+  <title>Event log – dark mode</title>
 
-  <!-- Event log component -->
-  <link rel="stylesheet" href="../components/event-log/event-log.css">
-  <script src="../components/event-log/event-log.js"></script>
+  <meta name="color-scheme" content="light dark" />
+  <link rel="stylesheet" href="event-log.css" />
 
   <style>
     body {
-      font-family: system-ui, sans-serif;
+      margin: 0;
       padding: 1rem;
-      background: #f5f7fb;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 1rem;
+      background: #0b1220;
+      color: #e6eaf2;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
   </style>
 </head>
 <body>
 
-  <h1>Event log – HTML example</h1>
+  <div id="log"></div>
 
-  <div class="layout">
-    <!-- Other UI / braille monitor would be here -->
-
-    <!-- Event log container -->
-    <div id="log"></div>
-  </div>
-
+  <script src="event-log.js"></script>
   <script>
-    // Create the logger
     const log = new EventLog(document.getElementById("log"));
 
-    // Example log messages
     log.log("Page loaded", "system");
-
-    setTimeout(() => {
-      log.log("Left thumb pressed", "key");
-    }, 500);
-
-    setTimeout(() => {
-      log.log("Routing button 8", "routing");
-    }, 1000);
-
-    setTimeout(() => {
-      log.log("Playing audio: letter-a.mp3", "audio");
-    }, 1500);
+    log.log("Left thumb pressed", "key");
+    log.log("Routing button 8", "routing");
+    log.log("Playing audio: letter-a.mp3", "audio");
+    log.log("Example error", "error");
   </script>
 
+</body>
+</html>script>
+  <script>
+    const log = new EventLog(document.getElementById("log"));
+    log.log("Page loaded", "system");
+    log.log("Left thumb pressed", "key");
+    log.log("Routing 8", "routing");
+    log.log("Playing letter-a.mp3", "audio");
+    log.log("Example error", "error");
+  </script>
 </body>
 </html>

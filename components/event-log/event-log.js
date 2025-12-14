@@ -8,30 +8,39 @@ class EventLog {
   }
 
   _render() {
-    this.container.innerHTML = "";
-    this.container.appendChild(
-      document.importNode(EventLog.template.content, true)
-    );
+    this.container.innerHTML = `
+      <div class="event-log">
+        <div class="event-log__header">
+          <span class="event-log__title">Event log</span>
+          <div class="event-log__controls">
+            <button type="button" data-action="clear">Clear</button>
+          </div>
+        </div>
+        <div class="event-log__body" role="log" aria-live="polite"></div>
+      </div>
+    `;
 
     this.body = this.container.querySelector(".event-log__body");
   }
 
   _bind() {
     this.container.addEventListener("click", (e) => {
-      if (e.target.dataset.action === "clear") {
+      if (e.target?.dataset?.action === "clear") {
         this.clear();
       }
     });
   }
 
   log(message, type = "system") {
+    if (!this.body) return;
+
     const entry = document.createElement("div");
     entry.className = `event-log__entry event-log__entry--${type}`;
     entry.textContent = `[${this._timestamp()}] ${message}`;
 
     this.body.appendChild(entry);
 
-    if (this.body.children.length > this.maxEntries) {
+    while (this.body.children.length > this.maxEntries) {
       this.body.removeChild(this.body.firstChild);
     }
 
@@ -39,7 +48,7 @@ class EventLog {
   }
 
   clear() {
-    this.body.innerHTML = "";
+    if (this.body) this.body.innerHTML = "";
   }
 
   _timestamp() {
@@ -51,16 +60,6 @@ class EventLog {
       fractionalSecondDigits: 3
     });
   }
-
-  static registerTemplate() {
-    const template = document.createElement("template");
-    template.innerHTML = EventLog.templateHTML;
-    EventLog.template = template;
-  }
 }
 
-EventLog.templateHTML = `
-${document.currentScript?.previousElementSibling?.outerHTML ?? ""}
-`;
-
-EventLog.registerTemplate();
+window.EventLog = EventLog;
