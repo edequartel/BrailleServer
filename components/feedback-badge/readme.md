@@ -1,27 +1,25 @@
-FeedbackBadge – how to use
+## How to use `FeedbackBadge` (short & simple)
 
-1. Add a container to your page:
-<div id=“feedback”></div>
+### 1. HTML
+```html
+<div class=“feedback-badge feedback-badge—hidden”>
+  <span class=“feedback-badge__icon”>✔</span>
+  <span class=“feedback-badge__text”>Feedback</span>
+</div>
 
-2. Load the component files:
-<link rel=“stylesheet” href=“../components/feedback-badge/feedback-badge.css”>
-<script src=“../components/feedback-badge/feedback-badge.js”></script>
+2. Load the JavaScript
 
-3. Create the badge:
-const badge = new FeedbackBadge({ containerId: “feedback” });
+<script src=“feedback-badge.js”></script>
 
-4. Show feedback:
-badge.show(“correct”, “Correct!”);
-badge.show(“wrong”, “Try again”);
-badge.show(“info”, “Next word…”);
+3. Use it in JavaScript
 
-5. Auto-hide (milliseconds):
-badge.show(“correct”, “Correct!”, 1200);
+const badge = new FeedbackBadge(
+  document.querySelector(“.feedback-badge”)
+);
 
-6. Clear manually:
-badge.clear();
+badge.showCorrect(“Goed gedaan”);   // green badge with ✔
+badge.showWrong(“Probeer opnieuw”); // red badge with ✖
+badge.hide();                       // hide badge
 
-Notes:
-- Types: correct | wrong | info
-- Pure UI component (no BrailleBridge dependency)
-- Use from game/page logic
+You only need these three steps.
+

@@ -1,133 +1,208 @@
-/* -------------------------------------------------------
-   Feedback badge – full adjusted CSS (light + dark)
-   Drop-in: put this in your shared CSS (e.g. style.css),
-   or in components/feedback/feedback-badge.css and include it.
-------------------------------------------------------- */
+/* /components/feedback-badge/feedback-badge.css
+   Nicer, modern badge + optional test button styling.
+   Works with your existing HTML + JS (no changes required).
+*/
 
-/* Tokens (inherit your global theme variables: --bg, --fg, --panel, --border, --accent) */
-:root {
-  --fb-bg: var(--panel);
-  --fb-fg: var(--fg);
-  --fb-border: var(--border);
-  --fb-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --fb-hover-bg: rgba(79, 107, 237, 0.10);
-  --fb-active-bg: rgba(79, 107, 237, 0.16);
-  --fb-focus: var(--accent);
-}
+/* -----------------------------
+   Base badge
+----------------------------- */
 
-/* Dark-mode tuning */
-html[data-theme="dark"] {
-  --fb-bg: #161a23;
-  --fb-fg: #e5e7eb;
-  --fb-border: #2a2f3a;
-  --fb-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --fb-hover-bg: #1c2230;
-  --fb-active-bg: #141826;
-}
-
-/* Badge */
 .feedback-badge {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 9999;
-
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.55rem;
 
-  padding: 10px 12px;
+  padding: 0.55rem 0.9rem;
   border-radius: 999px;
 
-  background: var(--fb-bg);
-  color: var(--fb-fg);
-  border: 1px solid var(--fb-border);
-  box-shadow: var(--fb-shadow);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
 
-  font: 600 14px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  cursor: pointer;
-  user-select: none;
+  max-width: 100%;
 
-  transition:
-    transform 0.12s ease,
-    background 0.12s ease,
-    border-color 0.12s ease,
-    box-shadow 0.12s ease;
+  border: 1px solid var(--border, #d7deea);
+  background: var(--panel, #ffffff);
+  color: var(--fg, #111827);
+
+  box-shadow:
+    0 1px 1px rgba(16, 24, 40, 0.06),
+    0 6px 18px rgba(16, 24, 40, 0.08);
+
+  transform: translateZ(0);
 }
 
-.feedback-badge:hover {
-  transform: translateY(-1px);
-  background: var(--fb-hover-bg);
-  border-color: color-mix(in srgb, var(--fb-border) 70%, var(--accent));
-}
-
-.feedback-badge:active {
-  transform: translateY(0);
-  background: var(--fb-active-bg);
-}
-
-/* Keyboard focus (accessibility) */
-.feedback-badge:focus-visible {
-  outline: 3px solid var(--fb-focus);
-  outline-offset: 4px;
-}
-
-/* Optional dot indicator */
-.feedback-badge__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(79, 107, 237, 0.22);
-}
-
-/* Slightly different glow in dark mode (optional but helps) */
-html[data-theme="dark"] .feedback-badge__dot {
-  box-shadow: 0 0 0 3px rgba(122, 162, 255, 0.25);
-}
-
-/* Optional: icon slot (if you use one) */
+/* Icon pill */
 .feedback-badge__icon {
-  width: 16px;
-  height: 16px;
-  display: inline-block;
+  display: inline-grid;
+  place-items: center;
+
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+
+  font-size: 0.9rem;
+  font-weight: 900;
+
+  background: rgba(79, 107, 237, 0.12);
+  border: 1px solid rgba(79, 107, 237, 0.18);
 }
 
-/* Optional: reduce motion for users who prefer it */
-@media (prefers-reduced-motion: reduce) {
+/* Text */
+.feedback-badge__text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+/* Hidden */
+.feedback-badge--hidden {
+  display: none;
+}
+
+/* -----------------------------
+   States
+----------------------------- */
+
+.feedback-badge--correct {
+  border-color: rgba(25, 180, 106, 0.42);
+  background: linear-gradient(180deg, #effff6 0%, #e4ffef 100%);
+  color: #0a4d2e;
+}
+
+.feedback-badge--correct .feedback-badge__icon {
+  background: rgba(25, 180, 106, 0.14);
+  border-color: rgba(25, 180, 106, 0.22);
+}
+
+.feedback-badge--wrong {
+  border-color: rgba(226, 75, 75, 0.42);
+  background: linear-gradient(180deg, #fff2f2 0%, #ffe6e6 100%);
+  color: #7a1414;
+}
+
+.feedback-badge--wrong .feedback-badge__icon {
+  background: rgba(226, 75, 75, 0.14);
+  border-color: rgba(226, 75, 75, 0.22);
+}
+
+/* -----------------------------
+   Subtle motion (reduced-motion safe)
+----------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
   .feedback-badge {
-    transition: none;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
   }
-  .feedback-badge:hover,
-  .feedback-badge:active {
-    transform: none;
+
+  .feedback-badge:not(.feedback-badge--hidden) {
+    animation: feedbackBadgePop 140ms ease-out;
+  }
+
+  @keyframes feedbackBadgePop {
+    from { transform: translateY(2px); opacity: 0.92; }
+    to   { transform: translateY(0px); opacity: 1; }
   }
 }
 
-.feedback-badge {
-  position: fixed !important;
-  right: 16px !important;
-  bottom: 16px !important;
-  z-index: 2147483647 !important;
+/* -----------------------------
+   Dark mode (uses html[data-theme="dark"])
+----------------------------- */
 
-  display: inline-flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+html[data-theme="dark"] .feedback-badge {
+  border-color: #2a2f3a;
+  background: #161a23;
+  color: #e5e7eb;
 
-  padding: 12px 16px !important;
-  border-radius: 999px !important;
-
-  background: #ff00ff !important; /* debug color */
-  color: #000 !important;
-  border: 3px solid #000 !important;
-
-  font: 700 16px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    0 8px 26px rgba(0, 0, 0, 0.35);
 }
 
-.feedback-badge {
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
+html[data-theme="dark"] .feedback-badge__icon {
+  background: rgba(122, 162, 255, 0.14);
+  border-color: rgba(122, 162, 255, 0.22);
+}
 
-  right: left;   /* important: override previous right */
+html[data-theme="dark"] .feedback-badge--correct {
+  border-color: rgba(45, 212, 143, 0.55);
+  background: linear-gradient(180deg, #0d241a 0%, #0a1f16 100%);
+  color: #a7f3d0;
+}
+
+html[data-theme="dark"] .feedback-badge--correct .feedback-badge__icon {
+  background: rgba(45, 212, 143, 0.16);
+  border-color: rgba(45, 212, 143, 0.26);
+}
+
+html[data-theme="dark"] .feedback-badge--wrong {
+  border-color: rgba(255, 107, 107, 0.55);
+  background: linear-gradient(180deg, #2a1414 0%, #201010 100%);
+  color: #fecaca;
+}
+
+html[data-theme="dark"] .feedback-badge--wrong .feedback-badge__icon {
+  background: rgba(255, 107, 107, 0.16);
+  border-color: rgba(255, 107, 107, 0.26);
+}
+
+/* -------------------------------------------------------
+   OPTIONAL: nice styling for the demo buttons
+   (only applies if your page uses <button>)
+------------------------------------------------------- */
+
+button {
+  appearance: none;
+  border: 1px solid var(--border, #d7deea);
+  background: var(--panel, #ffffff);
+  color: var(--fg, #111827);
+
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 1px 1px rgba(16, 24, 40, 0.06),
+    0 6px 16px rgba(16, 24, 40, 0.06);
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0px);
+  box-shadow:
+    0 1px 1px rgba(16, 24, 40, 0.06),
+    0 3px 10px rgba(16, 24, 40, 0.06);
+}
+
+button:focus-visible {
+  outline: 3px solid rgba(79, 107, 237, 0.35);
+  outline-offset: 2px;
+}
+
+html[data-theme="dark"] button {
+  border-color: #2a2f3a;
+  background: #161a23;
+  color: #e5e7eb;
+
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    0 8px 22px rgba(0, 0, 0, 0.30);
+}
+
+html[data-theme="dark"] button:focus-visible {
+  outline-color: rgba(122, 162, 255, 0.35);
 }
