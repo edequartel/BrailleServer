@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TTS with Howler</title>
+
+  <!-- Howler.js -->
+  <script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>
+</head>
+<body>
+
+  <h1>Text to Speech (Howler)</h1>
+
+  <label>
+    Tekst:
+    <input
+      id="ttsText"
+      value="Hallo, dit is Nederlandse spraak zonder downloaden."
+      style="width: 100%; max-width: 520px;"
+    />
+  </label>
+
+  <br><br>
+
+  <button id="playBtn" type="button">Play speech</button>
+
+  <script>
+    const OPENAI_API_KEY = "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"; // placeholder only
+    let currentSound = null;
+
+    async function speak(text) {
+      // Stop previous audio
+      if (currentSound) {
+        currentSound.stop();
+        currentSound.unload();
+        currentSound = null;
+      }
+
+      const response = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + OPENAI_API_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini-tts",
+          voice: "ash",
+          input: text
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        alert("TTS error: " + err);
+        return;
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      // Play with Howler
+      currentSound = new Howl({
+        src: [audioUrl],
+        format: ["mp3"],
+        autoplay: true,
+        onend: () => {
+          URL.revokeObjectURL(audioUrl);
+        }
+      });
+    }
+
+    document.getElementById("playBtn").addEventListener("click", () => {
+      const text = document.getElementById("ttsText").value;
+      speak(text);
+    });
+  </script>
+
+</body>
+</html>
