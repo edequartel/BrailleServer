@@ -1,0 +1,98 @@
+braillebridge API documentation
+
+Host (HTTP API)
+
+Base address
+http://localhost:5000
+
+This is a local HTTP server running on the user’s machine. It is used to send commands to the braille display.
+
+Send text to the braille display
+Method: POST
+Path: /braille
+Full URL: http://localhost:5000/braille
+
+Request body (JSON):
+{
+“text”: “Hello braille”,
+“pad”: true
+}
+
+The field “text” contains the text to show on the braille display.
+The optional field “pad” pads the text to the display width (for example 40 cells).
+
+Clear the braille display
+Method: POST
+Path: /clear
+Full URL: http://localhost:5000/clear
+
+This clears all braille cells. No request body is required.
+
+Status / health check (if enabled)
+Method: GET
+Path: /status
+Full URL: http://localhost:5000/status
+
+Typical response contains whether the bridge is running, if a braille display is connected, the device name, and the number of cells.
+
+
+WebSocket
+
+WebSocket address
+ws://localhost:5000/ws
+
+This WebSocket is used to send braille key events from BrailleBridge to the client (browser or app). The client connects once and receives events as they occur.
+
+Message format (JSON)
+
+All messages are JSON objects and include a “kind” field that indicates the event type.
+
+Thumb key event example:
+{
+“kind”: “Thumbkey”,
+“name”: “LeftThumb”,
+“press”: true
+}
+
+Possible thumb key names:
+LeftThumb
+MiddleLeftThumb
+MiddleRightThumb
+RightThumb
+
+The field “press” is true when the key is pressed and false when released.
+
+Cursor routing event example:
+{
+“kind”: “CursorRouting”,
+“index”: 12,
+“press”: true
+}
+
+The field “index” is the braille cell index (0-based).
+
+Raw / diagnostic event example:
+{
+“kind”: “Raw”,
+“msgType”: 8,
+“unit”: 1,
+“strip”: 0,
+“btn”: 2097152,
+“press”: true
+}
+
+
+Direction summary
+
+HTTP is used from client to BrailleBridge to send commands (text, clear, configuration).
+WebSocket is used from BrailleBridge to client to send key events.
+
+
+Quick reference
+
+HTTP base: http://localhost:5000
+WebSocket: ws://localhost:5000/ws
+
+POST /braille
+POST /clear
+GET /status
