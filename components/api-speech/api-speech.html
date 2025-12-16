@@ -3,77 +3,679 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TTS with Howler</title>
+  <title>API Speech (TTS) Monitor</title>
 
   <!-- Howler.js -->
   <script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg0: #0b1020;
+      --bg1: rgba(255, 255, 255, 0.06);
+      --bg2: rgba(255, 255, 255, 0.09);
+      --fg0: rgba(255, 255, 255, 0.92);
+      --fg1: rgba(255, 255, 255, 0.72);
+      --fg2: rgba(255, 255, 255, 0.58);
+      --bdr: rgba(255, 255, 255, 0.14);
+      --ok: #39d98a;
+      --bad: #ff5c7a;
+      --warn: #ffd36b;
+      --acc: #7aa7ff;
+      --acc2: #b38cff;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      --r: 14px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--fg0);
+      background:
+        radial-gradient(1200px 700px at 10% 10%, rgba(122, 167, 255, 0.28), transparent 60%),
+        radial-gradient(900px 600px at 95% 25%, rgba(179, 140, 255, 0.24), transparent 55%),
+        radial-gradient(900px 600px at 30% 95%, rgba(57, 217, 138, 0.16), transparent 55%),
+        linear-gradient(180deg, #070a14, var(--bg0));
+      min-height: 100vh;
+    }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 26px 18px 34px; }
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    h1 { margin: 0; font-size: 20px; font-weight: 720; letter-spacing: 0.2px; }
+    .subtitle { color: var(--fg1); font-size: 13px; }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .pill {
+      border: 1px solid var(--bdr);
+      background: var(--bg1);
+      padding: 8px 10px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      display: inline-flex;
+      gap: 8px;
+      align-items: baseline;
+      white-space: nowrap;
+    }
+    .pill b { font-size: 13px; }
+    .pill span { font-size: 12px; color: var(--fg1); }
+    .pill.ok b { color: var(--ok); }
+    .pill.bad b { color: var(--bad); }
+    .pill.warn b { color: var(--warn); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 920px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      border: 1px solid var(--bdr);
+      background: var(--bg1);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card .hd {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .card .hd h2 { margin: 0; font-size: 14px; letter-spacing: 0.2px; }
+    .card .bd { padding: 14px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+
+    label { display: grid; gap: 6px; font-size: 12px; color: var(--fg1); }
+    input[type="text"], input[type="password"], textarea, select {
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(10, 14, 28, 0.65);
+      color: var(--fg0);
+      outline: none;
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    input:focus, textarea:focus, select:focus { border-color: rgba(122, 167, 255, 0.55); box-shadow: 0 0 0 3px rgba(122, 167, 255, 0.15); }
+    .hint { color: var(--fg2); font-size: 12px; line-height: 1.35; }
+    .mono { font-family: var(--mono); }
+
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button {
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: var(--fg0);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+    }
+    button:hover { background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.28); transform: translateY(-1px); }
+    button:active { transform: translateY(0px); }
+    button.primary {
+      background: linear-gradient(135deg, rgba(122, 167, 255, 0.35), rgba(179, 140, 255, 0.24));
+      border-color: rgba(122, 167, 255, 0.40);
+    }
+    button.danger { border-color: rgba(255, 92, 122, 0.35); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .statusline {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: var(--fg1);
+      font-size: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 99px; background: rgba(255,255,255,0.22); display: inline-block; }
+    .dot.ok { background: var(--ok); }
+    .dot.bad { background: var(--bad); }
+    .dot.warn { background: var(--warn); }
+
+    .logwrap { height: 360px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: rgba(10, 14, 28, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      font-size: 12px;
+      color: var(--fg1);
+      text-align: left;
+      padding: 10px 12px;
+    }
+    tbody td {
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 10px 12px;
+      vertical-align: top;
+      font-size: 12px;
+      color: var(--fg1);
+    }
+    tbody tr:hover td { background: rgba(255,255,255,0.04); }
+    .tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      color: var(--fg0);
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      white-space: nowrap;
+    }
+    .tag.ok { border-color: rgba(57, 217, 138, 0.38); color: rgba(57, 217, 138, 0.95); }
+    .tag.bad { border-color: rgba(255, 92, 122, 0.45); color: rgba(255, 92, 122, 0.95); }
+    .tag.warn { border-color: rgba(255, 211, 107, 0.50); color: rgba(255, 211, 107, 0.95); }
+    .small { color: var(--fg2); font-size: 11px; }
+    .nowrap { white-space: nowrap; }
+  </style>
 </head>
 <body>
 
-  <h1>Text to Speech (Howler)</h1>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1>API Speech (TTS) Monitor</h1>
+        <div class="subtitle">Speel spraak af en bekijk request/response traffic (zonder secrets te loggen).</div>
+      </div>
+      <div class="stats" aria-label="Traffic stats">
+        <div class="pill"><b id="statTotal">0</b><span>requests</span></div>
+        <div class="pill ok"><b id="statOk">0</b><span>ok</span></div>
+        <div class="pill bad"><b id="statErr">0</b><span>errors</span></div>
+        <div class="pill warn"><b id="statMs">—</b><span>last ms</span></div>
+        <div class="pill"><b id="statBytes">0</b><span>bytes</span></div>
+      </div>
+    </div>
 
-  <label>
-    Tekst:
-    <input
-      id="ttsText"
-      value="Hallo, dit is Nederlandse spraak zonder downloaden."
-      style="width: 100%; max-width: 520px;"
-    />
-  </label>
+    <div class="grid">
+      <section class="card" aria-label="TTS controls">
+        <div class="hd">
+          <h2>Speak</h2>
+          <div class="btns">
+            <button id="playBtn" class="primary" type="button">Play</button>
+            <button id="stopBtn" class="danger" type="button" disabled>Stop</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="row">
+            <label>
+              API key
+              <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+              <div class="hint">Tip: zet ‘Remember’ aan om lokaal op te slaan (localStorage). Nooit gelogd.</div>
+            </label>
+            <label>
+              Endpoint
+              <input id="endpoint" type="text" class="mono" value="https://api.openai.com/v1/audio/speech" />
+              <div class="hint">Gebruik dezelfde origin/proxy als je CORS issues hebt.</div>
+            </label>
+          </div>
 
-  <br><br>
+          <div class="row" style="margin-top: 10px;">
+            <label>
+              Model
+              <select id="model">
+                <option value="gpt-4o-mini-tts" selected>gpt-4o-mini-tts</option>
+              </select>
+            </label>
+            <label>
+              Voice
+              <select id="voice">
+                <option value="alloy">alloy</option>
+                <option value="ash" selected>ash</option>
+                <option value="coral">coral</option>
+                <option value="echo">echo</option>
+                <option value="fable">fable</option>
+                <option value="onyx">onyx</option>
+                <option value="nova">nova</option>
+                <option value="sage">sage</option>
+                <option value="shimmer">shimmer</option>
+              </select>
+            </label>
+          </div>
 
-  <button id="playBtn" type="button">Play speech</button>
+          <label style="margin-top: 10px;">
+            Tekst
+            <textarea id="ttsText">Hallo, dit is Nederlandse spraak zonder downloaden.</textarea>
+            <div class="hint"><span id="charCount">0</span> chars.</div>
+          </label>
+
+          <div class="row" style="margin-top: 10px;">
+            <label>
+              Remember key
+              <select id="rememberKey">
+                <option value="off" selected>off</option>
+                <option value="on">on (localStorage)</option>
+              </select>
+            </label>
+            <label>
+              Autoscroll log
+              <select id="autoscroll">
+                <option value="on" selected>on</option>
+                <option value="off">off</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="statusline" role="status" aria-live="polite">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span id="stateDot" class="dot"></span>
+              <span id="stateText">Idle</span>
+            </div>
+            <span id="stateDetail" class="small mono"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Traffic log">
+        <div class="hd">
+          <h2>Traffic log</h2>
+          <div class="btns">
+            <button id="clearLogBtn" type="button">Clear</button>
+          </div>
+        </div>
+        <div class="logwrap" id="logWrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="nowrap">Time</th>
+                <th>Request</th>
+                <th class="nowrap">Status</th>
+                <th class="nowrap">ms</th>
+                <th class="nowrap">bytes</th>
+              </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
 
   <script>
-    const OPENAI_API_KEY = "xxxx"; // placeholder only
     let currentSound = null;
+    let currentRequest = null;
+    let currentAudioUrl = null;
 
-    async function speak(text) {
-      // Stop previous audio
+    const LS_KEY_REMEMBER = "apiSpeech.rememberKey";
+    const LS_KEY_APIKEY = "apiSpeech.apiKey";
+
+    const els = {
+      apiKey: document.getElementById("apiKey"),
+      endpoint: document.getElementById("endpoint"),
+      model: document.getElementById("model"),
+      voice: document.getElementById("voice"),
+      ttsText: document.getElementById("ttsText"),
+      playBtn: document.getElementById("playBtn"),
+      stopBtn: document.getElementById("stopBtn"),
+      rememberKey: document.getElementById("rememberKey"),
+      autoscroll: document.getElementById("autoscroll"),
+      logBody: document.getElementById("logBody"),
+      logWrap: document.getElementById("logWrap"),
+      clearLogBtn: document.getElementById("clearLogBtn"),
+      stateDot: document.getElementById("stateDot"),
+      stateText: document.getElementById("stateText"),
+      stateDetail: document.getElementById("stateDetail"),
+      charCount: document.getElementById("charCount"),
+      statTotal: document.getElementById("statTotal"),
+      statOk: document.getElementById("statOk"),
+      statErr: document.getElementById("statErr"),
+      statMs: document.getElementById("statMs"),
+      statBytes: document.getElementById("statBytes"),
+    };
+
+    const stats = { total: 0, ok: 0, err: 0, bytes: 0, lastMs: null };
+    const logRowsById = new Map();
+
+    function fmtTime(d) {
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      const ss = String(d.getSeconds()).padStart(2, "0");
+      const ms = String(d.getMilliseconds()).padStart(3, "0");
+      return `${hh}:${mm}:${ss}.${ms}`;
+    }
+
+    function clampText(s, max = 160) {
+      const t = String(s ?? "").replace(/\s+/g, " ").trim();
+      return t.length > max ? t.slice(0, max - 1) + "…" : t;
+    }
+
+    function setState(kind, text, detail = "") {
+      els.stateDot.className = "dot" + (kind ? " " + kind : "");
+      els.stateText.textContent = text;
+      els.stateDetail.textContent = detail;
+    }
+
+    function updateStats() {
+      els.statTotal.textContent = String(stats.total);
+      els.statOk.textContent = String(stats.ok);
+      els.statErr.textContent = String(stats.err);
+      els.statBytes.textContent = String(stats.bytes);
+      els.statMs.textContent = stats.lastMs == null ? "—" : String(stats.lastMs);
+    }
+
+    function addLogRow(entry) {
+      const tr = document.createElement("tr");
+      tr.dataset.id = entry.id;
+      tr.innerHTML = `
+        <td class="mono nowrap">${entry.time}</td>
+        <td>
+          <div class="mono">${entry.method} ${entry.path}</div>
+          <div class="small">model=${entry.model}, voice=${entry.voice}, chars=${entry.chars}</div>
+          ${entry.note ? `<div class="small">${entry.note}</div>` : ``}
+        </td>
+        <td class="nowrap"><span class="tag warn"><span class="dot warn"></span><span>pending</span></span></td>
+        <td class="mono nowrap">—</td>
+        <td class="mono nowrap">—</td>
+      `;
+      els.logBody.prepend(tr);
+      logRowsById.set(entry.id, tr);
+      if (els.autoscroll.value === "on") {
+        els.logWrap.scrollTop = 0;
+      }
+      return tr;
+    }
+
+    function finalizeLogRow(id, result) {
+      const tr = logRowsById.get(id);
+      if (!tr) return;
+      const statusTd = tr.children[2];
+      const msTd = tr.children[3];
+      const bytesTd = tr.children[4];
+
+      const ok = Boolean(result.ok);
+      const klass = ok ? "ok" : "bad";
+      const label = ok ? `${result.status}` : `ERR ${result.status ?? ""}`.trim();
+      statusTd.innerHTML = `<span class="tag ${klass}"><span class="dot ${klass}"></span><span>${label}</span></span>`;
+      msTd.textContent = result.ms == null ? "—" : String(result.ms);
+      bytesTd.textContent = result.bytes == null ? "—" : String(result.bytes);
+
+      const metaTd = tr.children[1];
+      if (result.errorText) {
+        const div = document.createElement("div");
+        div.className = "small mono";
+        div.textContent = clampText(result.errorText, 260);
+        metaTd.appendChild(div);
+      }
+    }
+
+    function stopPlayback({ abortRequest = true, stopSound = true } = {}) {
+      if (abortRequest && currentRequest) {
+        try { currentRequest.abort(); } catch {}
+        currentRequest = null;
+      }
+
       if (currentSound) {
-        currentSound.stop();
-        currentSound.unload();
+        if (stopSound) {
+          try { currentSound.stop(); } catch {}
+        }
+        try { currentSound.unload(); } catch {}
         currentSound = null;
       }
 
-      const response = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + OPENAI_API_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini-tts",
-          voice: "ash",
-          input: text
-        })
-      });
+      if (currentAudioUrl) {
+        try { URL.revokeObjectURL(currentAudioUrl); } catch {}
+        currentAudioUrl = null;
+      }
+    }
 
-      if (!response.ok) {
-        const err = await response.text();
-        alert("TTS error: " + err);
+    async function speak(text) {
+      const apiKey = els.apiKey.value.trim();
+      const endpoint = els.endpoint.value.trim();
+      const model = els.model.value;
+      const voice = els.voice.value;
+
+      if (!endpoint) {
+        setState("bad", "Missing endpoint");
+        return;
+      }
+      if (!apiKey) {
+        setState("bad", "Missing API key", "Add a key in the field above.");
         return;
       }
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const input = String(text ?? "").trim();
+      if (!input) {
+        setState("warn", "No text", "Type something to speak.");
+        return;
+      }
 
-      // Play with Howler
+      // Stop any previous playback/request before starting a new one.
+      stopPlayback({ abortRequest: true });
+
+      els.playBtn.disabled = true;
+      els.stopBtn.disabled = false;
+      setState("warn", "Requesting audio…", `model=${model}, voice=${voice}`);
+
+      let url;
+      try {
+        url = new URL(endpoint);
+      } catch {
+        setState("bad", "Invalid endpoint URL");
+        els.playBtn.disabled = false;
+        els.stopBtn.disabled = true;
+        return;
+      }
+      const entry = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        time: fmtTime(new Date()),
+        method: "POST",
+        path: url.pathname,
+        model,
+        voice,
+        chars: input.length,
+        note: clampText(input, 120),
+      };
+      addLogRow(entry);
+
+      stats.total += 1;
+      updateStats();
+
+      const started = performance.now();
+      const controller = new AbortController();
+      currentRequest = controller;
+
+      let response;
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Authorization": "Bearer " + apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ model, voice, input }),
+        });
+      } catch (e) {
+        const ms = Math.round(performance.now() - started);
+        stats.err += 1;
+        stats.lastMs = ms;
+        updateStats();
+        finalizeLogRow(entry.id, { ok: false, status: "fetch", ms, errorText: String(e?.message ?? e) });
+        setState("bad", "Request failed", String(e?.message ?? e));
+        els.playBtn.disabled = false;
+        els.stopBtn.disabled = true;
+        currentRequest = null;
+        return;
+      }
+
+      const ms = Math.round(performance.now() - started);
+      stats.lastMs = ms;
+
+      if (!response.ok) {
+        let errText = "";
+        try { errText = await response.text(); } catch {}
+        stats.err += 1;
+        updateStats();
+        finalizeLogRow(entry.id, { ok: false, status: response.status, ms, errorText: errText || response.statusText });
+        setState("bad", "TTS error", `${response.status} ${response.statusText}`.trim());
+        els.playBtn.disabled = false;
+        els.stopBtn.disabled = true;
+        currentRequest = null;
+        return;
+      }
+
+      let audioBlob;
+      try {
+        audioBlob = await response.blob();
+      } catch (e) {
+        stats.err += 1;
+        updateStats();
+        finalizeLogRow(entry.id, { ok: false, status: response.status, ms, errorText: "Could not read audio body" });
+        setState("bad", "Invalid audio response");
+        els.playBtn.disabled = false;
+        els.stopBtn.disabled = true;
+        currentRequest = null;
+        return;
+      }
+
+      stats.ok += 1;
+      stats.bytes += audioBlob.size || 0;
+      updateStats();
+      finalizeLogRow(entry.id, { ok: true, status: response.status, ms, bytes: audioBlob.size || 0 });
+
+      currentAudioUrl = URL.createObjectURL(audioBlob);
+      setState("ok", "Playing…", `${audioBlob.size || 0} bytes`);
+
       currentSound = new Howl({
-        src: [audioUrl],
+        src: [currentAudioUrl],
         format: ["mp3"],
         autoplay: true,
+        onplay: () => {
+          els.playBtn.disabled = true;
+          els.stopBtn.disabled = false;
+        },
+        onstop: () => {
+          stopPlayback({ abortRequest: false, stopSound: false });
+          setState("", "Stopped");
+          els.playBtn.disabled = false;
+          els.stopBtn.disabled = true;
+        },
         onend: () => {
-          URL.revokeObjectURL(audioUrl);
-        }
+          stopPlayback({ abortRequest: false, stopSound: false });
+          setState("", "Idle");
+          els.playBtn.disabled = false;
+          els.stopBtn.disabled = true;
+        },
+        onloaderror: (_id, err) => {
+          stopPlayback({ abortRequest: false, stopSound: false });
+          setState("bad", "Audio load error", String(err ?? ""));
+          els.playBtn.disabled = false;
+          els.stopBtn.disabled = true;
+        },
+        onplayerror: (_id, err) => {
+          stopPlayback({ abortRequest: false, stopSound: false });
+          setState("bad", "Audio play error", String(err ?? ""));
+          els.playBtn.disabled = false;
+          els.stopBtn.disabled = true;
+        },
       });
+
+      currentRequest = null;
     }
 
-    document.getElementById("playBtn").addEventListener("click", () => {
-      const text = document.getElementById("ttsText").value;
-      speak(text);
+    function syncCharCount() {
+      els.charCount.textContent = String((els.ttsText.value || "").length);
+    }
+
+    function loadRememberedKey() {
+      const remembered = localStorage.getItem(LS_KEY_REMEMBER);
+      const isOn = remembered === "on";
+      els.rememberKey.value = isOn ? "on" : "off";
+      if (isOn) {
+        const v = localStorage.getItem(LS_KEY_APIKEY);
+        if (v) els.apiKey.value = v;
+      }
+    }
+
+    els.playBtn.addEventListener("click", () => speak(els.ttsText.value));
+    els.stopBtn.addEventListener("click", () => {
+      stopPlayback({ abortRequest: true });
+      setState("", "Stopped");
+      els.playBtn.disabled = false;
+      els.stopBtn.disabled = true;
     });
+    els.clearLogBtn.addEventListener("click", () => {
+      els.logBody.innerHTML = "";
+      logRowsById.clear();
+      stats.total = 0;
+      stats.ok = 0;
+      stats.err = 0;
+      stats.bytes = 0;
+      stats.lastMs = null;
+      updateStats();
+      setState("", "Idle");
+    });
+
+    els.ttsText.addEventListener("input", syncCharCount);
+    els.rememberKey.addEventListener("change", () => {
+      localStorage.setItem(LS_KEY_REMEMBER, els.rememberKey.value);
+      if (els.rememberKey.value !== "on") {
+        localStorage.removeItem(LS_KEY_APIKEY);
+      } else if (els.apiKey.value.trim()) {
+        localStorage.setItem(LS_KEY_APIKEY, els.apiKey.value.trim());
+      }
+    });
+    els.apiKey.addEventListener("input", () => {
+      if (els.rememberKey.value === "on") {
+        const v = els.apiKey.value.trim();
+        if (v) localStorage.setItem(LS_KEY_APIKEY, v);
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        speak(els.ttsText.value);
+      }
+      if (e.key === "Escape") {
+        stopPlayback({ abortRequest: true });
+        setState("", "Stopped");
+        els.playBtn.disabled = false;
+        els.stopBtn.disabled = true;
+      }
+    });
+
+    syncCharCount();
+    loadRememberedKey();
+    updateStats();
+    setState("", "Idle", "Ctrl/⌘ + Enter to play, Esc to stop.");
   </script>
 
 </body>
