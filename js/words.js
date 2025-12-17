@@ -559,6 +559,7 @@
       fieldsPanel.classList.toggle("hidden", !visible);
       toggleFieldsBtn.textContent = visible ? "Verberg velden" : "Velden";
       toggleFieldsBtn.setAttribute("aria-expanded", visible ? "true" : "false");
+      log("[words] Fields panel", { visible });
     }
 
     if (toggleFieldsBtn && fieldsPanel) {
@@ -566,6 +567,11 @@
       toggleFieldsBtn.addEventListener("click", () => {
         const isHidden = fieldsPanel.classList.contains("hidden");
         setFieldsPanelVisible(isHidden);
+      });
+    } else {
+      log("[words] Fields toggle missing", {
+        hasToggleButton: Boolean(toggleFieldsBtn),
+        hasPanel: Boolean(fieldsPanel)
       });
     }
 
