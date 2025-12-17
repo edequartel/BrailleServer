@@ -36,6 +36,8 @@
   let records = [];
   let currentIndex = 0;
   let currentActivityIndex = 0;
+  let runToken = 0;
+  let running = false;
 
   // ------------------------------------------------------------
   // DOM helper
@@ -49,6 +51,21 @@
   function setStatus(text) {
     const el = $("data-status");
     if (el) el.textContent = "Data: " + text;
+  }
+
+  function setActivityStatus(text) {
+    const el = $("activity-status");
+    if (el) el.textContent = "Status: " + text;
+  }
+
+  function setRunnerUi({ isRunning }) {
+    const startBtn = $("start-activity-btn");
+    const doneBtn = $("done-activity-btn");
+    const autoRun = $("auto-run");
+
+    if (startBtn) startBtn.disabled = Boolean(isRunning);
+    if (doneBtn) doneBtn.disabled = !isRunning;
+    if (autoRun) autoRun.disabled = Boolean(isRunning);
   }
 
   // ------------------------------------------------------------
@@ -129,6 +146,16 @@
     renderActivity(item, activities);
   }
 
+  function getCurrentActivity() {
+    const item = records[currentIndex];
+    if (!item) return null;
+    const activities = getActivities(item);
+    if (!activities.length) return null;
+    const active = activities[currentActivityIndex] ?? activities[0];
+    if (!active) return null;
+    return { item, activities, activity: active };
+  }
+
   function renderActivity(item, activities) {
     const activityIndexEl = $("activity-index");
     const activityIdEl = $("activity-id");
@@ -187,10 +214,135 @@
       btn.title = a.id;
       btn.addEventListener("click", () => {
         log("[words] Activity selected", { id: a.id, index: i });
+        cancelRun();
         setActiveActivity(i);
+        startSelectedActivity({ autoStarted: true });
       });
       activityButtonsEl.appendChild(btn);
     }
+  }
+
+  function cancelRun() {
+    runToken += 1;
+    running = false;
+    setRunnerUi({ isRunning: false });
+    setActivityStatus("idle");
+  }
+
+  function canonicalActivityId(activityId) {
+    const rawId = String(activityId ?? "");
+    const id = rawId.trim().toLowerCase();
+    return id.startsWith("tts") ? "tts"
+      : id.startsWith("letters") ? "letters"
+        : id.startsWith("words") ? "words"
+          : id.startsWith("story") ? "story"
+            : id.startsWith("sounds") ? "sounds"
+              : id;
+  }
+
+  function waitForDone(currentToken) {
+    return new Promise((resolve) => {
+      const doneBtn = $("done-activity-btn");
+      if (!doneBtn) return resolve();
+
+      const onDone = () => {
+        doneBtn.removeEventListener("click", onDone);
+        resolve();
+      };
+
+      doneBtn.addEventListener("click", onDone);
+
+      // If cancelled/restarted, resolve silently and detach.
+      const poll = () => {
+        if (currentToken !== runToken) {
+          doneBtn.removeEventListener("click", onDone);
+          resolve();
+          return;
+        }
+        requestAnimationFrame(poll);
+      };
+      requestAnimationFrame(poll);
+    });
+  }
+
+  const handlers = {
+    async tts(ctx) {
+      log("[words] Run activity tts", { id: ctx.item.id, word: ctx.item.word });
+      setActivityStatus("running (tts)");
+      return waitForDone(ctx.token);
+    },
+    async letters(ctx) {
+      log("[words] Run activity letters", { id: ctx.item.id });
+      setActivityStatus("running (letters)");
+      return waitForDone(ctx.token);
+    },
+    async words(ctx) {
+      log("[words] Run activity words", { id: ctx.item.id });
+      setActivityStatus("running (words)");
+      return waitForDone(ctx.token);
+    },
+    async story(ctx) {
+      log("[words] Run activity story", { id: ctx.item.id });
+      setActivityStatus("running (story)");
+      return waitForDone(ctx.token);
+    },
+    async sounds(ctx) {
+      log("[words] Run activity sounds", { id: ctx.item.id });
+      setActivityStatus("running (sounds)");
+      return waitForDone(ctx.token);
+    },
+    async default(ctx) {
+      log("[words] Run activity (default)", { id: ctx.item.id, activityId: ctx.activity.id });
+      setActivityStatus("running");
+      return waitForDone(ctx.token);
+    }
+  };
+
+  async function startSelectedActivity({ autoStarted = false } = {}) {
+    const cur = getCurrentActivity();
+    if (!cur) return;
+
+    cancelRun();
+    const token = runToken;
+
+    const activityKey = canonicalActivityId(cur.activity.id);
+    const handler = handlers[activityKey] || handlers.default;
+
+    running = true;
+    setRunnerUi({ isRunning: true });
+    setActivityStatus(autoStarted ? "running (auto)" : "running");
+
+    try {
+      await handler({ ...cur, token });
+    } finally {
+      // If a new run started, ignore.
+      if (token !== runToken) return;
+      running = false;
+      setRunnerUi({ isRunning: false });
+      setActivityStatus("done");
+
+      const autoRun = $("auto-run");
+      if (autoRun && autoRun.checked) {
+        advanceToNextActivityOrWord({ autoStart: true });
+      }
+    }
+  }
+
+  function advanceToNextActivityOrWord({ autoStart = false } = {}) {
+    if (!records.length) return;
+    const item = records[currentIndex];
+    const activities = getActivities(item);
+    const nextIndex = currentActivityIndex + 1;
+
+    if (nextIndex < activities.length) {
+      setActiveActivity(nextIndex);
+    } else {
+      currentIndex = (currentIndex + 1) % records.length;
+      currentActivityIndex = 0;
+      render();
+    }
+
+    if (autoStart) startSelectedActivity({ autoStarted: true });
   }
 
   function render() {
@@ -232,6 +384,8 @@
     const activities = getActivities(item);
     if (currentActivityIndex >= activities.length) currentActivityIndex = 0;
     renderActivity(item, activities);
+    setRunnerUi({ isRunning: false });
+    setActivityStatus("idle");
 
     setStatus(`geladen (${records.length})`);
   }
@@ -241,6 +395,7 @@
   // ------------------------------------------------------------
   function next() {
     if (!records.length) return;
+    cancelRun();
     currentIndex = (currentIndex + 1) % records.length;
     currentActivityIndex = 0;
     log("[words] Next pressed", { currentIndex });
@@ -249,6 +404,7 @@
 
   function prev() {
     if (!records.length) return;
+    cancelRun();
     currentIndex = (currentIndex - 1 + records.length) % records.length;
     currentActivityIndex = 0;
     log("[words] Prev pressed", { currentIndex });
@@ -260,6 +416,7 @@
     const item = records[currentIndex];
     const activities = getActivities(item);
     if (activities.length < 2) return;
+    cancelRun();
     currentActivityIndex = (currentActivityIndex + 1) % activities.length;
     log("[words] Next activity", { currentActivityIndex });
     renderActivity(item, activities);
@@ -270,6 +427,7 @@
     const item = records[currentIndex];
     const activities = getActivities(item);
     if (activities.length < 2) return;
+    cancelRun();
     currentActivityIndex = (currentActivityIndex - 1 + activities.length) % activities.length;
     log("[words] Prev activity", { currentActivityIndex });
     renderActivity(item, activities);
@@ -329,17 +487,22 @@
     const prevBtn = $("prev-btn");
     const nextActivityBtn = $("next-activity-btn");
     const prevActivityBtn = $("prev-activity-btn");
+    const startActivityBtn = $("start-activity-btn");
+    const doneActivityBtn = $("done-activity-btn");
 
     if (nextBtn) nextBtn.addEventListener("click", next);
     if (prevBtn) prevBtn.addEventListener("click", prev);
     if (nextActivityBtn) nextActivityBtn.addEventListener("click", nextActivity);
     if (prevActivityBtn) prevActivityBtn.addEventListener("click", prevActivity);
+    if (startActivityBtn) startActivityBtn.addEventListener("click", () => startSelectedActivity({ autoStarted: false }));
+    // doneActivityBtn is handled by waitForDone() per run.
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "ArrowRight") nextActivity();
       if (e.key === "ArrowLeft") prevActivity();
       if (e.key === "ArrowDown") next();
       if (e.key === "ArrowUp") prev();
+      if (e.key === "Enter") startSelectedActivity({ autoStarted: false });
     });
 
     loadData();
