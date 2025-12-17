@@ -188,13 +188,14 @@
   function renderActivity(item, activities) {
     const activityIndexEl = $("activity-index");
     const activityIdEl = $("activity-id");
-    const activityCaptionEl = $("activity-caption");
-    const activityDetailEl = $("activity-detail");
     const activityButtonsEl = $("activity-buttons");
+    // Optional (page may choose not to show details)
+    const activityCaptionEl = document.getElementById("activity-caption");
+    const activityDetailEl = document.getElementById("activity-detail");
     const prevActivityBtn = $("prev-activity-btn");
     const nextActivityBtn = $("next-activity-btn");
 
-    if (!activityIndexEl || !activityIdEl || !activityCaptionEl || !activityDetailEl || !activityButtonsEl) {
+    if (!activityIndexEl || !activityIdEl || !activityButtonsEl) {
       log("[words] Missing activity DOM elements; cannot render activity.");
       return;
     }
@@ -202,8 +203,8 @@
     if (!activities.length) {
       activityIndexEl.textContent = "0 / 0";
       activityIdEl.textContent = "Activity: –";
-      activityCaptionEl.textContent = "Details";
-      activityDetailEl.textContent = "–";
+      if (activityCaptionEl) activityCaptionEl.textContent = "Details";
+      if (activityDetailEl) activityDetailEl.textContent = "–";
       activityButtonsEl.innerHTML = "";
       if (prevActivityBtn) prevActivityBtn.disabled = true;
       if (nextActivityBtn) nextActivityBtn.disabled = true;
@@ -230,8 +231,8 @@
     activityIdEl.textContent = canonical && canonical !== id ? `Activity: ${rawId} (${canonical})` : `Activity: ${rawId}`;
 
     const { caption, detail } = formatActivityDetail(active.id, item);
-    activityCaptionEl.textContent = caption || "Details";
-    activityDetailEl.textContent = detail ?? "–";
+    if (activityCaptionEl) activityCaptionEl.textContent = caption || "Details";
+    if (activityDetailEl) activityDetailEl.textContent = detail ?? "–";
 
     activityButtonsEl.innerHTML = "";
     for (let i = 0; i < activities.length; i++) {
