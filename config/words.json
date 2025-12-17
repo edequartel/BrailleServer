@@ -8,8 +8,8 @@
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
       { "id": "letters", "caption": "Oefen letters" },
-      { "id": "words", "caption": "Maak woorden 1" },
-      { "id": "words", "caption": "Maak woorden 2" },
+      { "id": "story", "caption": "Maak woorden 1" },
+      { "id": "story", "caption": "Maak woorden 2" },
       { "id": "story", "caption": "Luister (verhaal)" },
       { "id": "sounds", "caption": "Geluiden" }
     ],
