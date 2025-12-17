@@ -7,8 +7,7 @@
     "story": ["bal1.mp3", "bal2.mp3"],
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
-      { "id": "tts", "caption": "Luister (woord)" },
-      { "id": "letters", "caption": "Oefen letters" },
+      { "id": "lettersZZ", "caption": "Oefen letters" },
       { "id": "words", "caption": "Maak woorden" },
       { "id": "story", "caption": "Luister (verhaal)" },
       { "id": "sounds", "caption": "Geluiden" }
