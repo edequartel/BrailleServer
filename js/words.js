@@ -39,6 +39,7 @@
   let runToken = 0;
   let running = false;
   let activeActivityModule = null;
+  let activeActivityDonePromise = null;
 
   // ------------------------------------------------------------
   // DOM helper
@@ -275,7 +276,49 @@
       }
     } finally {
       activeActivityModule = null;
+      activeActivityDonePromise = null;
     }
+  }
+
+  function waitForDoneOrActivityEnd(currentToken) {
+    return new Promise((resolve) => {
+      const doneBtn = $("done-activity-btn");
+      let settled = false;
+
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (doneBtn) doneBtn.removeEventListener("click", onDone);
+        resolve();
+      };
+
+      const onDone = () => {
+        stopActiveActivity({ reason: "doneClick" });
+        finish();
+      };
+
+      if (doneBtn) doneBtn.addEventListener("click", onDone);
+
+      const p = activeActivityDonePromise;
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          stopActiveActivity({ reason: "activityDone" });
+          finish();
+        }).catch(() => {
+          stopActiveActivity({ reason: "activityError" });
+          finish();
+        });
+      }
+
+      const poll = () => {
+        if (currentToken !== runToken) {
+          finish();
+          return;
+        }
+        requestAnimationFrame(poll);
+      };
+      requestAnimationFrame(poll);
+    });
   }
 
   function canonicalActivityId(activityId) {
@@ -324,7 +367,7 @@
     async letters(ctx) {
       log("[words] Run activity letters", { id: ctx.item.id });
       setActivityStatus("running (letters)");
-      return waitForDone(ctx.token);
+      return waitForDoneOrActivityEnd(ctx.token);
     },
     async words(ctx) {
       log("[words] Run activity words", { id: ctx.item.id });
@@ -334,7 +377,7 @@
     async story(ctx) {
       log("[words] Run activity story", { id: ctx.item.id });
       setActivityStatus("running (story)");
-      return waitForDone(ctx.token);
+      return waitForDoneOrActivityEnd(ctx.token);
     },
     async sounds(ctx) {
       log("[words] Run activity sounds", { id: ctx.item.id });
@@ -361,7 +404,7 @@
     const activityModule = getActivityModule(activityKey);
     if (activityModule) {
       activeActivityModule = activityModule;
-      activityModule.start({
+      const maybePromise = activityModule.start({
         activityKey,
         activityId: cur.activity?.id ?? null,
         activityCaption: cur.activity?.caption ?? null,
@@ -370,8 +413,10 @@
         activityIndex: currentActivityIndex,
         autoStarted: Boolean(autoStarted)
       });
+      activeActivityDonePromise = (maybePromise && typeof maybePromise.then === "function") ? maybePromise : null;
     } else {
       activeActivityModule = null;
+      activeActivityDonePromise = null;
       log("[words] No activity module found", { activityKey });
     }
 

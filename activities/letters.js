@@ -23,6 +23,9 @@
     let session = null;
     let playToken = 0;
     let currentHowl = null;
+    let currentUrl = null;
+    let donePromise = null;
+    let doneResolve = null;
 
     function isRunning() {
       return Boolean(intervalId);
@@ -47,7 +50,24 @@
         // ignore
       } finally {
         currentHowl = null;
+        currentUrl = null;
       }
+    }
+
+    function ensureDonePromise() {
+      if (donePromise) return donePromise;
+      donePromise = new Promise((resolve) => {
+        doneResolve = resolve;
+      });
+      return donePromise;
+    }
+
+    function resolveDone(payload) {
+      if (!doneResolve) return;
+      const resolve = doneResolve;
+      doneResolve = null;
+      donePromise = null;
+      resolve(payload);
     }
 
     function playHowl(howl, token) {
@@ -93,19 +113,26 @@
         if (!key) continue;
 
         const url = Sounds._buildUrl(lang, "letters", key);
+        currentUrl = url;
         currentHowl = Sounds._getHowl(url);
-        log("[activity:letters] play", { key, url });
+        log("[activity:letters] play start", { key, url });
         try {
           // eslint-disable-next-line no-await-in-loop
           await playHowl(currentHowl, token);
+          log("[activity:letters] play end", { key, url });
         } finally {
           stopCurrentHowl();
         }
       }
+
+      if (token !== playToken) return;
+      log("[activity:letters] audio done");
+      stop({ reason: "audioEnd" });
     }
 
     function start(ctx) {
       stop({ reason: "restart" });
+      ensureDonePromise();
       session = {
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
         ctx
@@ -126,7 +153,10 @@
       playToken += 1;
       playLetters(ctx).catch((err) => {
         log("[activity:letters] audio error", { message: err?.message || String(err) });
+        resolveDone({ ok: false, error: err?.message || String(err) });
       });
+
+      return donePromise;
     }
 
     function stop(payload) {
@@ -135,9 +165,12 @@
         intervalId = null;
       }
       playToken += 1;
+      const url = currentUrl;
+      if (payload?.reason && url) log("[activity:letters] play stop", { url, reason: payload.reason });
       stopCurrentHowl();
       log("[activity:letters] stop", { sessionId: session?.id, payload });
       session = null;
+      resolveDone({ ok: true, payload });
     }
 
     return { start, stop, isRunning };
