@@ -4,6 +4,8 @@ root/pages ; where the project html files are found
 
 root/config/sounds.json ; where the sound can be found
 
+root/components ;  where teh different components are storen with js and css
+
 root/js/sounds.js ; howlr play functions javascript
 root/js/app.js ; app  functions javascript
 

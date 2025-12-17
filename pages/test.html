@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Letter Game – BrailleServer All Components</title>
+
+  <!-- Components CSS -->
+  <link rel="stylesheet" href="./components/device-status/device-status.css" />
+  <link rel="stylesheet" href="./components/feedback-badge/feedback-badge.css" />
+  <link rel="stylesheet" href="./components/event-log/event-log.css" />
+  <link rel="stylesheet" href="./components/braille-monitor/braille-monitor.css" />
+
+  <style>
+    :root { color-scheme: light; }
+    html[data-theme="dark"] { color-scheme: dark; }
+
+    body{
+      margin:0; padding:1rem;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:#f6f7fb; color:#111827;
+    }
+    html[data-theme="dark"] body{ background:#0f1117; color:#e5e7eb; }
+
+    header{ display:flex; gap:1rem; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    .row{ display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+    .grid{ display:grid; grid-template-columns:1fr; gap:1rem; }
+    @media(min-width:980px){ .grid{ grid-template-columns: 1fr 1fr; } .full{ grid-column:1/-1; } }
+
+    .panel{
+      border:1px solid rgba(0,0,0,.12);
+      border-radius:12px; padding:1rem;
+      background:rgba(255,255,255,.92);
+    }
+    html[data-theme="dark"] .panel{
+      border-color:rgba(255,255,255,.14);
+      background:rgba(22,26,35,.92);
+    }
+
+    button.simple{
+      border:1px solid rgba(0,0,0,.2);
+      background:transparent; color:inherit;
+      padding:.5rem .75rem; border-radius:10px;
+      cursor:pointer;
+    }
+    html[data-theme="dark"] button.simple{ border-color: rgba(255,255,255,.18); }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+      border: 1px solid rgba(0,0,0,.18);
+      padding: .1rem .35rem;
+      border-radius: 6px;
+      opacity: .9;
+    }
+    html[data-theme="dark"] .kbd{ border-color: rgba(255,255,255,.18); }
+    .muted{ opacity:.8; }
+  </style>
+</head>
+
+<body>
+<header>
+  <div>
+    <h1 style="margin:0;">Letter Game</h1>
+    <div class="muted" style="margin-top:.25rem;">
+      Listen to a target letter, then select it on the braille line via cursor routing (hardware or mouse).
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="simple" id="themeToggle" type="button">Toggle theme</button>
+    <button class="simple" id="startBtn" type="button">Start</button>
+    <button class="simple" id="stopBtn" type="button">Stop</button>
+  </div>
+</header>
+
+<div class="row" style="margin-bottom:1rem;">
+  <div id="feedbackBadge"></div>
+  <div class="muted">
+    Tip: click a cell in the monitor to simulate cursor routing (if supported).
+  </div>
+</div>
+
+<div class="grid">
+  <section class="panel">
+    <h2 style="margin-top:0;">Device status</h2>
+    <div id="deviceStatus"></div>
+    <div class="muted" style="margin-top:.5rem;">
+      If your DeviceStatus component supports it, it will reflect BrailleBridge connectivity.
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-top:0;">Event log</h2>
+    <div id="eventLog"></div>
+    <div class="row" style="margin-top:.75rem;">
+      <button class="simple" id="logClear" type="button">Clear log</button>
+      <button class="simple" id="repeatTarget" type="button">Repeat letter</button>
+    </div>
+  </section>
+
+  <section class="panel full">
+    <h2 style="margin-top:0;">Braille monitor</h2>
+    <div id="brailleMonitor"></div>
+
+    <div class="row" style="margin-top:.75rem;">
+      <button class="simple" id="newRoundBtn" type="button">New round</button>
+      <button class="simple" id="toggleSpeechBtn" type="button">Speech: on</button>
+      <span class="muted">
+        Hardware: use cursor routing buttons, or mouse on monitor cells.
+      </span>
+    </div>
+
+    <div class="muted" style="margin-top:.5rem;">
+      Expected events: cursor routing -> we check the selected cell letter.
+      If your BrailleBridge sends key events over WebSocket, this page can also listen to them.
+    </div>
+  </section>
+</div>
+
+<!-- Components JS -->
+<script src="./components/event-log/event-log.js"></script>
+<script src="./components/feedback-badge/feedback-badge.js"></script>
+<script src="./components/device-status/device-status.js"></script>
+<script src="./components/braille-monitor/braille-monitor.js"></script>
+
+<script>
+/* ============================================================
+   CONFIG – adjust these to match your local BrailleBridge + API
+============================================================ */
+const CONFIG = {
+  // WebSocket that emits key events (BrailleBridge -> browser).
+  // Change to your actual endpoint.
+  bridgeWsUrl: "ws://localhost:8080/ws",
+
+  // Localhost API endpoint to send text to the physical braille display.
+  // Change to your actual endpoint.
+  // Expected: POST { text: "..." }
+  displayApiUrl: "http://localhost:8080/api/display",
+
+  // Game
+  cells: 20,                 // how many letters we show
+  alphabet: "abcdefghijklmnopqrstuvwxyz",
+  roundDelayMs: 350
+};
+
+/* ============================================================
+   Small helpers
+============================================================ */
+function $(id){ return document.getElementById(id); }
+
+function safeSpeak(text){
+  if (!Game.speechEnabled) return;
+  if (!("speechSynthesis" in window)) return;
+
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    // Let browser choose language; adjust if you want:
+    // u.lang = "nl-NL";
+    window.speechSynthesis.speak(u);
+  }catch(e){
+    // ignore
+  }
+}
+
+// Best-effort braille display update: physical + monitor
+async function sendToPhysicalDisplay(text){
+  // If you don’t have the API yet, this will fail harmlessly.
+  try{
+    await fetch(CONFIG.displayApiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    Game.logInfo(`Display API ok: "${text}"`);
+  }catch(err){
+    Game.logInfo(`Display API not reachable (ok for demo): ${String(err).slice(0,120)}…`);
+  }
+}
+
+/* ============================================================
+   Components initialization (supports common patterns)
+============================================================ */
+const Game = {
+  running: false,
+  ws: null,
+  speechEnabled: true,
+
+  monitor: null,
+  log: null,
+  badge: null,
+  status: null,
+
+  lineText: "",
+  targetLetter: "",
+  targetIndex: -1,
+
+  logInfo(msg){
+    if (this.log?.info) this.log.info(msg);
+    else if (this.log?.add) this.log.add("info", msg);
+    else console.log(msg);
+  },
+  logWarn(msg){
+    if (this.log?.warn) this.log.warn(msg);
+    else if (this.log?.add) this.log.add("warn", msg);
+    else console.warn(msg);
+  },
+  showBadge(text, kind){
+    // kind: "correct" | "wrong" | "hidden"
+    if (this.badge?.show) this.badge.show(text, kind);
+  },
+
+  setMonitorText(text){
+    // Support multiple possible APIs.
+    if (this.monitor?.setText) return this.monitor.setText(text);
+    if (this.monitor?.setValue) return this.monitor.setValue(text);
+    if (this.monitor?.value !== undefined) { this.monitor.value = text; return; }
+    if (this.monitor) this.monitor.textContent = text;
+  },
+
+  randomLine(){
+    let out = "";
+    for (let i=0; i<CONFIG.cells; i++){
+      out += CONFIG.alphabet[Math.floor(Math.random()*CONFIG.alphabet.length)];
+    }
+    return out;
+  },
+
+  pickTargetFromLine(line){
+    const idx = Math.floor(Math.random()*line.length);
+    return { idx, letter: line[idx] };
+  },
+
+  async newRound(){
+    if (!this.running) return;
+
+    this.lineText = this.randomLine();
+    const pick = this.pickTargetFromLine(this.lineText);
+    this.targetIndex = pick.idx;
+    this.targetLetter = pick.letter;
+
+    this.setMonitorText(this.lineText);
+    this.showBadge(`Find letter: "${this.targetLetter}"`, "hidden"); // hidden style keeps layout stable if you use it
+    this.logInfo(`New round: target="${this.targetLetter}" at cell=${this.targetIndex}`);
+
+    // update physical device (best-effort)
+    await sendToPhysicalDisplay(this.lineText);
+
+    // speak target
+    safeSpeak(this.targetLetter);
+  },
+
+  checkSelection(cellIndex){
+    if (!this.running) return;
+    if (cellIndex < 0 || cellIndex >= this.lineText.length) return;
+
+    const chosen = this.lineText[cellIndex];
+    if (chosen === this.targetLetter){
+      this.showBadge(`Correct: cell ${cellIndex+1} is "${chosen}"`, "correct");
+      this.logInfo(`CORRECT: cell=${cellIndex} letter="${chosen}"`);
+      safeSpeak("Correct");
+
+      // next round
+      setTimeout(() => this.newRound(), CONFIG.roundDelayMs);
+    } else {
+      this.showBadge(`Wrong: cell ${cellIndex+1} is "${chosen}"`, "wrong");
+      this.logInfo(`WRONG: cell=${cellIndex} letter="${chosen}" (target="${this.targetLetter}" at ${this.targetIndex})`);
+      safeSpeak("Wrong");
+    }
+  },
+
+  connectWs(){
+    try{
+      this.ws = new WebSocket(CONFIG.bridgeWsUrl);
+    }catch(e){
+      this.logWarn(`WebSocket init failed: ${String(e)}`);
+      return;
+    }
+
+    this.ws.onopen = () => this.logInfo(`WS connected: ${CONFIG.bridgeWsUrl}`);
+    this.ws.onclose = () => this.logInfo("WS closed");
+    this.ws.onerror = () => this.logWarn("WS error");
+
+    this.ws.onmessage = (ev) => {
+      // Expecting JSON events from BrailleBridge (best-effort).
+      // You can map your real event schema here.
+      let msg = null;
+      try{ msg = JSON.parse(ev.data); }catch{ return; }
+
+      // Common patterns you might have:
+      // { type:"CursorRouting", index:12 }
+      // { event:"cursorRouting", cell:12 }
+      // { key:"CR", value:12 }
+      const t = (msg.type || msg.event || msg.key || "").toLowerCase();
+
+      if (t.includes("cursor") || t.includes("routing") || t === "cr"){
+        const idx = (msg.index ?? msg.cell ?? msg.value);
+        if (Number.isInteger(idx)){
+          this.logInfo(`WS cursor routing: ${idx}`);
+          this.checkSelection(idx);
+        }
+      } else {
+        // For thumbkeys you can log / extend later
+        this.logInfo(`WS event: ${ev.data}`);
+      }
+    };
+  },
+
+  start(){
+    if (this.running) return;
+    this.running = true;
+    this.showBadge("Game started", "correct");
+    this.logInfo("Game started");
+
+    // connect WS (optional)
+    this.connectWs();
+
+    // initial round
+    this.newRound();
+  },
+
+  stop(){
+    if (!this.running) return;
+    this.running = false;
+
+    try{ this.ws?.close(); }catch{}
+    this.ws = null;
+
+    this.showBadge("Game stopped", "wrong");
+    this.logInfo("Game stopped");
+  }
+};
+
+// Init EventLog
+(function(){
+  const host = $("eventLog");
+  if (!host) return;
+
+  if (typeof EventLog !== "undefined") {
+    Game.log = new EventLog(host);
+    Game.logInfo("EventLog ready");
+    return;
+  }
+  const el = document.createElement("event-log");
+  host.appendChild(el);
+  Game.log = el;
+  Game.logInfo("EventLog ready");
+})();
+
+// Init FeedbackBadge
+(function(){
+  const host = $("feedbackBadge");
+  if (!host) return;
+
+  if (typeof FeedbackBadge !== "undefined") {
+    Game.badge = new FeedbackBadge(host);
+    Game.badge.show?.("Ready", "correct");
+    return;
+  }
+  const el = document.createElement("feedback-badge");
+  host.appendChild(el);
+  Game.badge = el;
+  Game.showBadge("Ready", "correct");
+})();
+
+// Init DeviceStatus
+(function(){
+  const host = $("deviceStatus");
+  if (!host) return;
+
+  if (typeof DeviceStatus !== "undefined") {
+    Game.status = new DeviceStatus(host, {});
+    Game.logInfo("DeviceStatus ready");
+    return;
+  }
+  const el = document.createElement("device-status");
+  host.appendChild(el);
+  Game.status = el;
+  Game.logInfo("DeviceStatus ready");
+})();
+
+// Init BrailleMonitor
+(function(){
+  const host = $("brailleMonitor");
+  if (!host) return;
+
+  if (typeof BrailleMonitor !== "undefined") {
+    Game.monitor = new BrailleMonitor(host, {
+      onCursorRouting: (index) => {
+        Game.logInfo(`Monitor cursor routing: ${index}`);
+        Game.checkSelection(index);
+      },
+      onThumbKey: (key) => {
+        Game.logInfo(`Monitor thumbkey: ${key}`);
+      }
+    });
+    Game.logInfo("BrailleMonitor ready");
+    return;
+  }
+
+  const el = document.createElement("braille-monitor");
+  host.appendChild(el);
+  Game.monitor = el;
+
+  // If your web component emits custom events, hook them here:
+  el.addEventListener("cursor-routing", (e) => {
+    const idx = e.detail?.index;
+    if (Number.isInteger(idx)) Game.checkSelection(idx);
+  });
+
+  Game.logInfo("BrailleMonitor ready");
+})();
+
+/* ============================================================
+   UI wiring
+============================================================ */
+$("themeToggle")?.addEventListener("click", () => {
+  const html = document.documentElement;
+  html.dataset.theme = (html.dataset.theme === "dark") ? "light" : "dark";
+});
+
+$("logClear")?.addEventListener("click", () => {
+  Game.log?.clear?.();
+  Game.logInfo("Log cleared");
+});
+
+$("toggleSpeechBtn")?.addEventListener("click", (ev) => {
+  Game.speechEnabled = !Game.speechEnabled;
+  ev.target.textContent = `Speech: ${Game.speechEnabled ? "on" : "off"}`;
+  Game.logInfo(`Speech ${Game.speechEnabled ? "enabled" : "disabled"}`);
+});
+
+$("repeatTarget")?.addEventListener("click", () => {
+  if (!Game.targetLetter) return;
+  safeSpeak(Game.targetLetter);
+  Game.logInfo(`Repeat target: "${Game.targetLetter}"`);
+});
+
+$("newRoundBtn")?.addEventListener("click", () => Game.newRound());
+$("startBtn")?.addEventListener("click", () => Game.start());
+$("stopBtn")?.addEventListener("click", () => Game.stop());
+
+/* ============================================================
+   Optional: keyboard shortcuts for quick testing
+============================================================ */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") Game.start();
+  if (e.key === "Escape") Game.stop();
+  if (e.key === " ") { e.preventDefault(); Game.newRound(); }
+});
+</script>
+</body>
+</html>

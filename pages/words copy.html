@@ -85,7 +85,6 @@
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      flex-wrap: wrap;
     }
 
     button {
@@ -102,22 +101,6 @@
     button.secondary {
       background: #e5e7eb;
       color: #111827;
-    }
-
-    .chip {
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      color: #111827;
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-
-    .chip.active {
-      background: #111827;
-      color: #f9fafb;
-      border-color: #111827;
     }
 
     /* Visible log panel */
@@ -162,7 +145,7 @@
 <body>
   <main class="container" aria-live="polite">
     <h1>Woordentrainer</h1>
-    <p class="subtitle">Kies een woord (node) en ga door de activiteiten om de details te zien.</p>
+    <p class="subtitle">Toont één JSON-record per keer. Gebruik “Vorige/Volgende”.</p>
 
     <div class="meta-bar">
       <span id="item-id">ID: –</span>
@@ -170,28 +153,31 @@
       <span id="data-status">Data: –</span>
     </div>
 
-    <p class="field-label">Node</p>
+    <p class="field-label">Hoofdwoord</p>
     <p class="field-value" id="field-word">–</p>
+
+    <p class="field-label">Letters</p>
+    <p class="field-value" id="field-letters">–</p>
+
+    <p class="field-label">Woorden / combinaties</p>
+    <p class="field-value" id="field-words">–</p>
+
+    <p class="field-label">Stories (audio-bestanden)</p>
+    <p class="field-value" id="field-story">–</p>
+
+    <p class="field-label">Sounds (effecten)</p>
+    <p class="field-value" id="field-sounds">–</p>
+
+    <p class="field-label">Icon</p>
+    <p class="field-value" id="field-icon">–</p>
+
     <div class="meta-bar">
-      <span id="field-icon">Icon: –</span>
       <span id="short-flag" class="short-flag" style="display:none;">Kort verhaal: ja</span>
     </div>
-
-    <p class="field-label">Activiteiten</p>
-    <div class="meta-bar" style="margin-top: 8px;">
-      <span id="activity-index">0 / 0</span>
-      <span id="activity-id">Activity: –</span>
-    </div>
-    <div id="activity-buttons" class="buttons" style="justify-content:flex-start; margin-top: 10px;"></div>
-
-    <p class="field-label" id="activity-caption">Details</p>
-    <p class="field-value" id="activity-detail">–</p>
 
     <div class="buttons">
       <button id="prev-btn" class="secondary" type="button">Vorige</button>
       <button id="next-btn" type="button">Volgende</button>
-      <button id="prev-activity-btn" class="secondary" type="button">◀</button>
-      <button id="next-activity-btn" type="button">▶</button>
     </div>
 
     <!-- Visible logging UI -->
