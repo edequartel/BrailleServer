@@ -9,7 +9,7 @@
     "activities": [
       { "id": "letters", "caption": "Oefen letters" },
       { "id": "story", "index": 0, "caption": "3ballen" },
-      { "id": "story", "index": 1, "caption": "2ballen" },
+      { "id": "story", "index": 10, "caption": "2ballen" },
       { "id": "words", "caption": "Maak woorden 2" },
       { "id": "story", "index": 1, "caption": "2ballen" },
       { "id": "sounds", "caption": "Geluiden" },
