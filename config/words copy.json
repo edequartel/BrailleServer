@@ -1,0 +1,69 @@
+[
+  {
+    "id": "bal-001",
+    "word": "bal",
+    "letters": ["b", "a", "l"],
+    "words": ["bal", "ba", "al", "la"],
+    "story": ["bal1.mp3", "bal2.mp3"],
+    "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
+    "activities": [
+      { "id": "lettersZZ", "caption": "Oefen letters" },
+      { "id": "words", "caption": "Maak woorden" },
+      { "id": "story", "caption": "Luister (verhaal)" },
+      { "id": "sounds", "caption": "Geluiden" }
+    ],
+    "short": true,
+    "icon": "ball.icon"
+  },
+  {
+    "id": "kam-001",
+    "word": "kam",
+    "letters": ["k", "a", "m"],
+    "words": ["kam", "ka", "am", "mak"],
+    "story": ["kam1.mp3", "kam2.mp3"],
+    "sounds": ["scratch.mp3", "hair.mp3", "tap.mp3"],
+    "activities": [
+      { "id": "tts", "caption": "Luister (woord)" },
+      { "id": "letters", "caption": "Oefen letters" },
+      { "id": "words", "caption": "Maak woorden" },
+      { "id": "story", "caption": "Luister (verhaal)" },
+      { "id": "sounds", "caption": "Geluiden" }
+    ],
+    "short": true,
+    "icon": "comb.icon"
+  },
+  {
+    "id": "aap-001",
+    "word": "aap",
+    "letters": ["a", "a", "p"],
+    "words": ["aap", "aa", "ap", "pa"],
+    "story": ["aap1.mp3", "aap2.mp3"],
+    "sounds": ["monkey1.mp3", "monkey2.mp3", "jump.mp3"],
+    "activities": [
+      { "id": "tts", "caption": "Luister (woord)" },
+      { "id": "letters", "caption": "Oefen letters" },
+      { "id": "words", "caption": "Maak woorden" },
+      { "id": "story", "caption": "Luister (verhaal)" },
+      { "id": "sounds", "caption": "Geluiden" }
+    ],
+    "short": true,
+    "icon": "monkey.icon"
+  },
+  {
+    "id": "tak-001",
+    "word": "tak",
+    "letters": ["t", "a", "k"],
+    "words": ["tak", "ta", "ak", "kat"],
+    "story": ["tak1.mp3", "tak2.mp3"],
+    "sounds": ["branch.mp3", "snap.mp3", "wind.mp3"],
+    "activities": [
+      { "id": "tts", "caption": "Luister (woord)" },
+      { "id": "letters", "caption": "Oefen letters" },
+      { "id": "words", "caption": "Maak woorden" },
+      { "id": "story", "caption": "Luister (verhaal)" },
+      { "id": "sounds", "caption": "Geluiden" }
+    ],
+    "short": true,
+    "icon": "branch.icon"
+  }
+]

@@ -18,7 +18,7 @@
   function safeJson(x) {
     try {
       return JSON.stringify(x);
-    } catch {
+    } catch (err) {
       return String(x);
     }
   }
@@ -36,6 +36,10 @@
   let records = [];
   let currentIndex = 0;
   let currentActivityIndex = 0;
+  let runToken = 0;
+  let running = false;
+  let activeActivityModule = null;
+  let activeActivityDonePromise = null;
 
   // ------------------------------------------------------------
   // DOM helper
@@ -51,6 +55,54 @@
     if (el) el.textContent = "Data: " + text;
   }
 
+  function setActivityStatus(text) {
+    const el = $("activity-status");
+    if (el) el.textContent = "Status: " + text;
+  }
+
+  function setRunnerUi({ isRunning }) {
+    const startBtn = $("start-activity-btn");
+    const doneBtn = $("done-activity-btn");
+    const autoRun = $("auto-run");
+
+    if (startBtn) startBtn.disabled = Boolean(isRunning);
+    if (doneBtn) doneBtn.disabled = !isRunning;
+    if (autoRun) autoRun.disabled = Boolean(isRunning);
+  }
+
+  function formatAllFields(item) {
+    if (!item || typeof item !== "object") return "–";
+
+    const activities = Array.isArray(item.activities) ? item.activities : [];
+    const activityLines = activities
+      .filter(a => a && typeof a === "object")
+      .map(a => {
+        const id = String(a.id ?? "").trim();
+        const caption = String(a.caption ?? "").trim();
+        const instruction = String(a.instruction ?? "").trim();
+        if (!id && !caption) return null;
+        if (caption && instruction) return `${id} — ${caption} — ${instruction}`;
+        if (caption) return `${id} — ${caption}`;
+        if (instruction) return `${id} — ${instruction}`;
+        return id;
+      })
+      .filter(Boolean);
+
+    const lines = [
+      `id: ${item.id ?? "–"}`,
+      `word: ${item.word ?? "–"}`,
+      `icon: ${item.icon ?? "–"}`,
+      `short: ${typeof item.short === "boolean" ? item.short : (item.short ?? "–")}`,
+      `letters: ${Array.isArray(item.letters) ? item.letters.join(" ") : "–"}`,
+      `words: ${Array.isArray(item.words) ? item.words.join(", ") : "–"}`,
+      `story: ${Array.isArray(item.story) ? item.story.join(", ") : "–"}`,
+      `sounds: ${Array.isArray(item.sounds) ? item.sounds.join(", ") : "–"}`,
+      `activities (${activityLines.length}):${activityLines.length ? "\n  - " + activityLines.join("\n  - ") : " –"}`
+    ];
+
+    return lines.join("\n");
+  }
+
   // ------------------------------------------------------------
   // Render
   // ------------------------------------------------------------
@@ -58,7 +110,12 @@
     if (Array.isArray(item.activities) && item.activities.length) {
       return item.activities
         .filter(a => a && typeof a === "object")
-        .map(a => ({ id: String(a.id ?? "").trim(), caption: String(a.caption ?? "").trim() }))
+        .map(a => ({
+          id: String(a.id ?? "").trim(),
+          caption: String(a.caption ?? "").trim(),
+          instruction: String(a.instruction ?? "").trim(),
+          index: a.index
+        }))
         .filter(a => a.id);
     }
 
@@ -72,7 +129,17 @@
   }
 
   function formatActivityDetail(activityId, item) {
-    switch (activityId) {
+    const rawId = String(activityId ?? "");
+    const id = rawId.trim().toLowerCase();
+    const canonical =
+      id.startsWith("tts") ? "tts" :
+      id.startsWith("letters") ? "letters" :
+      id.startsWith("words") ? "words" :
+      id.startsWith("story") ? "story" :
+      id.startsWith("sounds") ? "sounds" :
+      id;
+
+    switch (canonical) {
       case "tts":
         return {
           caption: "Luister (woord)",
@@ -100,7 +167,7 @@
         };
       default:
         return {
-          caption: activityId ? `Activity: ${activityId}` : "Details",
+          caption: rawId ? `Activity: ${rawId}` : "Details",
           detail: safeJson(item)
         };
     }
@@ -119,14 +186,28 @@
     renderActivity(item, activities);
   }
 
+  function getCurrentActivity() {
+    const item = records[currentIndex];
+    if (!item) return null;
+    const activities = getActivities(item);
+    if (!activities.length) return null;
+    const active = activities[currentActivityIndex] ?? activities[0];
+    if (!active) return null;
+    return { item, activities, activity: active };
+  }
+
   function renderActivity(item, activities) {
     const activityIndexEl = $("activity-index");
     const activityIdEl = $("activity-id");
-    const activityCaptionEl = $("activity-caption");
-    const activityDetailEl = $("activity-detail");
     const activityButtonsEl = $("activity-buttons");
+    const activityCaptionEl = document.getElementById("activity-caption");
+    const activityDetailEl = document.getElementById("activity-detail");
+    const activityInstructionEl = document.getElementById("activity-instruction");
+    const activityInstructionLabelEl = document.getElementById("activity-instruction-label");
+    const prevActivityBtn = $("prev-activity-btn");
+    const nextActivityBtn = $("next-activity-btn");
 
-    if (!activityIndexEl || !activityIdEl || !activityCaptionEl || !activityDetailEl || !activityButtonsEl) {
+    if (!activityIndexEl || !activityIdEl || !activityButtonsEl) {
       log("[words] Missing activity DOM elements; cannot render activity.");
       return;
     }
@@ -134,21 +215,44 @@
     if (!activities.length) {
       activityIndexEl.textContent = "0 / 0";
       activityIdEl.textContent = "Activity: –";
-      activityCaptionEl.textContent = "Details";
-      activityDetailEl.textContent = "–";
+      if (activityCaptionEl) activityCaptionEl.textContent = "Details";
+      if (activityDetailEl) activityDetailEl.textContent = "–";
+      if (activityInstructionEl) activityInstructionEl.textContent = "–";
+      if (activityInstructionEl) activityInstructionEl.style.display = "";
+      if (activityInstructionLabelEl) activityInstructionLabelEl.style.display = "";
       activityButtonsEl.innerHTML = "";
+      if (prevActivityBtn) prevActivityBtn.disabled = true;
+      if (nextActivityBtn) nextActivityBtn.disabled = true;
       return;
     }
+
+    const canCycle = activities.length > 1;
+    if (prevActivityBtn) prevActivityBtn.disabled = !canCycle;
+    if (nextActivityBtn) nextActivityBtn.disabled = !canCycle;
 
     const active = activities[currentActivityIndex] ?? activities[0];
     if (!active) return;
 
     activityIndexEl.textContent = `${currentActivityIndex + 1} / ${activities.length}`;
-    activityIdEl.textContent = `Activity: ${active.id}`;
+    const rawId = String(active.id ?? "");
+    const id = rawId.trim().toLowerCase();
+    const canonical =
+      id.startsWith("tts") ? "tts" :
+      id.startsWith("letters") ? "letters" :
+      id.startsWith("words") ? "words" :
+      id.startsWith("story") ? "story" :
+      id.startsWith("sounds") ? "sounds" :
+      id;
+    activityIdEl.textContent = canonical && canonical !== id ? `Activity: ${rawId} (${canonical})` : `Activity: ${rawId}`;
 
     const { caption, detail } = formatActivityDetail(active.id, item);
-    activityCaptionEl.textContent = caption || "Details";
-    activityDetailEl.textContent = detail ?? "–";
+    const instruction = String(active.instruction ?? "").trim();
+
+    if (activityCaptionEl) activityCaptionEl.textContent = active.caption || caption || "Details";
+    if (activityDetailEl) activityDetailEl.textContent = detail ?? "–";
+    if (activityInstructionEl) activityInstructionEl.textContent = instruction || "–";
+    if (activityInstructionEl) activityInstructionEl.style.display = "";
+    if (activityInstructionLabelEl) activityInstructionLabelEl.style.display = "";
 
     activityButtonsEl.innerHTML = "";
     for (let i = 0; i < activities.length; i++) {
@@ -160,16 +264,227 @@
       btn.title = a.id;
       btn.addEventListener("click", () => {
         log("[words] Activity selected", { id: a.id, index: i });
+        cancelRun();
         setActiveActivity(i);
       });
       activityButtonsEl.appendChild(btn);
     }
   }
 
+  function cancelRun() {
+    runToken += 1;
+    running = false;
+    stopActiveActivity({ reason: "cancelRun" });
+    setRunnerUi({ isRunning: false });
+    setActivityStatus("idle");
+  }
+
+  function getActivityModule(activityKey) {
+    const acts = window.Activities;
+    if (!acts || typeof acts !== "object") return null;
+    const mod = acts[activityKey];
+    if (!mod || typeof mod !== "object") return null;
+    if (typeof mod.start !== "function" || typeof mod.stop !== "function") return null;
+    return mod;
+  }
+
+  function stopActiveActivity(payload) {
+    try {
+      if (activeActivityModule && typeof activeActivityModule.stop === "function") {
+        activeActivityModule.stop(payload);
+      }
+    } finally {
+      activeActivityModule = null;
+      activeActivityDonePromise = null;
+    }
+  }
+
+  function waitForDoneOrActivityEnd(currentToken) {
+    return new Promise((resolve) => {
+      const doneBtn = $("done-activity-btn");
+      let settled = false;
+
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (doneBtn) doneBtn.removeEventListener("click", onDone);
+        resolve();
+      };
+
+      const onDone = () => {
+        stopActiveActivity({ reason: "doneClick" });
+        finish();
+      };
+
+      if (doneBtn) doneBtn.addEventListener("click", onDone);
+
+      const p = activeActivityDonePromise;
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          stopActiveActivity({ reason: "activityDone" });
+          finish();
+        }).catch(() => {
+          stopActiveActivity({ reason: "activityError" });
+          finish();
+        });
+      }
+
+      const poll = () => {
+        if (currentToken !== runToken) {
+          finish();
+          return;
+        }
+        requestAnimationFrame(poll);
+      };
+      requestAnimationFrame(poll);
+    });
+  }
+
+  function canonicalActivityId(activityId) {
+    const rawId = String(activityId ?? "");
+    const id = rawId.trim().toLowerCase();
+    return id.startsWith("tts") ? "tts"
+      : id.startsWith("letters") ? "letters"
+        : id.startsWith("words") ? "words"
+          : id.startsWith("story") ? "story"
+            : id.startsWith("sounds") ? "sounds"
+              : id;
+  }
+
+  function waitForDone(currentToken) {
+    return new Promise((resolve) => {
+      const doneBtn = $("done-activity-btn");
+      if (!doneBtn) return resolve();
+
+      const onDone = () => {
+        stopActiveActivity({ reason: "doneClick" });
+        doneBtn.removeEventListener("click", onDone);
+        resolve();
+      };
+
+      doneBtn.addEventListener("click", onDone);
+
+      // If cancelled/restarted, resolve silently and detach.
+      const poll = () => {
+        if (currentToken !== runToken) {
+          doneBtn.removeEventListener("click", onDone);
+          resolve();
+          return;
+        }
+        requestAnimationFrame(poll);
+      };
+      requestAnimationFrame(poll);
+    });
+  }
+
+  const handlers = {
+    async tts(ctx) {
+      log("[words] Run activity tts", { id: ctx.item.id, word: ctx.item.word });
+      setActivityStatus("running (tts)");
+      return waitForDone(ctx.token);
+    },
+    async letters(ctx) {
+      log("[words] Run activity letters", { id: ctx.item.id });
+      setActivityStatus("running (letters)");
+      return waitForDoneOrActivityEnd(ctx.token);
+    },
+    async words(ctx) {
+      log("[words] Run activity words", { id: ctx.item.id });
+      setActivityStatus("running (words)");
+      return waitForDone(ctx.token);
+    },
+    async story(ctx) {
+      log("[words] Run activity story", { id: ctx.item.id });
+      setActivityStatus("running (story)");
+      return waitForDoneOrActivityEnd(ctx.token);
+    },
+    async sounds(ctx) {
+      log("[words] Run activity sounds", { id: ctx.item.id });
+      setActivityStatus("running (sounds)");
+      return waitForDone(ctx.token);
+    },
+    async default(ctx) {
+      log("[words] Run activity (default)", { id: ctx.item.id, activityId: ctx.activity.id });
+      setActivityStatus("running");
+      return waitForDone(ctx.token);
+    }
+  };
+
+  async function startSelectedActivity({ autoStarted = false } = {}) {
+    const cur = getCurrentActivity();
+    if (!cur) return;
+
+    cancelRun();
+    const token = runToken;
+
+    const activityKey = canonicalActivityId(cur.activity.id);
+    const handler = handlers[activityKey] || handlers.default;
+
+    const activityModule = getActivityModule(activityKey);
+    if (activityModule) {
+      activeActivityModule = activityModule;
+      const maybePromise = activityModule.start({
+        activityKey,
+        activityId: cur.activity?.id ?? null,
+        activityCaption: cur.activity?.caption ?? null,
+        activity: cur.activity ?? null,
+        record: cur.item ?? null,
+        recordIndex: currentIndex,
+        activityIndex: currentActivityIndex,
+        autoStarted: Boolean(autoStarted)
+      });
+      activeActivityDonePromise = (maybePromise && typeof maybePromise.then === "function") ? maybePromise : null;
+    } else {
+      activeActivityModule = null;
+      activeActivityDonePromise = null;
+      log("[words] No activity module found", { activityKey });
+    }
+
+    running = true;
+    setRunnerUi({ isRunning: true });
+    setActivityStatus(autoStarted ? "running (auto)" : "running");
+
+    try {
+      await handler({ ...cur, token });
+    } finally {
+      // If a new run started, ignore.
+      if (token !== runToken) return;
+      running = false;
+      setRunnerUi({ isRunning: false });
+      setActivityStatus("done");
+
+      stopActiveActivity({ reason: "finally" });
+
+      const autoRun = $("auto-run");
+      if (autoRun && autoRun.checked) {
+        advanceToNextActivityOrWord({ autoStart: true });
+      }
+    }
+  }
+
+  function advanceToNextActivityOrWord({ autoStart = false } = {}) {
+    if (!records.length) return;
+    const item = records[currentIndex];
+    const activities = getActivities(item);
+    const nextIndex = currentActivityIndex + 1;
+
+    if (nextIndex < activities.length) {
+      setActiveActivity(nextIndex);
+    } else {
+      currentIndex = (currentIndex + 1) % records.length;
+      currentActivityIndex = 0;
+      render();
+    }
+
+    if (autoStart) startSelectedActivity({ autoStarted: true });
+  }
+
   function render() {
     if (!records.length) {
       log("[words] render() called with no records");
       setStatus("geen records");
+      const allEl = $("field-all");
+      if (allEl) allEl.textContent = "–";
       return;
     }
 
@@ -202,9 +517,14 @@
       shortFlagEl.style.display = item.short ? "inline-flex" : "none";
     }
 
+    const allEl = $("field-all");
+    if (allEl) allEl.textContent = formatAllFields(item);
+
     const activities = getActivities(item);
     if (currentActivityIndex >= activities.length) currentActivityIndex = 0;
     renderActivity(item, activities);
+    setRunnerUi({ isRunning: false });
+    setActivityStatus("idle");
 
     setStatus(`geladen (${records.length})`);
   }
@@ -214,6 +534,7 @@
   // ------------------------------------------------------------
   function next() {
     if (!records.length) return;
+    cancelRun();
     currentIndex = (currentIndex + 1) % records.length;
     currentActivityIndex = 0;
     log("[words] Next pressed", { currentIndex });
@@ -222,6 +543,7 @@
 
   function prev() {
     if (!records.length) return;
+    cancelRun();
     currentIndex = (currentIndex - 1 + records.length) % records.length;
     currentActivityIndex = 0;
     log("[words] Prev pressed", { currentIndex });
@@ -232,7 +554,8 @@
     if (!records.length) return;
     const item = records[currentIndex];
     const activities = getActivities(item);
-    if (!activities.length) return;
+    if (activities.length < 2) return;
+    cancelRun();
     currentActivityIndex = (currentActivityIndex + 1) % activities.length;
     log("[words] Next activity", { currentActivityIndex });
     renderActivity(item, activities);
@@ -242,7 +565,8 @@
     if (!records.length) return;
     const item = records[currentIndex];
     const activities = getActivities(item);
-    if (!activities.length) return;
+    if (activities.length < 2) return;
+    cancelRun();
     currentActivityIndex = (currentActivityIndex - 1 + activities.length) % activities.length;
     log("[words] Prev activity", { currentActivityIndex });
     renderActivity(item, activities);
@@ -302,17 +626,52 @@
     const prevBtn = $("prev-btn");
     const nextActivityBtn = $("next-activity-btn");
     const prevActivityBtn = $("prev-activity-btn");
+    const startActivityBtn = $("start-activity-btn");
+    const doneActivityBtn = $("done-activity-btn");
+    const toggleFieldsBtn = $("toggle-fields-btn");
+    const fieldsPanel = $("fields-panel");
 
     if (nextBtn) nextBtn.addEventListener("click", next);
     if (prevBtn) prevBtn.addEventListener("click", prev);
     if (nextActivityBtn) nextActivityBtn.addEventListener("click", nextActivity);
     if (prevActivityBtn) prevActivityBtn.addEventListener("click", prevActivity);
+    if (startActivityBtn) startActivityBtn.addEventListener("click", () => startSelectedActivity({ autoStarted: false }));
+    // doneActivityBtn is handled by waitForDone() per run.
+
+    function setFieldsPanelVisible(visible) {
+      if (!toggleFieldsBtn || !fieldsPanel) return;
+      fieldsPanel.classList.toggle("hidden", !visible);
+      toggleFieldsBtn.textContent = visible ? "Verberg velden" : "Velden";
+      toggleFieldsBtn.setAttribute("aria-expanded", visible ? "true" : "false");
+      if (visible) {
+        try {
+          fieldsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (err) {
+          fieldsPanel.scrollIntoView();
+        }
+      }
+      log("[words] Fields panel", { visible });
+    }
+
+    if (toggleFieldsBtn && fieldsPanel) {
+      setFieldsPanelVisible(false);
+      toggleFieldsBtn.addEventListener("click", () => {
+        const isHidden = fieldsPanel.classList.contains("hidden");
+        setFieldsPanelVisible(isHidden);
+      });
+    } else {
+      log("[words] Fields toggle missing", {
+        hasToggleButton: Boolean(toggleFieldsBtn),
+        hasPanel: Boolean(fieldsPanel)
+      });
+    }
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "ArrowRight") nextActivity();
       if (e.key === "ArrowLeft") prevActivity();
       if (e.key === "ArrowDown") next();
       if (e.key === "ArrowUp") prev();
+      if (e.key === "Enter") startSelectedActivity({ autoStarted: false });
     });
 
     loadData();

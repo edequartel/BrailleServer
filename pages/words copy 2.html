@@ -127,9 +127,6 @@
       border-radius: 12px;
       overflow: hidden;
     }
-    .log-panel.hidden {
-      display: none;
-    }
 
     .log-header {
       display: flex;
@@ -164,7 +161,7 @@
 </head>
 <body>
   <main class="container" aria-live="polite">
-    <h1>BrailleStudio</h1>
+    <h1>Woordentrainer</h1>
     <p class="subtitle">Kies een woord (node) en ga door de activiteiten om de details te zien.</p>
 
     <div class="meta-bar">
@@ -187,40 +184,18 @@
     </div>
     <div id="activity-buttons" class="buttons" style="justify-content:flex-start; margin-top: 10px;"></div>
 
-    <p class="field-label" id="activity-instruction-label">Instructie</p>
-    <p class="field-value" id="activity-instruction">–</p>
-
-    <div class="meta-bar" style="margin-top: 12px;">
-      <span id="activity-status">Status: idle</span>
-      <span style="display:flex; gap:10px; align-items:center;">
-        <label style="display:flex; gap:8px; align-items:center; font-size:0.85rem; color:#6b7280;">
-          <input id="auto-run" type="checkbox" checked />
-          Auto next
-        </label>
-        <button id="start-activity-btn" class="secondary" type="button">Start</button>
-        <button id="done-activity-btn" type="button" disabled>Done</button>
-      </span>
-    </div>
+    <p class="field-label" id="activity-caption">Details</p>
+    <p class="field-value" id="activity-detail">–</p>
 
     <div class="buttons">
       <button id="prev-btn" class="secondary" type="button">Vorige</button>
       <button id="next-btn" type="button">Volgende</button>
       <button id="prev-activity-btn" class="secondary" type="button">◀</button>
       <button id="next-activity-btn" type="button">▶</button>
-      <button id="toggle-fields-btn" class="secondary" type="button" aria-controls="fields-panel" aria-expanded="false">Velden</button>
-      <button id="toggle-log-btn" class="secondary" type="button">Log</button>
     </div>
 
-    <!-- Default hidden: show all fields -->
-    <section id="fields-panel" class="log-panel hidden" aria-label="Alle velden">
-      <div class="log-header">
-        <span>Alle velden</span>
-      </div>
-      <div id="field-all" class="log-body">–</div>
-    </section>
-
     <!-- Visible logging UI -->
-    <section id="log-panel" class="log-panel hidden" aria-label="Log">
+    <section class="log-panel" aria-label="Log">
       <div class="log-header">
         <span>Log</span>
         <span class="log-controls">
@@ -256,14 +231,6 @@
           const el = document.getElementById("log");
           if (el) el.textContent = "";
         });
-
-        const toggle = document.getElementById("toggle-log-btn");
-        const panel = document.getElementById("log-panel");
-        if (toggle && panel) {
-          toggle.addEventListener("click", () => {
-            panel.classList.toggle("hidden");
-          });
-        }
       });
 
       // Immediate proof that the page logs
@@ -273,19 +240,6 @@
 
   <!-- Load your logging.js (optional, but keep it) -->
   <script src="../js/logging.js"></script>
-
-  <!-- Howler.js (required for Sounds + activities audio) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-
-  <!-- Sounds wrapper (reads ../config/sounds.json) -->
-  <script src="../js/sounds.js"></script>
-
-  <!-- Mock activities -->
-  <script src="../activities/tts.js"></script>
-  <script src="../activities/letters.js"></script>
-  <script src="../activities/words.js"></script>
-  <script src="../activities/story.js"></script>
-  <script src="../activities/sounds.js"></script>
 
   <!-- Then the app logic -->
   <script src="../js/words.js"></script>
