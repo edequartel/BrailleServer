@@ -4,7 +4,7 @@
     "word": "bal",
     "letters": ["b", "a", "l"],
     "words": ["bal", "ba", "al", "la"],
-    "story": ["bal1.mp3", "bal2.mp3"],
+    "story": ["bal.mp3", "bal2.mp3"],
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
       { "id": "letters", "caption": "Oefen letters" },

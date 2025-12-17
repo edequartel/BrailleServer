@@ -120,7 +120,7 @@
       let tick = 0;
       intervalId = window.setInterval(() => {
         tick += 1;
-        log("[activity:letters] XXX tick", { sessionId: session.id, tick });
+        log("[activity:letters] XXXtick", { sessionId: session.id, tick });
       }, 750);
 
       playToken += 1;
