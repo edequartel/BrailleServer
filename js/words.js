@@ -68,6 +68,35 @@
     if (autoRun) autoRun.disabled = Boolean(isRunning);
   }
 
+  function formatAllFields(item) {
+    if (!item || typeof item !== "object") return "–";
+
+    const activities = Array.isArray(item.activities) ? item.activities : [];
+    const activityLines = activities
+      .filter(a => a && typeof a === "object")
+      .map(a => {
+        const id = String(a.id ?? "").trim();
+        const caption = String(a.caption ?? "").trim();
+        if (!id && !caption) return null;
+        return caption ? `${id} — ${caption}` : id;
+      })
+      .filter(Boolean);
+
+    const lines = [
+      `id: ${item.id ?? "–"}`,
+      `word: ${item.word ?? "–"}`,
+      `icon: ${item.icon ?? "–"}`,
+      `short: ${typeof item.short === "boolean" ? item.short : (item.short ?? "–")}`,
+      `letters: ${Array.isArray(item.letters) ? item.letters.join(" ") : "–"}`,
+      `words: ${Array.isArray(item.words) ? item.words.join(", ") : "–"}`,
+      `story: ${Array.isArray(item.story) ? item.story.join(", ") : "–"}`,
+      `sounds: ${Array.isArray(item.sounds) ? item.sounds.join(", ") : "–"}`,
+      `activities (${activityLines.length}):${activityLines.length ? "\n  - " + activityLines.join("\n  - ") : " –"}`
+    ];
+
+    return lines.join("\n");
+  }
+
   // ------------------------------------------------------------
   // Render
   // ------------------------------------------------------------
@@ -370,6 +399,8 @@
     if (!records.length) {
       log("[words] render() called with no records");
       setStatus("geen records");
+      const allEl = $("field-all");
+      if (allEl) allEl.textContent = "–";
       return;
     }
 
@@ -401,6 +432,9 @@
     if (shortFlagEl) {
       shortFlagEl.style.display = item.short ? "inline-flex" : "none";
     }
+
+    const allEl = $("field-all");
+    if (allEl) allEl.textContent = formatAllFields(item);
 
     const activities = getActivities(item);
     if (currentActivityIndex >= activities.length) currentActivityIndex = 0;
