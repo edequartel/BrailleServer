@@ -72,7 +72,17 @@
   }
 
   function formatActivityDetail(activityId, item) {
-    switch (activityId) {
+    const rawId = String(activityId ?? "");
+    const id = rawId.trim().toLowerCase();
+    const canonical =
+      id.startsWith("tts") ? "tts" :
+      id.startsWith("letters") ? "letters" :
+      id.startsWith("words") ? "words" :
+      id.startsWith("story") ? "story" :
+      id.startsWith("sounds") ? "sounds" :
+      id;
+
+    switch (canonical) {
       case "tts":
         return {
           caption: "Luister (woord)",
@@ -100,7 +110,7 @@
         };
       default:
         return {
-          caption: activityId ? `Activity: ${activityId}` : "Details",
+          caption: rawId ? `Activity: ${rawId}` : "Details",
           detail: safeJson(item)
         };
     }
@@ -152,7 +162,16 @@
     if (!active) return;
 
     activityIndexEl.textContent = `${currentActivityIndex + 1} / ${activities.length}`;
-    activityIdEl.textContent = `Activity: ${active.id}`;
+    const rawId = String(active.id ?? "");
+    const id = rawId.trim().toLowerCase();
+    const canonical =
+      id.startsWith("tts") ? "tts" :
+      id.startsWith("letters") ? "letters" :
+      id.startsWith("words") ? "words" :
+      id.startsWith("story") ? "story" :
+      id.startsWith("sounds") ? "sounds" :
+      id;
+    activityIdEl.textContent = canonical && canonical !== id ? `Activity: ${rawId} (${canonical})` : `Activity: ${rawId}`;
 
     const { caption, detail } = formatActivityDetail(active.id, item);
     activityCaptionEl.textContent = caption || "Details";
