@@ -4,14 +4,15 @@
     "word": "bal",
     "letters": ["b", "a", "l"],
     "words": ["bal", "ba", "al", "la"],
-    "story": ["bal1.mp3", "bal2.mp3"],
+    "story": ["3ballen.mp3", "2ballen.mp3"],
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
       { "id": "letters", "caption": "Oefen letters" },
-      { "id": "story", "index": 1, "caption": "Maak woorden 1" },
+      { "id": "story", "index": 0, "caption": "3ballen" },
       { "id": "words", "caption": "Maak woorden 2" },
-      { "id": "story", "index": 2, "caption": "Luister (verhaal)" },
-      { "id": "sounds", "caption": "Geluiden" }
+      { "id": "story", "index": 1, "caption": "2ballen" },
+      { "id": "sounds", "caption": "Geluiden" },
+      { "id": "story", "index": -1, "caption": "alles" }
     ],
     "short": true,
     "icon": "ball.icon"
@@ -21,13 +22,13 @@
     "word": "kam",
     "letters": ["k", "a", "m"],
     "words": ["kam", "ka", "am", "mak"],
-    "story": ["kam1.mp3", "kam2.mp3"],
+    "story": ["kam.mp3", "kam.mp3"],
     "sounds": ["scratch.mp3", "hair.mp3", "tap.mp3"],
     "activities": [
       { "id": "tts", "caption": "Luister (woord)" },
       { "id": "letters", "caption": "Oefen letters" },
       { "id": "words", "caption": "Maak woorden" },
-      { "id": "story", "index": 1, "caption": "Luister (verhaal)" },
+      { "id": "story", "index": -1, "caption": "Luister (verhaal)" },
       { "id": "sounds", "caption": "Geluiden" }
     ],
     "short": true,
