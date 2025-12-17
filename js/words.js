@@ -18,7 +18,7 @@
   function safeJson(x) {
     try {
       return JSON.stringify(x);
-    } catch {
+    } catch (err) {
       return String(x);
     }
   }
@@ -559,6 +559,13 @@
       fieldsPanel.classList.toggle("hidden", !visible);
       toggleFieldsBtn.textContent = visible ? "Verberg velden" : "Velden";
       toggleFieldsBtn.setAttribute("aria-expanded", visible ? "true" : "false");
+      if (visible) {
+        try {
+          fieldsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (err) {
+          fieldsPanel.scrollIntoView();
+        }
+      }
       log("[words] Fields panel", { visible });
     }
 

@@ -15,7 +15,7 @@
   function safeJson(x) {
     try {
       return JSON.stringify(x);
-    } catch {
+    } catch (err) {
       return String(x);
     }
   }
@@ -70,4 +70,3 @@
     log("[mockActivity] ready");
   }
 })();
-
