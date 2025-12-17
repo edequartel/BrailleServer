@@ -8,9 +8,9 @@
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
       { "id": "letters", "caption": "Oefen letters" },
-      { "id": "story", "caption": "Maak woorden 1" },
-      { "id": "story", "caption": "Maak woorden 2" },
-      { "id": "story", "caption": "Luister (verhaal)" },
+      { "id": "story", "index": 1, "caption": "Maak woorden 1" },
+      { "id": "words", "caption": "Maak woorden 2" },
+      { "id": "story", "index": 2, "caption": "Luister (verhaal)" },
       { "id": "sounds", "caption": "Geluiden" }
     ],
     "short": true,
@@ -27,7 +27,7 @@
       { "id": "tts", "caption": "Luister (woord)" },
       { "id": "letters", "caption": "Oefen letters" },
       { "id": "words", "caption": "Maak woorden" },
-      { "id": "story", "caption": "Luister (verhaal)" },
+      { "id": "story", "index": 1, "caption": "Luister (verhaal)" },
       { "id": "sounds", "caption": "Geluiden" }
     ],
     "short": true,
@@ -44,7 +44,7 @@
       { "id": "tts", "caption": "Luister (woord)" },
       { "id": "letters", "caption": "Oefen letters" },
       { "id": "words", "caption": "Maak woorden" },
-      { "id": "story", "caption": "Luister (verhaal)" },
+      { "id": "story", "index": 1, "caption": "Luister (verhaal)" },
       { "id": "sounds", "caption": "Geluiden" }
     ],
     "short": true,
@@ -61,7 +61,7 @@
       { "id": "tts", "caption": "Luister (woord)" },
       { "id": "letters", "caption": "Oefen letters" },
       { "id": "words", "caption": "Maak woorden" },
-      { "id": "story", "caption": "Luister (verhaal)" },
+      { "id": "story", "index": 1, "caption": "Luister (verhaal)" },
       { "id": "sounds", "caption": "Geluiden" }
     ],
     "short": true,

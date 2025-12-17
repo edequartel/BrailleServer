@@ -106,7 +106,11 @@
     if (Array.isArray(item.activities) && item.activities.length) {
       return item.activities
         .filter(a => a && typeof a === "object")
-        .map(a => ({ id: String(a.id ?? "").trim(), caption: String(a.caption ?? "").trim() }))
+        .map(a => ({
+          id: String(a.id ?? "").trim(),
+          caption: String(a.caption ?? "").trim(),
+          index: a.index
+        }))
         .filter(a => a.id);
     }
 
@@ -408,6 +412,7 @@
         activityKey,
         activityId: cur.activity?.id ?? null,
         activityCaption: cur.activity?.caption ?? null,
+        activity: cur.activity ?? null,
         record: cur.item ?? null,
         recordIndex: currentIndex,
         activityIndex: currentActivityIndex,

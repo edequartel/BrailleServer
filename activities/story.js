@@ -105,7 +105,14 @@
       const storyFiles = Array.isArray(record.story) ? record.story : [];
       const lang = ctx?.lang || DEFAULT_LANG;
 
-      log("[activity:story] audio sequence", { lang, count: storyFiles.length });
+      const indexRaw = ctx?.activity?.index;
+      const hasIndex = indexRaw !== undefined && indexRaw !== null && indexRaw !== "";
+      const parsedIndex = hasIndex ? Number(indexRaw) : null;
+      const selectedIndex = hasIndex
+        ? (Number.isFinite(parsedIndex) ? (parsedIndex >= 1 ? parsedIndex - 1 : parsedIndex) : 0)
+        : null;
+
+      log("[activity:story] audio sequence", { lang, count: storyFiles.length, index: hasIndex ? indexRaw : null });
       if (!storyFiles.length) {
         log("[activity:story] no story files to play", { recordId: record?.id, word: record?.word });
         return;
@@ -114,7 +121,8 @@
       await ensureSoundsReady();
       log("[activity:story] Sounds ready");
 
-      for (const fileName of storyFiles) {
+      const filesToPlay = hasIndex ? [storyFiles[Math.max(0, Math.min(selectedIndex, storyFiles.length - 1))]] : storyFiles;
+      for (const fileName of filesToPlay) {
         if (token !== playToken) return;
         const key = normalizeStoryKey(fileName);
         if (!key) continue;
