@@ -3,6 +3,15 @@
 18dec25 - new branch developer
 18dec25 - ftech alleen only
 18dec25 - merged into main
+19dec25 - changed into elevenlabs, main is behind of developer.
+
+words is now the truth. has not be tested yet with brailledisplay.
+
+ideas for activities
+the ones already in braillestudio
+one which tracks your reading speed.
+a tracking system which saves tracking local and is private.
+dictee. comprehension. asking questions after de text is read.
 
 BrailleServer is de online omgeving voor **BrailleStudio**.  
 Het is een volledig statische webomgeving (HTML, CSS, JavaScript) die communiceert met **BrailleBridge** — een lokale Windows-applicatie die de brailleleesregel aanstuurt via SAM32.dll, USB-communicatie en websockets.
