@@ -160,3 +160,32 @@
 .thumb-key.pill {
   border-radius: 999px;
 }
+
+/* Thumb key row: spread buttons with clear spacing */
+.button-row.thumb-row {
+  display: flex;
+  align-items: center;
+
+  /* Option A: equal distribution across the row */
+  justify-content: space-between;
+
+  /* Add explicit spacing too (applies when buttons wrap or when there is spare room) */
+  gap: 0.75rem;
+
+  /* Optional: keep some breathing room at the edges */
+  padding: 0.25rem 0.5rem;
+
+  /* Optional: allow wrap on small screens */
+  flex-wrap: wrap;
+}
+
+/* Optional: give buttons consistent width so spacing looks intentional */
+.button-row.thumb-row .thumb-key {
+  min-width: 3.25rem;
+}
+
+/* Optional: if you want the row to be narrower than the monitor and centered */
+.braille-monitor-component .button-row.thumb-row {
+  max-width: 520px;     /* pick a value you like */
+  margin: 0.5rem auto 0;
+}
