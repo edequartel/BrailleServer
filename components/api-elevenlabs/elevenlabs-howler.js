@@ -10,10 +10,14 @@
     text: $("text"),
     modelId: $("modelId"),
     outputFormat: $("outputFormat"),
+    chkRememberVoice: $("chkRememberVoice"),
+    chkRememberKey: $("chkRememberKey"),
+    chkRememberModel: $("chkRememberModel"),
     chkTryMSE: $("chkTryMSE"),
     btnPlay: $("btnPlay"),
     btnStop: $("btnStop"),
     btnClear: $("btnClear"),
+    btnDownload: $("btnDownload"),
     status: $("status"),
     log: $("log"),
   };
@@ -21,9 +25,148 @@
   let currentHowl = null;
   let currentObjectUrl = null;
   let currentAbort = null;
+  let lastAudioBlob = null;
+  let lastAudioFilename = null;
+
+  const STORAGE = Object.freeze({
+    rememberVoice: "elevenlabs.remember.voiceId",
+    rememberKey: "elevenlabs.remember.apiKey",
+    rememberModel: "elevenlabs.remember.modelId",
+    voiceId: "elevenlabs.voiceId",
+    apiKey: "elevenlabs.apiKey",
+    modelId: "elevenlabs.modelId",
+  });
+
+  function storageGet(key) {
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
+  function storageSet(key, value) {
+    try { localStorage.setItem(key, value); } catch {}
+  }
+  function storageDel(key) {
+    try { localStorage.removeItem(key); } catch {}
+  }
+
+  function isRememberVoiceEnabled() {
+    if (!els.chkRememberVoice) return false;
+    return !!els.chkRememberVoice.checked;
+  }
+
+  function isRememberKeyEnabled() {
+    if (!els.chkRememberKey) return false;
+    return !!els.chkRememberKey.checked;
+  }
+
+  function isRememberModelEnabled() {
+    if (!els.chkRememberModel) return false;
+    return !!els.chkRememberModel.checked;
+  }
+
+  function persistRememberFlags() {
+    if (els.chkRememberVoice) storageSet(STORAGE.rememberVoice, isRememberVoiceEnabled() ? "1" : "0");
+    if (els.chkRememberKey) storageSet(STORAGE.rememberKey, isRememberKeyEnabled() ? "1" : "0");
+    if (els.chkRememberModel) storageSet(STORAGE.rememberModel, isRememberModelEnabled() ? "1" : "0");
+  }
+
+  function persistVoiceId(valueRaw) {
+    if (!els.voiceId) return;
+    const value = (valueRaw ?? els.voiceId.value ?? "").trim();
+
+    if (!isRememberVoiceEnabled()) {
+      storageDel(STORAGE.voiceId);
+      return;
+    }
+
+    if (!value) storageDel(STORAGE.voiceId);
+    else storageSet(STORAGE.voiceId, value);
+  }
+
+  function persistApiKey(valueRaw) {
+    if (!els.apiKey) return;
+    const value = (valueRaw ?? els.apiKey.value ?? "").trim();
+
+    if (!isRememberKeyEnabled()) {
+      storageDel(STORAGE.apiKey);
+      return;
+    }
+
+    if (!value) storageDel(STORAGE.apiKey);
+    else storageSet(STORAGE.apiKey, value);
+  }
+
+  function persistModelId(valueRaw) {
+    if (!els.modelId) return;
+    const value = (valueRaw ?? els.modelId.value ?? "").trim();
+
+    if (!isRememberModelEnabled()) {
+      storageDel(STORAGE.modelId);
+      return;
+    }
+
+    if (!value) storageDel(STORAGE.modelId);
+    else storageSet(STORAGE.modelId, value);
+  }
+
+  function loadPrefs() {
+    const rememberVoice = storageGet(STORAGE.rememberVoice);
+    const rememberKey = storageGet(STORAGE.rememberKey);
+    const rememberModel = storageGet(STORAGE.rememberModel);
+
+    if (els.chkRememberVoice) {
+      els.chkRememberVoice.checked = rememberVoice == null ? true : rememberVoice === "1";
+    }
+    if (els.chkRememberKey) {
+      els.chkRememberKey.checked = rememberKey === "1";
+    }
+    if (els.chkRememberModel) {
+      els.chkRememberModel.checked = rememberModel == null ? true : rememberModel === "1";
+    }
+
+    if (isRememberVoiceEnabled()) {
+      const savedVoiceId = storageGet(STORAGE.voiceId);
+      if (savedVoiceId && els.voiceId) els.voiceId.value = savedVoiceId;
+    }
+
+    if (isRememberKeyEnabled()) {
+      const savedApiKey = storageGet(STORAGE.apiKey);
+      if (savedApiKey && els.apiKey) els.apiKey.value = savedApiKey;
+    }
+
+    if (isRememberModelEnabled()) {
+      const savedModelId = storageGet(STORAGE.modelId);
+      if (savedModelId && els.modelId) els.modelId.value = savedModelId;
+    }
+  }
 
   function setStatus(msg) {
     if (els.status) els.status.textContent = msg;
+  }
+
+  function safeFilenamePart(s) {
+    return String(s || "")
+      .trim()
+      .replace(/[^a-z0-9._-]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80);
+  }
+
+  function setLastAudio(blob, { voiceId, modelId } = {}) {
+    lastAudioBlob = blob || null;
+    if (!lastAudioBlob) {
+      lastAudioFilename = null;
+      if (els.btnDownload) els.btnDownload.disabled = true;
+      return;
+    }
+
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const voicePart = safeFilenamePart(voiceId) || "voice";
+    const modelPart = safeFilenamePart(modelId) || "model";
+    lastAudioFilename = `elevenlabs-${voicePart}-${modelPart}-${ts}.mp3`;
+    if (els.btnDownload) els.btnDownload.disabled = false;
+  }
+
+  function clearLastAudio() {
+    setLastAudio(null);
   }
 
   function log(msg) {
@@ -131,6 +274,7 @@
     const arrayBuffer = await res.arrayBuffer();
 
     const blob = new Blob([arrayBuffer], { type: "audio/mpeg" });
+    setLastAudio(blob, { voiceId: params.voiceId, modelId: params.modelId });
     const url = URL.createObjectURL(blob);
     currentObjectUrl = url;
 
@@ -199,6 +343,7 @@
     const reader = res.body.getReader();
 
     let started = false;
+    const downloadChunks = [];
 
     const appendChunk = (chunk) =>
       new Promise((resolve, reject) => {
@@ -222,6 +367,7 @@
         const { value, done } = await reader.read();
         if (done) break;
 
+        downloadChunks.push(value);
         await appendChunk(value);
 
         if (!started) {
@@ -239,6 +385,10 @@
 
       ms.endOfStream();
       log("Stream complete.");
+      if (downloadChunks.length) {
+        const blob = new Blob(downloadChunks, { type: "audio/mpeg" });
+        setLastAudio(blob, { voiceId: params.voiceId, modelId: params.modelId });
+      }
     } catch (e) {
       try { ms.endOfStream(); } catch {}
       throw e;
@@ -251,6 +401,12 @@
     let text = (els.text?.value || "").trim();
     const modelId = (els.modelId?.value || "").trim();
     const outputFormat = (els.outputFormat?.value || "").trim();
+
+    persistRememberFlags();
+    persistApiKey(apiKey);
+    persistVoiceId(voiceId);
+    persistModelId(modelId);
+    clearLastAudio();
 
     if (!apiKey || !voiceId || !text) {
       log("Missing required fields: API key, Voice ID, and Text are required.");
@@ -331,13 +487,52 @@
     log("Log cleared.");
   }
 
+  function onDownload() {
+    if (!lastAudioBlob) {
+      log("No audio available to download yet.");
+      return;
+    }
+
+    const url = URL.createObjectURL(lastAudioBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = lastAudioFilename || "elevenlabs.mp3";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => {
+      try { URL.revokeObjectURL(url); } catch {}
+    }, 0);
+    log(`Download started: ${a.download}`);
+  }
+
   // Wire up
   els.btnPlay?.addEventListener("click", onPlay);
   els.btnStop?.addEventListener("click", onStop);
   els.btnClear?.addEventListener("click", onClear);
+  els.btnDownload?.addEventListener("click", onDownload);
+  els.apiKey?.addEventListener("change", () => persistApiKey());
+  els.voiceId?.addEventListener("change", () => persistVoiceId());
+  els.modelId?.addEventListener("change", () => persistModelId());
+
+  els.chkRememberKey?.addEventListener("change", () => {
+    persistRememberFlags();
+    persistApiKey();
+  });
+  els.chkRememberVoice?.addEventListener("change", () => {
+    persistRememberFlags();
+    persistVoiceId();
+  });
+  els.chkRememberModel?.addEventListener("change", () => {
+    persistRememberFlags();
+    persistModelId();
+  });
 
   // Init
   if (els.btnStop) els.btnStop.disabled = true;
+  if (els.btnDownload) els.btnDownload.disabled = true;
+
+  loadPrefs();
 
   // If MSE isn't possible, auto-uncheck
   if (els.chkTryMSE && !browserCanUseMSE()) {

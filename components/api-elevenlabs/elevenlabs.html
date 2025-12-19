@@ -47,11 +47,26 @@
           <button id="btnPlay" class="btn primary">Play</button>
           <button id="btnStop" class="btn">Stop</button>
           <button id="btnClear" class="btn">Clear log</button>
+          <button id="btnDownload" class="btn" disabled>Download audio</button>
 
-          <label class="toggle">
-            <input id="chkTryMSE" type="checkbox" checked />
-            <span>Try "true streaming" (MediaSource) first</span>
-          </label>
+          <div class="toggles" role="group" aria-label="Preferences">
+            <label class="toggle">
+              <input id="chkRememberVoice" type="checkbox" checked />
+              <span>Remember Voice ID</span>
+            </label>
+            <label class="toggle">
+              <input id="chkRememberModel" type="checkbox" checked />
+              <span>Remember Model</span>
+            </label>
+            <label class="toggle">
+              <input id="chkRememberKey" type="checkbox" />
+              <span>Remember API key (local)</span>
+            </label>
+            <label class="toggle">
+              <input id="chkTryMSE" type="checkbox" checked />
+              <span>Try "true streaming" (MediaSource) first</span>
+            </label>
+          </div>
         </div>
       </div>
     </section>
