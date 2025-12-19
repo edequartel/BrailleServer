@@ -28,7 +28,8 @@
   // ------------------------------------------------------------
   // Config
   // ------------------------------------------------------------
-  const DATA_URL = "../config/words.json";
+  const LOCAL_DATA_URL = "../config/words.json";
+  const REMOTE_DATA_URL = "https://edequartel.github.io/BrailleServer/config/words.json";
 
   // ------------------------------------------------------------
   // State
@@ -704,8 +705,11 @@
   // Load JSON
   // ------------------------------------------------------------
   async function loadData() {
-    const resolvedUrl = new URL(DATA_URL, window.location.href).toString();
-    log("[words] Loading JSON", { url: resolvedUrl });
+    const params = new URLSearchParams(window.location.search || "");
+    const overrideUrl = params.get("data");
+    const preferred = overrideUrl ? overrideUrl : REMOTE_DATA_URL;
+    const resolvedUrl = new URL(preferred, window.location.href).toString();
+    log("[words] Loading JSON", { url: resolvedUrl, source: preferred });
     setStatus("laden...");
 
     try {
@@ -735,6 +739,35 @@
       render();
     } catch (err) {
       log("[words] ERROR loading JSON", { message: err.message });
+
+      if (!overrideUrl && preferred === REMOTE_DATA_URL) {
+        const fallbackUrl = new URL(LOCAL_DATA_URL, window.location.href).toString();
+        log("[words] Fallback to local JSON", { url: fallbackUrl });
+        setStatus("online mislukt, probeer lokaal...");
+        try {
+          const res = await fetch(fallbackUrl, { cache: "no-store" });
+          log("[words] Fallback response", { status: res.status, ok: res.ok });
+          if (!res.ok) {
+            setStatus(`fout HTTP ${res.status}`);
+            throw new Error(`HTTP ${res.status}`);
+          }
+          const json = await res.json();
+          if (!Array.isArray(json)) {
+            setStatus("fout: geen array");
+            throw new Error("words.json is not an array");
+          }
+          records = json;
+          currentIndex = 0;
+          currentActivityIndex = 0;
+          log("[words] JSON parsed (remote)", { count: records.length, firstId: records[0]?.id });
+          setStatus(`geladen (${records.length})`);
+          render();
+          return;
+        } catch (fallbackErr) {
+          log("[words] ERROR loading remote JSON", { message: fallbackErr.message });
+        }
+      }
+
       // Helpful hint for the common case (opening via file://)
       if (location.protocol === "file:") {
         setStatus("laden mislukt: open via http:// (file:// blokkeert fetch)");
