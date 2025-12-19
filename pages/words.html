@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Woordentrainer – Eén record per keer</title>
 
+  <link rel="stylesheet" href="../components/braille-monitor/braillemonitor.css" />
+
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -66,6 +68,12 @@
       font-size: 0.92rem;
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    .field-braille {
+      margin-top: 6px;
+      color: #374151;
+      letter-spacing: 0.02em;
     }
 
     .short-flag {
@@ -160,10 +168,30 @@
       font-size: 0.85rem;
       padding: 6px 10px;
     }
+
+    .braille-panel {
+      margin-bottom: 16px;
+    }
+
+    .braille-panel .field-label {
+      margin-top: 0;
+    }
+
+    .braille-panel .hint {
+      margin: 6px 0 0 0;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
   </style>
 </head>
 <body>
   <main class="container" aria-live="polite">
+    <div class="braille-panel">
+      <p class="field-label">Braille monitor</p>
+      <div id="brailleMonitorComponent"></div>
+      <p class="hint">Unicode braille staat onder elke letter.</p>
+    </div>
+
     <h1>BrailleStudio</h1>
     <p class="subtitle">Kies een woord (node) en ga door de activiteiten om de details te zien.</p>
 
@@ -175,6 +203,7 @@
 
     <p class="field-label">Node</p>
     <p class="field-value" id="field-word">–</p>
+    <p class="field-value field-braille" id="field-word-braille">–</p>
     <div class="meta-bar">
       <span id="field-icon">Icon: –</span>
       <span id="short-flag" class="short-flag" style="display:none;">Kort verhaal: ja</span>
@@ -273,6 +302,10 @@
 
   <!-- Load your logging.js (optional, but keep it) -->
   <script src="../js/logging.js"></script>
+
+  <!-- BrailleBridge + monitor component -->
+  <script src="../js/braillebridge.js"></script>
+  <script src="../components/braille-monitor/braillemonitor.js"></script>
 
   <!-- Howler.js (required for Sounds + activities audio) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>

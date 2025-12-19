@@ -40,6 +40,32 @@
   let running = false;
   let activeActivityModule = null;
   let activeActivityDonePromise = null;
+  let brailleMonitor = null;
+  let brailleLine = "";
+  const BRAILLE_CELLS = 40;
+
+  const BRAILLE_UNICODE_MAP = {
+    a: "⠁", b: "⠃", c: "⠉", d: "⠙", e: "⠑",
+    f: "⠋", g: "⠛", h: "⠓", i: "⠊", j: "⠚",
+    k: "⠅", l: "⠇", m: "⠍", n: "⠝", o: "⠕",
+    p: "⠏", q: "⠟", r: "⠗", s: "⠎", t: "⠞",
+    u: "⠥", v: "⠧", w: "⠺", x: "⠭", y: "⠽", z: "⠵",
+    "1": "⠼⠁", "2": "⠼⠃", "3": "⠼⠉", "4": "⠼⠙", "5": "⠼⠑",
+    "6": "⠼⠋", "7": "⠼⠛", "8": "⠼⠓", "9": "⠼⠊", "0": "⠼⠚",
+    " ": "⠀",
+    ".": "⠲",
+    ",": "⠂",
+    ";": "⠆",
+    ":": "⠒",
+    "?": "⠦",
+    "!": "⠖",
+    "-": "⠤",
+    "'": "⠄",
+    "\"": "⠶",
+    "(": "⠐⠣",
+    ")": "⠐⠜",
+    "/": "⠌"
+  };
 
   // ------------------------------------------------------------
   // DOM helper
@@ -68,6 +94,101 @@
     if (startBtn) startBtn.disabled = Boolean(isRunning);
     if (doneBtn) doneBtn.disabled = !isRunning;
     if (autoRun) autoRun.disabled = Boolean(isRunning);
+  }
+
+  function toBrailleUnicode(text) {
+    const raw = String(text ?? "");
+    if (!raw) return "–";
+    let out = "";
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+      if (BRAILLE_UNICODE_MAP[ch]) {
+        out += BRAILLE_UNICODE_MAP[ch];
+        continue;
+      }
+      const lower = ch.toLowerCase();
+      if (BRAILLE_UNICODE_MAP[lower]) {
+        out += BRAILLE_UNICODE_MAP[lower];
+        continue;
+      }
+      out += "⣿";
+    }
+    return out;
+  }
+
+  function compactSingleLine(text) {
+    return String(text ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function normalizeBrailleText(text) {
+    const single = compactSingleLine(text);
+    if (!single) return "";
+    return single.padEnd(BRAILLE_CELLS, " ").substring(0, BRAILLE_CELLS);
+  }
+
+  function updateBrailleLine(text, meta = {}) {
+    const next = normalizeBrailleText(text);
+    if (next === brailleLine) return;
+    brailleLine = next;
+
+    if (brailleMonitor && typeof brailleMonitor.setText === "function") {
+      if (next) brailleMonitor.setText(next);
+      else if (typeof brailleMonitor.clear === "function") brailleMonitor.clear();
+      else brailleMonitor.setText("");
+    }
+
+    if (window.BrailleBridge) {
+      if (!next && typeof BrailleBridge.clearDisplay === "function") {
+        BrailleBridge.clearDisplay().catch((err) => {
+          log("[words] BrailleBridge.clearDisplay failed", { message: err?.message });
+        });
+      } else if (typeof BrailleBridge.sendText === "function") {
+        BrailleBridge.sendText(next).catch((err) => {
+          log("[words] BrailleBridge.sendText failed", { message: err?.message });
+        });
+      }
+    }
+
+    log("[words] Braille line updated", { len: next.length, reason: meta.reason || "unspecified" });
+  }
+
+  function getBrailleTextForCurrent() {
+    const item = records[currentIndex];
+    if (!item) return "";
+
+    const cur = getCurrentActivity();
+    if (cur && cur.activity) {
+      const { detail } = formatActivityDetail(cur.activity.id, item);
+      const detailText = compactSingleLine(detail);
+      if (detailText && detailText !== "–") return detailText;
+    }
+
+    return item.word != null ? String(item.word) : "";
+  }
+
+  function computeWordAt(text, index) {
+    if (!text) return "";
+    const len = text.length;
+    if (index < 0 || index >= len) return "";
+    let start = index;
+    let end = index;
+    while (start > 0 && text[start - 1] !== " ") start--;
+    while (end < len - 1 && text[end + 1] !== " ") end++;
+    return text.substring(start, end + 1).trim();
+  }
+
+  function dispatchCursorSelection(info, source) {
+    const index = typeof info?.index === "number" ? info.index : null;
+    const letter = info?.letter ?? (index != null ? brailleLine[index] || " " : " ");
+    const word = info?.word ?? (index != null ? computeWordAt(brailleLine, index) : "");
+
+    log("[words] Cursor selection", { source, index, letter, word });
+
+    if (activeActivityModule && typeof activeActivityModule.onCursor === "function") {
+      activeActivityModule.onCursor({ source, index, letter, word });
+    }
   }
 
   function formatAllFields(item) {
@@ -223,6 +344,7 @@
       activityButtonsEl.innerHTML = "";
       if (prevActivityBtn) prevActivityBtn.disabled = true;
       if (nextActivityBtn) nextActivityBtn.disabled = true;
+      updateBrailleLine(getBrailleTextForCurrent(), { reason: "activity-empty" });
       return;
     }
 
@@ -269,6 +391,8 @@
       });
       activityButtonsEl.appendChild(btn);
     }
+
+    updateBrailleLine(getBrailleTextForCurrent(), { reason: "activity-change" });
   }
 
   function cancelRun() {
@@ -506,6 +630,10 @@
     indexEl.textContent = `${currentIndex + 1} / ${records.length}`;
 
     wordEl.textContent = item.word || "–";
+    const wordBrailleEl = $("field-word-braille");
+    if (wordBrailleEl) {
+      wordBrailleEl.textContent = toBrailleUnicode(item.word || "");
+    }
 
     const iconEl = $("field-icon");
     if (iconEl) {
@@ -630,6 +758,35 @@
     const doneActivityBtn = $("done-activity-btn");
     const toggleFieldsBtn = $("toggle-fields-btn");
     const fieldsPanel = $("fields-panel");
+
+    if (window.BrailleBridge && typeof BrailleBridge.connect === "function") {
+      BrailleBridge.connect();
+      BrailleBridge.on("cursor", (evt) => {
+        if (typeof evt?.index !== "number") return;
+        dispatchCursorSelection({ index: evt.index }, "bridge");
+      });
+      BrailleBridge.on("connected", () => log("[words] BrailleBridge connected"));
+      BrailleBridge.on("disconnected", () => log("[words] BrailleBridge disconnected"));
+    } else {
+      log("[words] BrailleBridge not available");
+    }
+
+    if (window.BrailleMonitor && typeof BrailleMonitor.init === "function") {
+      brailleMonitor = BrailleMonitor.init({
+        containerId: "brailleMonitorComponent",
+        onCursorClick(info) {
+          dispatchCursorSelection(info, "monitor");
+        },
+        mapping: {
+          leftthumb: () => prev(),
+          rightthumb: () => next(),
+          middleleftthumb: () => prevActivity(),
+          middlerightthumb: () => nextActivity()
+        }
+      });
+    } else {
+      log("[words] BrailleMonitor component not available");
+    }
 
     if (nextBtn) nextBtn.addEventListener("click", next);
     if (prevBtn) prevBtn.addEventListener("click", prev);

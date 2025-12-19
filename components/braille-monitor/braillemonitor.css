@@ -50,12 +50,17 @@
 
 /* Braille line (top) and print line (bottom) */
 .monitor-cell__braille {
+  display: block;
   line-height: 1;
   font-size: 0.95em;
   opacity: 0.85;
+  font-family: "Apple Braille", "Noto Sans Symbols2", "Segoe UI Symbol",
+    "DejaVu Sans", "Arial Unicode MS", ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, "Cascadia Code", "Fira Code", monospace;
 }
 
 .monitor-cell__print {
+  display: block;
   line-height: 1;
   font-size: 0.95em;
 }

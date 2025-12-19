@@ -187,9 +187,9 @@
         return currentText.substring(start, end + 1).trim();
       }
 
-      // -------------------------------------------------------------------
-      // UPDATED: Render two lines per cell: braille above, print below
-      // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  // UPDATED: Render two lines per cell: print above, braille below
+  // -------------------------------------------------------------------
       function rebuildCells() {
         monitorP.innerHTML = "";
 
@@ -209,16 +209,15 @@
           cell.setAttribute("role", "option");
           cell.setAttribute("aria-label", "Cel " + i + " teken " + ch);
 
-          const brailleLine = document.createElement("span");
-          brailleLine.className = "monitor-cell__braille";
-          brailleLine.textContent = brailleChar;
-
           const printLine = document.createElement("span");
           printLine.className = "monitor-cell__print";
           printLine.textContent = printChar;
 
-          cell.appendChild(brailleLine);
           cell.appendChild(printLine);
+          const brailleLine = document.createElement("span");
+          brailleLine.className = "monitor-cell__braille";
+          brailleLine.textContent = brailleChar;
+          cell.appendChild(brailleLine);
 
           monitorP.appendChild(cell);
         }
