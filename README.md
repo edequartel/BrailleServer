@@ -5,6 +5,8 @@
 18dec25 - merged into main
 19dec25 - changed into elevenlabs, main is behind of developer.
 
+test
+
 words is now the truth. has not be tested yet with brailledisplay.
 
 ideas for activities
