@@ -13,7 +13,7 @@
   padding: 0.6rem 0.7rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Cascadia Code", "Fira Code", monospace;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
 
   /* Two-line cell needs tighter line-height */
   line-height: 1.05;
@@ -29,6 +29,7 @@
   flex-direction: column;     /* ABOVE, not next to */
   align-items: center;
   justify-content: center;
+  gap: 0.18rem;
 
   min-width: 1.2ch;           /* a bit wider for braille glyphs */
   padding: 0.12rem 0.18rem;
@@ -52,7 +53,7 @@
 .monitor-cell__braille {
   display: block;
   line-height: 1;
-  font-size: 0.95em;
+  font-size: 1.05em;
   opacity: 0.85;
   font-family: "Apple Braille", "Noto Sans Symbols2", "Segoe UI Symbol",
     "DejaVu Sans", "Arial Unicode MS", ui-monospace, SFMono-Regular, Menlo,
@@ -62,7 +63,7 @@
 .monitor-cell__print {
   display: block;
   line-height: 1;
-  font-size: 0.95em;
+  font-size: 1.05em;
 }
 
 /* Option B: Flex, but force equal-width buttons */
