@@ -1,10 +1,10 @@
 {
-  "elevenlabs.remember.modelId" : "1",
+  "elevenlabs.remember.voiceId" : "1",
   "apiSpeech.apiKey" : "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",
   "elevenlabs.voiceId" : "yO6w2xlECAQRFP6pX7Hw",
-  "apiSpeech.rememberKey" : "on",
   "elevenlabs.remember.apiKey" : "1",
+  "apiSpeech.rememberKey" : "on",
   "elevenlabs.modelId" : "eleven_v3",
   "elevenlabs.apiKey" : "sk_f2f53aaa6df2b8f51d646de114b88f4e5fc723fe7e2350d6",
-  "elevenlabs.remember.voiceId" : "1"
+  "elevenlabs.remember.modelId" : "1"
 }
