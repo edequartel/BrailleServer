@@ -1,9 +1,0 @@
-root/index.html ; origing of website
-
-
-root/config/sounds.json ; where the sound can be found
-
-root/js/sounds.js ; howlr play functions javascript
-root/js/app.js ; app  functions javascript
-
-root/css/style.css ; style sheet
