@@ -6,14 +6,29 @@
       "file": "000-bal.txt"
     },
     {
-      "id": "story-02",
-      "title": "De kam",
-      "file": "story-02.txt"
+      "id": "bal-02",
+      "title": "De bal",
+      "file": "0O1-bal.txt"
     },
     {
-      "id": "story-03",
-      "title": "Het bos",
-      "file": "story-03.txt"
+      "id": "kam-01",
+      "title": "De kam",
+      "file": "000-kam.txt"
+    },
+    {
+      "id": "kam-02",
+      "title": "De kam",
+      "file": "001-kam.txt"
+    },
+    {
+      "id": "aap-01",
+      "title": "De aap",
+      "file": "000-aap.txt"
+    },
+    {
+      "id": "aap-01",
+      "title": "De aap",
+      "file": "001-aap.txt"
     }
   ]
 }
