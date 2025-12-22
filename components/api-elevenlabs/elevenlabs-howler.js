@@ -17,6 +17,7 @@
     btnPlay: $("btnPlay"),
     btnStop: $("btnStop"),
     btnClear: $("btnClear"),
+    btnClearText: $("clearTextBtn"), // <-- added
     btnDownload: $("btnDownload"),
     status: $("status"),
     log: $("log"),
@@ -435,7 +436,7 @@
   async function onPlay() {
     const apiKey = (els.apiKey?.value || "").trim();
     const voiceId = (els.voiceId?.value || "").trim();
-    let text = (els.text?.value || "").trim();
+    const text = (els.text?.value || "").trim();
     const modelId = (els.modelId?.value || "").trim();
     const outputFormat = (els.outputFormat?.value || "").trim();
 
@@ -524,6 +525,13 @@
     log("Log cleared.");
   }
 
+  function onClearText() {
+    if (!els.text) return;
+    els.text.value = "";
+    els.text.focus();
+    log("Text cleared.");
+  }
+
   async function onDownload() {
     if (!lastAudioBlob) {
       log("No audio available to download yet.");
@@ -561,6 +569,7 @@
   els.btnPlay?.addEventListener("click", onPlay);
   els.btnStop?.addEventListener("click", onStop);
   els.btnClear?.addEventListener("click", onClear);
+  els.btnClearText?.addEventListener("click", onClearText); // <-- added
   els.btnDownload?.addEventListener("click", onDownload);
   els.apiKey?.addEventListener("change", () => persistApiKey());
   els.voiceId?.addEventListener("change", () => persistVoiceId());
