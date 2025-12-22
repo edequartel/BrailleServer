@@ -1,120 +1,498 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="nl" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <title>Verhalen (NL)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    body {
+    /* -----------------------------
+       Theme tokens (light/dark)
+    ----------------------------- */
+    :root{
+      --bg: #f6f8fc;
+      --fg: #111827;
+      --muted: #6b7280;
+
+      --panel: rgba(255,255,255,.78);
+      --panel-solid: #ffffff;
+      --border: rgba(17,24,39,.12);
+
+      --accent: #4f6bed;
+      --accent-2: #7c3aed;
+
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --shadow-soft: 0 6px 18px rgba(0,0,0,.06);
+
+      --radius: 14px;
+      --radius-sm: 10px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    html[data-theme="dark"]{
+      --bg: #0b1020;
+      --fg: #e5e7eb;
+      --muted: #9ca3af;
+
+      --panel: rgba(17,24,39,.72);
+      --panel-solid: #111827;
+      --border: rgba(229,231,235,.14);
+
+      --accent: #7aa2ff;
+      --accent-2: #c084fc;
+
+      --shadow: 0 14px 38px rgba(0,0,0,.45);
+      --shadow-soft: 0 10px 24px rgba(0,0,0,.35);
+
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body{
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      display: grid;
-      grid-template-columns: 260px 1fr;
+      font-family: var(--sans);
+      color: var(--fg);
+      background: radial-gradient(1200px 800px at 18% 12%, rgba(79,107,237,.20), transparent 55%),
+                  radial-gradient(1000px 700px at 88% 22%, rgba(124,58,237,.16), transparent 55%),
+                  linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg) 85%, #000 15%));
+    }
+
+    /* -----------------------------
+       Layout
+    ----------------------------- */
+    .app{
       height: 100vh;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 14px;
+      padding: 14px;
     }
 
-    nav {
-      border-right: 1px solid #ddd;
-      padding: 1rem;
-      overflow-y: auto;
-      background: #f7f7f9;
+    @media (max-width: 900px){
+      .app{
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
     }
 
-    nav h2 {
+    /* -----------------------------
+       Panels (glass-like)
+    ----------------------------- */
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    /* -----------------------------
+       Sidebar
+    ----------------------------- */
+    nav.panel{
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      min-height: 0;
+    }
+
+    .navHeader{
+      padding: 16px 16px 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .logo{
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background:
+        radial-gradient(12px 12px at 28% 34%, rgba(255,255,255,.95), rgba(255,255,255,.15) 70%),
+        linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: var(--shadow-soft);
+      flex: 0 0 auto;
+    }
+
+    h1{
       font-size: 1rem;
-      margin-top: 0;
+      line-height: 1.1;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    nav button {
-      display: block;
+    .sub{
+      margin: 2px 0 0 0;
+      font-size: .85rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toolbar{
+      padding: 12px 16px;
+      display: grid;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--panel-solid) 75%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+    }
+    .search svg{ flex: 0 0 auto; opacity: .8; }
+    .search input{
       width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--fg);
+      font-size: .95rem;
+    }
+    .search input::placeholder{ color: color-mix(in srgb, var(--muted) 70%, transparent); }
+
+    .storyCount{
+      font-size: .85rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .storyList{
+      padding: 10px 10px 12px 10px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .storyBtn{
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+
       text-align: left;
-      margin-bottom: 0.4rem;
-      padding: 0.5rem;
-      border: none;
-      border-radius: 4px;
-      background: #fff;
+      padding: 12px 12px;
+      margin: 0 0 8px 0;
+      border-radius: var(--radius-sm);
+
+      border: 1px solid transparent;
+      background: color-mix(in srgb, var(--panel-solid) 86%, transparent);
+      color: var(--fg);
+      cursor: pointer;
+
+      box-shadow: 0 1px 0 rgba(255,255,255,.10), 0 8px 16px rgba(0,0,0,.05);
+      transition: transform .08s ease, border-color .12s ease, background .12s ease;
+    }
+
+    .storyBtn:hover{
+      transform: translateY(-1px);
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+      background: color-mix(in srgb, var(--panel-solid) 92%, transparent);
+    }
+
+    .storyBtn.active{
+      border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+      background:
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--accent) 16%, var(--panel-solid)),
+          color-mix(in srgb, var(--accent-2) 10%, var(--panel-solid))
+        );
+    }
+
+    .storyTitle{
+      font-weight: 650;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pill{
+      font-size: .78rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: color-mix(in srgb, var(--panel-solid) 70%, transparent);
+      flex: 0 0 auto;
+    }
+
+    .navFooter{
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    .themeBtn{
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--panel-solid) 80%, transparent);
+      color: var(--fg);
+      padding: 8px 10px;
+      border-radius: 12px;
       cursor: pointer;
     }
+    .themeBtn:active{ transform: translateY(1px); }
 
-    nav button:hover,
-    nav button.active {
-      background: #e6ecff;
+    /* -----------------------------
+       Main content
+    ----------------------------- */
+    main.panel{
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 0;
     }
 
-    main {
-      padding: 1rem;
-      overflow-y: auto;
+    .contentHeader{
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .contentHeader h2{
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: .2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 70%;
+    }
+
+    .meta{
+      color: var(--muted);
+      font-size: .85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: right;
+      max-width: 30%;
+    }
+
+    .contentBody{
+      padding: 16px 18px 18px 18px;
+      overflow: auto;
       white-space: pre-wrap;
-      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-family: var(--mono);
       font-size: 1rem;
+      line-height: 1.55;
     }
 
-    .placeholder {
-      color: #777;
+    .placeholder{
+      color: var(--muted);
       font-style: italic;
+      padding: 10px;
+      border: 1px dashed color-mix(in srgb, var(--muted) 30%, transparent);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--panel-solid) 70%, transparent);
+      display: inline-block;
+    }
+
+    /* Accessibility / focus */
+    :focus-visible{
+      outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent);
+      outline-offset: 2px;
+      border-radius: 10px;
     }
   </style>
 </head>
+
 <body>
+  <div class="app">
+    <nav class="panel" aria-label="Verhalen navigatie">
+      <div class="navHeader">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div style="min-width:0">
+            <h1>Verhalen (NL)</h1>
+            <p class="sub">Kies links een verhaal en lees rechts mee.</p>
+          </div>
+        </div>
+      </div>
 
-  <nav>
-    <h2>Verhalen (NL)</h2>
-    <div id="storyList">Laden…</div>
-  </nav>
+      <div class="toolbar">
+        <div class="search" role="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M10 18a8 8 0 1 1 0-16a8 8 0 0 1 0 16m0-2a6 6 0 1 0 0-12a6 6 0 0 0 0 12m9.3 5.7l-5.2-5.2l1.4-1.4l5.2 5.2z"/>
+          </svg>
+          <input id="search" type="text" placeholder="Zoek in titels…" autocomplete="off" />
+        </div>
 
-  <main id="storyContent">
-    <div class="placeholder">
-      Kies links een verhaal.
-    </div>
-  </main>
+        <div class="storyCount">
+          <span id="countLabel">Laden…</span>
+          <span id="activeLabel"></span>
+        </div>
+      </div>
 
-<script>
-/* ===== CONFIG ===== */
-const STORIES_BASE = "../stories/nl/";
-const INDEX_FILE = STORIES_BASE + "stories.json";
+      <div id="storyList" class="storyList">Laden…</div>
 
-/* ===== ELEMENTS ===== */
-const storyListEl = document.getElementById("storyList");
-const storyContentEl = document.getElementById("storyContent");
+      <div class="navFooter">
+        <span id="statusLabel">Index: stories.json</span>
+        <button id="themeBtn" class="themeBtn" type="button">Donker/licht</button>
+      </div>
+    </nav>
 
-let currentButton = null;
+    <main class="panel" aria-label="Verhaal inhoud">
+      <div class="contentHeader">
+        <h2 id="storyTitle">Verhaal</h2>
+        <div id="storyMeta" class="meta"></div>
+      </div>
 
-/* ===== LOAD INDEX ===== */
-fetch(INDEX_FILE)
-  .then(r => r.json())
-  .then(data => {
-    storyListEl.innerHTML = "";
-    data.stories.forEach(story => {
-      const btn = document.createElement("button");
-      btn.textContent = story.title;
-      btn.onclick = () => loadStory(story, btn);
-      storyListEl.appendChild(btn);
+      <div id="storyContent" class="contentBody">
+        <div class="placeholder">Kies links een verhaal.</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    /* ===== CONFIG ===== */
+    const STORIES_BASE = "../stories/nl/";
+    const INDEX_FILE = STORIES_BASE + "stories.json";
+
+    /* ===== ELEMENTS ===== */
+    const storyListEl = document.getElementById("storyList");
+    const storyContentEl = document.getElementById("storyContent");
+    const storyTitleEl = document.getElementById("storyTitle");
+    const storyMetaEl = document.getElementById("storyMeta");
+    const countLabelEl = document.getElementById("countLabel");
+    const activeLabelEl = document.getElementById("activeLabel");
+    const searchEl = document.getElementById("search");
+    const themeBtn = document.getElementById("themeBtn");
+
+    let currentButton = null;
+    let storiesCache = [];
+
+    /* ===== THEME TOGGLE ===== */
+    function setTheme(next) {
+      document.documentElement.setAttribute("data-theme", next);
+      try { localStorage.setItem("stories.theme", next); } catch {}
+    }
+
+    (function initTheme(){
+      let saved = null;
+      try { saved = localStorage.getItem("stories.theme"); } catch {}
+      if (saved === "dark" || saved === "light") setTheme(saved);
+    })();
+
+    themeBtn?.addEventListener("click", () => {
+      const cur = document.documentElement.getAttribute("data-theme") || "light";
+      setTheme(cur === "light" ? "dark" : "light");
     });
-  })
-  .catch(err => {
-    storyListEl.textContent = "Kan stories.json niet laden";
-    console.error(err);
-  });
 
-/* ===== LOAD STORY ===== */
-function loadStory(story, btn) {
-  if (currentButton) currentButton.classList.remove("active");
-  btn.classList.add("active");
-  currentButton = btn;
+    /* ===== RENDER LIST ===== */
+    function renderList(items) {
+      storyListEl.innerHTML = "";
+      if (!items.length) {
+        storyListEl.innerHTML = `<div class="placeholder">Geen verhalen gevonden.</div>`;
+        countLabelEl.textContent = "0 verhalen";
+        activeLabelEl.textContent = "";
+        return;
+      }
 
-  fetch(STORIES_BASE + story.file)
-    .then(r => r.text())
-    .then(text => {
-      storyContentEl.textContent = text;
-    })
-    .catch(err => {
-      storyContentEl.textContent = "Fout bij laden van verhaal.";
-      console.error(err);
-    });
-}
-</script>
+      countLabelEl.textContent = `${items.length} verhaal${items.length === 1 ? "" : "en"}`;
 
+      items.forEach((story) => {
+        const btn = document.createElement("button");
+        btn.className = "storyBtn";
+        btn.type = "button";
+
+        // Title + pill
+        const title = document.createElement("div");
+        title.className = "storyTitle";
+        title.textContent = story.title || "(zonder titel)";
+
+        const pill = document.createElement("div");
+        pill.className = "pill";
+        pill.textContent = (story.file || "").split("/").pop() || "txt";
+
+        btn.appendChild(title);
+        btn.appendChild(pill);
+
+        btn.addEventListener("click", () => loadStory(story, btn));
+        storyListEl.appendChild(btn);
+      });
+    }
+
+    /* ===== LOAD INDEX ===== */
+    fetch(INDEX_FILE)
+      .then(r => r.json())
+      .then(data => {
+        storiesCache = Array.isArray(data?.stories) ? data.stories : [];
+        renderList(storiesCache);
+        activeLabelEl.textContent = "";
+      })
+      .catch(err => {
+        storyListEl.textContent = "Kan stories.json niet laden";
+        countLabelEl.textContent = "Fout";
+        console.error(err);
+      });
+
+    /* ===== SEARCH ===== */
+    function applySearch() {
+      const q = (searchEl.value || "").trim().toLowerCase();
+      if (!q) {
+        renderList(storiesCache);
+        return;
+      }
+      const filtered = storiesCache.filter(s => String(s.title || "").toLowerCase().includes(q));
+      renderList(filtered);
+    }
+
+    searchEl?.addEventListener("input", applySearch);
+
+    /* ===== LOAD STORY ===== */
+    function loadStory(story, btn) {
+      if (currentButton) currentButton.classList.remove("active");
+      btn.classList.add("active");
+      currentButton = btn;
+
+      const title = story.title || "Verhaal";
+      storyTitleEl.textContent = title;
+      activeLabelEl.textContent = `Gekozen: ${title}`;
+      storyMetaEl.textContent = story.file ? story.file : "";
+
+      fetch(STORIES_BASE + story.file)
+        .then(r => r.text())
+        .then(text => {
+          storyContentEl.textContent = text;
+        })
+        .catch(err => {
+          storyContentEl.textContent = "Fout bij laden van verhaal.";
+          console.error(err);
+        });
+    }
+  </script>
 </body>
 </html>
