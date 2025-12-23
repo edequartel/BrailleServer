@@ -59,3 +59,6 @@ zoek 2 dezelfde woorden.
 je vindt de woorden door de cursortoetsen te gebruiken
 druk op de rechterduimtoets als je 2 dezelfde hebt.
 druk de linkerduimtoets als ze niet hetzelfde zijn.
+
+Links en rechts
+links en rechts staan op de leesregel letters en woorden welke is hetzelfde 
