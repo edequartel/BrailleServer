@@ -7,8 +7,6 @@
     "story": ["ballen.mp3", "2ballen.mp3"],
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
-      { "id": "story", "index": 0, "caption": "bal", "instruction": "Luister naar het verhaal: ballen." },
-      { "id": "letters", "caption": "Oefen letters", "instruction": "Oefen de letters van het woord." },
       { "id": "story", "index": 0, "caption": "bal", "instruction": "Luister naar het verhaal: 3ballen." },
       { "id": "story", "index": 1, "caption": "2ballen", "instruction": "Luister naar het verhaal: 2ballen." },
       { "id": "words", "caption": "Maak woorden 2", "instruction": "Maak woorden met de letters (niveau 2)." },
