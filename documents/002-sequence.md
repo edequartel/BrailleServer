@@ -89,8 +89,7 @@ bal – kam – aap – bel – deeg – de – kip – sap – tas – vis – 
 ## Compacte sequentie
 **b, a, l, k, m, aa, p, e, d, ee, g, i, s, t, v, n, o, oo, r, u, uu, h, ie, w, f, sch, c, oe, eu, ou, au, ch**
 
-
-# Introductietabel – nieuwe letters en combinaties
+## Tabel
 
 | Nr | Woord  | Introductie | Unicode braille |
 |---|---|---|---|
