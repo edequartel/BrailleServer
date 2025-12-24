@@ -97,25 +97,6 @@
     if (autoRun) autoRun.disabled = Boolean(isRunning);
   }
 
-  // ------------------------------------------------------------
-  // Emoji/icon helpers (NEW)
-  // ------------------------------------------------------------
-  function getEmojiForItem(item) {
-    // Prefer explicit emoji in JSON
-    const direct = String(item?.emoji ?? "").trim();
-    if (direct) return direct;
-
-    // Optional fallback: map known icons -> emoji (keeps UI working if emoji missing)
-    const icon = String(item?.icon ?? "").trim().toLowerCase();
-    const map = {
-      "ball.icon": "⚽",
-      "comb.icon": "💇",
-      "monkey.icon": "🐒",
-      "branch.icon": "🌿"
-    };
-    return map[icon] || "";
-  }
-
   function toBrailleUnicode(text) {
     const raw = String(text ?? "");
     if (!raw) return "–";
@@ -222,9 +203,9 @@
         const caption = String(a.caption ?? "").trim();
         const instruction = String(a.instruction ?? "").trim();
         if (!id && !caption) return null;
-        if (caption && instruction) return `${id} -- ${caption} -- ${instruction}`;
-        if (caption) return `${id} -- ${caption}`;
-        if (instruction) return `${id} -- ${instruction}`;
+        if (caption && instruction) return `${id} — ${caption} — ${instruction}`;
+        if (caption) return `${id} — ${caption}`;
+        if (instruction) return `${id} — ${instruction}`;
         return id;
       })
       .filter(Boolean);
@@ -233,7 +214,6 @@
       `id: ${item.id ?? "–"}`,
       `word: ${item.word ?? "–"}`,
       `icon: ${item.icon ?? "–"}`,
-      `emoji: ${item.emoji ?? "–"}`, // NEW: show emoji in fields panel
       `short: ${typeof item.short === "boolean" ? item.short : (item.short ?? "–")}`,
       `letters: ${Array.isArray(item.letters) ? item.letters.join(" ") : "–"}`,
       `words: ${Array.isArray(item.words) ? item.words.join(", ") : "–"}`,
@@ -639,9 +619,8 @@
     const idEl = $("item-id");
     const indexEl = $("item-index");
     const wordEl = $("field-word");
-    const emojiEl = $("field-emoji"); // NEW: emoji target
 
-    // Critical elements must exist (emoji is optional, but we still try)
+    // Critical elements must exist
     if (!idEl || !indexEl || !wordEl) {
       log("[words] Critical DOM elements missing; cannot render.");
       setStatus("HTML mist ids");
@@ -652,15 +631,6 @@
     indexEl.textContent = `${currentIndex + 1} / ${records.length}`;
 
     wordEl.textContent = item.word || "–";
-
-    // NEW: render emoji (from JSON or icon fallback map)
-    if (emojiEl) {
-      const em = getEmojiForItem(item);
-      emojiEl.textContent = em || " ";
-      emojiEl.style.display = em ? "" : "none";
-      emojiEl.setAttribute("aria-label", em ? `Emoji: ${em}` : "Geen emoji");
-    }
-
     const wordBrailleEl = $("field-word-braille");
     if (wordBrailleEl) {
       wordBrailleEl.textContent = toBrailleUnicode(item.word || "");

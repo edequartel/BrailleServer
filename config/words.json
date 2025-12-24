@@ -16,7 +16,8 @@
       { "id": "story", "index": -1, "caption": "alles", "instruction": "Luister naar alle verhalen." }
     ],
     "short": true,
-    "icon": "ball.icon"
+    "icon": "ball.icon",
+    "emoji": "⚽"
   },
   {
     "id": "kam-001",
@@ -33,7 +34,8 @@
       { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." }
     ],
     "short": true,
-    "icon": "comb.icon"
+    "icon": "comb.icon",
+    "emoji": "💇"
   },
   {
     "id": "aap-001",
@@ -50,7 +52,8 @@
       { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." }
     ],
     "short": true,
-    "icon": "monkey.icon"
+    "icon": "monkey.icon",
+    "emoji": "🐒"
   },
   {
     "id": "tak-001",
@@ -67,6 +70,7 @@
       { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." }
     ],
     "short": true,
-    "icon": "branch.icon"
+    "icon": "branch.icon",
+    "emoji": "🌿"
   }
 ]

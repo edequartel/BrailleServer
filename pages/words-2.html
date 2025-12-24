@@ -91,19 +91,26 @@
       box-shadow: var(--shadow);
     }
 
-    /* Theme toggle (re-used, now in bottom buttons row) */
+    /* Top bar for theme toggle */
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
     .theme-toggle {
       display: inline-flex;
       align-items: center;
       gap: 10px;
       border-radius: 999px;
-      padding: 8px 16px; /* match button sizing */
+      padding: 6px 10px;
       background: transparent;
       border: 1px solid var(--chip-border);
       color: var(--fg);
       cursor: pointer;
       font-weight: 700;
-      font-size: 0.95rem; /* match button sizing */
+      font-size: 0.9rem;
     }
 
     .theme-dot {
@@ -267,42 +274,22 @@
       font-size: 0.85rem;
       color: var(--muted);
     }
-
-    /* ----------------------------
-       Word header above braille
-    ---------------------------- */
-    .word-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 12px;
-    }
-
-    .word-emoji {
-      font-size: 2.4rem;
-      line-height: 1;
-    }
-
-    .word-text {
-      font-size: 1.4rem;
-      font-weight: 800;
-    }
   </style>
 </head>
 
 <body>
   <main class="container" aria-live="polite">
-    <!-- Theme toggle REMOVED from top -->
+    <!-- Theme toggle at top -->
+    <div class="top-bar">
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+        <span class="theme-dot" aria-hidden="true"></span>
+        <span id="themeLabel">Theme: light</span>
+      </button>
+    </div>
 
     <div class="braille-panel">
-      <!-- Word + emoji ABOVE braille monitor -->
-      <div class="word-header">
-        <span id="field-emoji" class="word-emoji" aria-hidden="true">–</span>
-        <span id="field-word" class="word-text">–</span>
-      </div>
-
-      <!-- Braille monitor -->
       <div id="brailleMonitorComponent"></div>
+      
     </div>
 
     <div class="meta-bar">
@@ -311,9 +298,8 @@
       <span id="data-status">Data: –</span>
     </div>
 
-    <!-- Keep only braille text here (word moved above) -->
+    <p class="field-value" id="field-word">–</p>
     <p class="field-value field-braille" id="field-word-braille">–</p>
-
     <div class="meta-bar">
       <span id="field-icon">Icon: –</span>
       <span id="short-flag" class="short-flag" style="display:none;">Kort verhaal: ja</span>
@@ -348,12 +334,6 @@
       <button id="next-activity-btn" type="button">▶</button>
       <button id="toggle-fields-btn" class="secondary" type="button" aria-controls="fields-panel" aria-expanded="false">Velden</button>
       <button id="toggle-log-btn" class="secondary" type="button">Log</button>
-
-      <!-- Theme toggle MOVED here -->
-      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme">
-        <span class="theme-dot" aria-hidden="true"></span>
-        <span id="themeLabel">Theme: light</span>
-      </button>
     </div>
 
     <!-- Default hidden: show all fields -->
