@@ -93,7 +93,7 @@ bal – kam – aap – bel – deeg – de – kip – sap – tas – vis – 
 # Introductietabel – nieuwe letters en combinaties
 
 | Nr | Woord  | Introductie | Unicode braille |
-|-—|———|-————|——————|
+|--—|---|---|---|
 | 1  | bal    | b   | ⠃ |
 | 2  | bal    | a   | ⠁ |
 | 3  | bal    | l   | ⠇ |
