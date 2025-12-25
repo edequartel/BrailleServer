@@ -97,6 +97,23 @@
     if (autoRun) autoRun.disabled = Boolean(isRunning);
   }
 
+  // ------------------------------------------------------------
+  // Emoji/icon helpers
+  // ------------------------------------------------------------
+  function getEmojiForItem(item) {
+    const direct = String(item?.emoji ?? "").trim();
+    if (direct) return direct;
+
+    const icon = String(item?.icon ?? "").trim().toLowerCase();
+    const map = {
+      "ball.icon": "⚽",
+      "comb.icon": "💇",
+      "monkey.icon": "🐒",
+      "branch.icon": "🌿"
+    };
+    return map[icon] || "";
+  }
+
   function toBrailleUnicode(text) {
     const raw = String(text ?? "");
     if (!raw) return "–";
@@ -192,6 +209,50 @@
     }
   }
 
+  // ------------------------------------------------------------
+  // Thumbkey binary interaction (NEW)
+  // RightThumb = YES/START/ACK
+  // LeftThumb  = NO/CANCEL
+  // ------------------------------------------------------------
+  function handleYes() {
+    log("[words] YES (rightthumb)");
+
+    if (!running) {
+      startSelectedActivity({ autoStarted: false });
+      return;
+    }
+
+    // If an activity module supports explicit yes/ack, prefer that.
+    if (activeActivityModule && typeof activeActivityModule.onYes === "function") {
+      try {
+        activeActivityModule.onYes({ source: "thumbkey" });
+      } catch (err) {
+        log("[words] activeActivityModule.onYes failed", { message: err?.message });
+      }
+      return;
+    }
+
+    // Otherwise: treat YES as "Done / Acknowledge"
+    const doneBtn = $("done-activity-btn");
+    if (doneBtn) doneBtn.click();
+  }
+
+  function handleNo() {
+    log("[words] NO (leftthumb)");
+
+    // If an activity module supports explicit no/cancel, call it.
+    if (activeActivityModule && typeof activeActivityModule.onNo === "function") {
+      try {
+        activeActivityModule.onNo({ source: "thumbkey" });
+      } catch (err) {
+        log("[words] activeActivityModule.onNo failed", { message: err?.message });
+      }
+    }
+
+    // Then stop the run (safe and consistent)
+    cancelRun();
+  }
+
   function formatAllFields(item) {
     if (!item || typeof item !== "object") return "–";
 
@@ -203,9 +264,9 @@
         const caption = String(a.caption ?? "").trim();
         const instruction = String(a.instruction ?? "").trim();
         if (!id && !caption) return null;
-        if (caption && instruction) return `${id} — ${caption} — ${instruction}`;
-        if (caption) return `${id} — ${caption}`;
-        if (instruction) return `${id} — ${instruction}`;
+        if (caption && instruction) return `${id} -- ${caption} -- ${instruction}`;
+        if (caption) return `${id} -- ${caption}`;
+        if (instruction) return `${id} -- ${instruction}`;
         return id;
       })
       .filter(Boolean);
@@ -214,6 +275,7 @@
       `id: ${item.id ?? "–"}`,
       `word: ${item.word ?? "–"}`,
       `icon: ${item.icon ?? "–"}`,
+      `emoji: ${item.emoji ?? "–"}`,
       `short: ${typeof item.short === "boolean" ? item.short : (item.short ?? "–")}`,
       `letters: ${Array.isArray(item.letters) ? item.letters.join(" ") : "–"}`,
       `words: ${Array.isArray(item.words) ? item.words.join(", ") : "–"}`,
@@ -263,35 +325,17 @@
 
     switch (canonical) {
       case "tts":
-        return {
-          caption: "Luister (woord)",
-          detail: item.word ? String(item.word) : "–"
-        };
+        return { caption: "Luister (woord)", detail: item.word ? String(item.word) : "–" };
       case "letters":
-        return {
-          caption: "Oefen letters",
-          detail: Array.isArray(item.letters) && item.letters.length ? item.letters.join(" ") : "–"
-        };
+        return { caption: "Oefen letters", detail: Array.isArray(item.letters) && item.letters.length ? item.letters.join(" ") : "–" };
       case "words":
-        return {
-          caption: "Maak woorden",
-          detail: Array.isArray(item.words) && item.words.length ? item.words.join(", ") : "–"
-        };
+        return { caption: "Maak woorden", detail: Array.isArray(item.words) && item.words.length ? item.words.join(", ") : "–" };
       case "story":
-        return {
-          caption: "Luister (verhaal)",
-          detail: Array.isArray(item.story) && item.story.length ? item.story.join("\n") : "–"
-        };
+        return { caption: "Luister (verhaal)", detail: Array.isArray(item.story) && item.story.length ? item.story.join("\n") : "–" };
       case "sounds":
-        return {
-          caption: "Geluiden",
-          detail: Array.isArray(item.sounds) && item.sounds.length ? item.sounds.join("\n") : "–"
-        };
+        return { caption: "Geluiden", detail: Array.isArray(item.sounds) && item.sounds.length ? item.sounds.join("\n") : "–" };
       default:
-        return {
-          caption: rawId ? `Activity: ${rawId}` : "Details",
-          detail: safeJson(item)
-        };
+        return { caption: rawId ? `Activity: ${rawId}` : "Details", detail: safeJson(item) };
     }
   }
 
@@ -489,7 +533,6 @@
 
       doneBtn.addEventListener("click", onDone);
 
-      // If cancelled/restarted, resolve silently and detach.
       const poll = () => {
         if (currentToken !== runToken) {
           doneBtn.removeEventListener("click", onDone);
@@ -572,7 +615,6 @@
     try {
       await handler({ ...cur, token });
     } finally {
-      // If a new run started, ignore.
       if (token !== runToken) return;
       running = false;
       setRunnerUi({ isRunning: false });
@@ -619,8 +661,8 @@
     const idEl = $("item-id");
     const indexEl = $("item-index");
     const wordEl = $("field-word");
+    const emojiEl = $("field-emoji");
 
-    // Critical elements must exist
     if (!idEl || !indexEl || !wordEl) {
       log("[words] Critical DOM elements missing; cannot render.");
       setStatus("HTML mist ids");
@@ -629,8 +671,15 @@
 
     idEl.textContent = "ID: " + (item.id ?? "–");
     indexEl.textContent = `${currentIndex + 1} / ${records.length}`;
-
     wordEl.textContent = item.word || "–";
+
+    if (emojiEl) {
+      const em = getEmojiForItem(item);
+      emojiEl.textContent = em || " ";
+      emojiEl.style.display = em ? "" : "none";
+      emojiEl.setAttribute("aria-label", em ? `Emoji: ${em}` : "Geen emoji");
+    }
+
     const wordBrailleEl = $("field-word-braille");
     if (wordBrailleEl) {
       wordBrailleEl.textContent = toBrailleUnicode(item.word || "");
@@ -659,7 +708,8 @@
   }
 
   // ------------------------------------------------------------
-  // Navigation
+  // Navigation (buttons/keyboard can still use these)
+  // Thumbkeys no longer call these.
   // ------------------------------------------------------------
   function next() {
     if (!records.length) return;
@@ -728,7 +778,6 @@
         throw new Error("words.json is not an array");
       }
 
-      // Basic validation/logging
       records = json;
       currentIndex = 0;
       currentActivityIndex = 0;
@@ -768,7 +817,6 @@
         }
       }
 
-      // Helpful hint for the common case (opening via file://)
       if (location.protocol === "file:") {
         setStatus("laden mislukt: open via http:// (file:// blokkeert fetch)");
       } else {
@@ -788,7 +836,6 @@
     const nextActivityBtn = $("next-activity-btn");
     const prevActivityBtn = $("prev-activity-btn");
     const startActivityBtn = $("start-activity-btn");
-    const doneActivityBtn = $("done-activity-btn");
     const toggleFieldsBtn = $("toggle-fields-btn");
     const fieldsPanel = $("fields-panel");
 
@@ -810,23 +857,29 @@
         onCursorClick(info) {
           dispatchCursorSelection(info, "monitor");
         },
+
+        // ------------------------------------------------------------
+        // THUMBKEYS: binary model (UPDATED)
+        // rightthumb = YES/START/ACK
+        // leftthumb  = NO/CANCEL
+        // NO navigation on thumbkeys.
+        // ------------------------------------------------------------
         mapping: {
-          leftthumb: () => prev(),
-          rightthumb: () => next(),
-          middleleftthumb: () => prevActivity(),
-          middlerightthumb: () => nextActivity()
+          rightthumb: () => handleYes(),
+          leftthumb: () => handleNo()
         }
       });
     } else {
       log("[words] BrailleMonitor component not available");
     }
 
+    // Buttons: keep for debugging / teacher use
     if (nextBtn) nextBtn.addEventListener("click", next);
     if (prevBtn) prevBtn.addEventListener("click", prev);
     if (nextActivityBtn) nextActivityBtn.addEventListener("click", nextActivity);
     if (prevActivityBtn) prevActivityBtn.addEventListener("click", prevActivity);
-    if (startActivityBtn) startActivityBtn.addEventListener("click", () => startSelectedActivity({ autoStarted: false }));
-    // doneActivityBtn is handled by waitForDone() per run.
+    if (startActivityBtn) startActivityBtn.addEventListener("click", () => handleYes());
+    // done-activity-btn is still handled by waitForDone() during a run.
 
     function setFieldsPanelVisible(visible) {
       if (!toggleFieldsBtn || !fieldsPanel) return;
@@ -856,12 +909,14 @@
       });
     }
 
+    // Keyboard navigation remains available (optional)
     document.addEventListener("keydown", (e) => {
       if (e.key === "ArrowRight") nextActivity();
       if (e.key === "ArrowLeft") prevActivity();
       if (e.key === "ArrowDown") next();
       if (e.key === "ArrowUp") prev();
-      if (e.key === "Enter") startSelectedActivity({ autoStarted: false });
+      if (e.key === "Enter") handleYes();
+      if (e.key === "Escape") handleNo();
     });
 
     loadData();

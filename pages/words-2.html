@@ -1,3 +1,4 @@
+<!-- /pages/words.html -->
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -6,278 +7,12 @@
   <title>BrailleStudio - Bartiméus Onderwijs</title>
 
   <link rel="stylesheet" href="../components/braille-monitor/braillemonitor.css" />
-
-  <style>
-    /* ----------------------------
-       Theme tokens
-    ---------------------------- */
-    :root {
-      --bg: #f3f4f6;
-      --fg: #111827;
-      --panel: #ffffff;
-      --muted: #6b7280;
-      --label: #4b5563;
-      --code-bg: #f9fafb;
-
-      --btn-bg: #111827;
-      --btn-fg: #f9fafb;
-      --btn2-bg: #e5e7eb;
-      --btn2-fg: #111827;
-
-      --chip-bg: #f9fafb;
-      --chip-fg: #111827;
-      --chip-border: #e5e7eb;
-
-      --shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
-
-      --log-head-bg: #111827;
-      --log-head-fg: #f9fafb;
-      --log-body-bg: #0b1220;
-      --log-body-fg: #e5e7eb;
-
-      --flag-bg: #ecfdf3;
-      --flag-fg: #15803d;
-    }
-
-    html[data-theme="dark"] {
-      --bg: #0b1220;
-      --fg: #e5e7eb;
-      --panel: #0f172a;
-      --muted: #94a3b8;
-      --label: #cbd5e1;
-      --code-bg: #111827;
-
-      --btn-bg: #e5e7eb;
-      --btn-fg: #0b1220;
-      --btn2-bg: #1f2937;
-      --btn2-fg: #e5e7eb;
-
-      --chip-bg: #0b1220;
-      --chip-fg: #e5e7eb;
-      --chip-border: #243041;
-
-      --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
-
-      --log-head-bg: #0b1220;
-      --log-head-fg: #e5e7eb;
-      --log-body-bg: #070b14;
-      --log-body-fg: #e5e7eb;
-
-      --flag-bg: rgba(16, 185, 129, 0.12);
-      --flag-fg: #34d399;
-
-      color-scheme: dark;
-    }
-
-    /* ----------------------------
-       Layout
-    ---------------------------- */
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: var(--bg);
-      color: var(--fg);
-      display: flex;
-      justify-content: center;
-    }
-
-    .container {
-      max-width: 760px;
-      width: 100%;
-      background: var(--panel);
-      padding: 20px 24px;
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-    }
-
-    /* Theme toggle (bottom row) */
-    .theme-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      border-radius: 999px;
-      padding: 8px 16px;
-      background: transparent;
-      border: 1px solid var(--chip-border);
-      color: var(--fg);
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 0.95rem;
-    }
-
-    .theme-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: var(--fg);
-      opacity: 0.9;
-    }
-
-    .meta-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 14px 0 16px 0;
-      font-size: 0.85rem;
-      color: var(--muted);
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .field-label {
-      font-weight: 600;
-      margin: 10px 0 4px 0;
-      font-size: 0.9rem;
-      color: var(--label);
-    }
-
-    .field-value {
-      margin: 0;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: var(--code-bg);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        "Cascadia Code", "Fira Code", "Liberation Mono", "Courier New", monospace;
-      font-size: 0.92rem;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .short-flag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 2px 10px;
-      border-radius: 999px;
-      background: var(--flag-bg);
-      color: var(--flag-fg);
-      font-size: 0.8rem;
-      font-weight: 700;
-      border: 1px solid rgba(0,0,0,0.06);
-    }
-
-    .buttons {
-      margin-top: 18px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      padding: 8px 16px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.95rem;
-      font-weight: 700;
-      background: var(--btn-bg);
-      color: var(--btn-fg);
-    }
-
-    button.secondary {
-      background: var(--btn2-bg);
-      color: var(--btn2-fg);
-    }
-
-    /* Visible log panel */
-    .log-panel {
-      margin-top: 18px;
-      border: 1px solid var(--chip-border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .log-panel.hidden { display: none; }
-
-    .log-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 12px;
-      background: var(--log-head-bg);
-      color: var(--log-head-fg);
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-
-    .log-body {
-      padding: 10px 12px;
-      background: var(--log-body-bg);
-      color: var(--log-body-fg);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        "Cascadia Code", "Fira Code", "Liberation Mono", "Courier New", monospace;
-      font-size: 0.85rem;
-      white-space: pre-wrap;
-      height: 180px;
-      overflow: auto;
-    }
-
-    .log-controls button {
-      background: #374151;
-      color: #f9fafb;
-      font-size: 0.85rem;
-      padding: 6px 10px;
-    }
-
-    html[data-theme="dark"] .log-controls button {
-      background: #1f2937;
-      color: #e5e7eb;
-    }
-
-    .braille-panel { margin-bottom: 16px; }
-
-    /* ----------------------------
-       Word header requested:
-       emoji left | word ... braille (right-aligned)
-    ---------------------------- */
-    .word-header {
-      display: grid;
-      grid-template-columns: 44px 1fr;
-      align-items: center;
-      column-gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .word-emoji {
-      width: 44px;
-      text-align: left;
-      font-size: 2rem;
-      line-height: 1;
-    }
-
-    .word-line {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      column-gap: 16px;
-      min-width: 0;
-    }
-
-    .word-text {
-      font-size: 1.35rem;
-      font-weight: 800;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .word-braille {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        "Cascadia Code", "Fira Code", "Liberation Mono", "Courier New", monospace;
-      font-size: 1.25rem;
-      letter-spacing: 0.18em;
-      text-align: right;
-      white-space: nowrap;
-      opacity: 0.95;
-    }
-  </style>
+  <link rel="stylesheet" href="./words.css" />
 </head>
 
 <body>
   <main class="container" aria-live="polite">
     <div class="braille-panel">
-      <!-- Emoji left, word + braille on same line (braille right aligned) -->
       <div class="word-header">
         <span id="field-emoji" class="word-emoji" aria-hidden="true">–</span>
 
@@ -287,9 +22,11 @@
         </div>
       </div>
 
-      <!-- Braille monitor -->
       <div id="brailleMonitorComponent"></div>
     </div>
+
+    <!-- IMPORTANT: only one element with this id -->
+    <p class="field-value" id="activity-instruction">–</p>
 
     <div class="meta-bar">
       <span id="item-id">ID: –</span>
@@ -297,20 +34,17 @@
       <span id="data-status">Data: –</span>
     </div>
 
-
-    <div class="meta-bar" style="margin-top: 8px;">
+    <div class="meta-bar meta-bar-tight">
       <span id="activity-index">0 / 0</span>
       <span id="activity-id">Activity: –</span>
     </div>
-    <div id="activity-buttons" class="buttons" style="justify-content:flex-start; margin-top: 10px;"></div>
 
-    <p class="field-label" id="activity-instruction-label">Instructie</p>
-    <p class="field-value" id="activity-instruction">–</p>
+    <div id="activity-buttons" class="buttons buttons-left"></div>
 
-    <div class="meta-bar" style="margin-top: 12px;">
+    <div class="meta-bar meta-bar-tight">
       <span id="activity-status">Status: idle</span>
-      <span style="display:flex; gap:10px; align-items:center;">
-        <label style="display:flex; gap:8px; align-items:center; font-size:0.85rem; color:var(--muted);">
+      <span class="runner-controls">
+        <label class="auto-next">
           <input id="auto-run" type="checkbox" checked />
           Auto next
         </label>
@@ -324,7 +58,10 @@
       <button id="next-btn" type="button">Volgende</button>
       <button id="prev-activity-btn" class="secondary" type="button">◀</button>
       <button id="next-activity-btn" type="button">▶</button>
-      <button id="toggle-fields-btn" class="secondary" type="button" aria-controls="fields-panel" aria-expanded="false">Velden</button>
+
+      <button id="toggle-fields-btn" class="secondary" type="button"
+        aria-controls="fields-panel" aria-expanded="false">Velden</button>
+
       <button id="toggle-log-btn" class="secondary" type="button">Log</button>
 
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme">
@@ -353,7 +90,6 @@
 
   <script>
     (function () {
-      // ---------- Theme toggle (persist in localStorage) ----------
       const THEME_KEY = "bs_theme";
       const html = document.documentElement;
 
@@ -386,7 +122,6 @@
         }
       });
 
-      // ---------- Fallback logMessage ----------
       function appendToPanel(line) {
         const el = document.getElementById("log");
         if (!el) return;
