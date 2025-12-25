@@ -6,21 +6,52 @@
   <title>BrailleServer</title>
 
   <style>
+    /* -----------------------------------------
+       Theme variables (light default)
+    ----------------------------------------- */
+    :root {
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --text: #111827;
+      --border: #e5e7eb;
+      --link-bg: #f9fafb;
+      --link-hover: #eef2ff;
+      --shadow: rgba(0, 0, 0, 0.12);
+    }
+
+    /* -----------------------------------------
+       Dark theme (system preference)
+    ----------------------------------------- */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117;
+        --panel: #161a23;
+        --text: #e5e7eb;
+        --border: #2a2f3a;
+        --link-bg: #1f2430;
+        --link-hover: #2a3050;
+        --shadow: rgba(0, 0, 0, 0.6);
+      }
+    }
+
+    /* -----------------------------------------
+       Base layout
+    ----------------------------------------- */
     body {
       margin: 0;
       padding: 2rem;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: #f3f4f6;
-      color: #111827;
+      background: var(--bg);
+      color: var(--text);
     }
 
     main {
       max-width: 720px;
       margin: 0 auto;
-      background: #ffffff;
+      background: var(--panel);
       padding: 2rem;
       border-radius: 14px;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      box-shadow: 0 6px 24px var(--shadow);
     }
 
     h1 {
@@ -42,15 +73,16 @@
       display: block;
       padding: 1rem;
       border-radius: 10px;
-      background: #f9fafb;
+      background: var(--link-bg);
       text-decoration: none;
-      color: inherit;
+      color: var(--text);
       font-weight: 600;
-      border: 1px solid #e5e7eb;
+      border: 1px solid var(--border);
+      transition: background 0.15s ease;
     }
 
     a:hover {
-      background: #eef2ff;
+      background: var(--link-hover);
     }
   </style>
 </head>
@@ -61,8 +93,8 @@
 
     <ul>
       <li>
-        <a href="./pages/words.html/">
-          Letter en Woorden oefenen
+        <a href="./pages/words.html">
+          Letter en woorden oefenen
         </a>
       </li>
 
