@@ -26,59 +26,6 @@
   log("[words] words.js loaded");
 
   // ------------------------------------------------------------
-  // Chip button styling injection
-  // States:
-  // - default (non-selected)
-  // - .is-selected (selected activity)
-  // - .is-active (selected AND currently running)
-  // ------------------------------------------------------------
-  function injectActivityChipStyles() {
-    if (document.getElementById("words-activity-chip-styles")) return;
-
-    const style = document.createElement("style");
-    style.id = "words-activity-chip-styles";
-    style.textContent = `
-      #activity-buttons .chip {
-        appearance: none;
-        border: 1px solid rgba(0,0,0,.18);
-        background: rgba(0,0,0,.04);
-        color: inherit;
-        border-radius: 999px;
-        padding: 0.35rem 0.7rem;
-        font: inherit;
-        line-height: 1.1;
-        cursor: pointer;
-        user-select: none;
-        transition: background-color .12s ease, border-color .12s ease, box-shadow .12s ease, transform .04s ease;
-      }
-      #activity-buttons .chip:hover { background: rgba(0,0,0,.06); }
-      #activity-buttons .chip:active { transform: translateY(1px); }
-      #activity-buttons .chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(79,107,237,.35); }
-
-      /* SELECTED */
-      #activity-buttons .chip.is-selected {
-        background: rgba(79,107,237,.16);
-        border-color: rgba(79,107,237,.6);
-        box-shadow: 0 0 0 2px rgba(79,107,237,.12) inset;
-      }
-
-      /* ACTIVE (selected + running) */
-      #activity-buttons .chip.is-active {
-        background: rgba(20,140,60,.18);
-        border-color: rgba(20,140,60,.65);
-        box-shadow: 0 0 0 2px rgba(20,140,60,.14) inset, 0 0 0 3px rgba(20,140,60,.18);
-      }
-
-      /* If both exist, active wins */
-      #activity-buttons .chip.is-selected.is-active {
-        background: rgba(20,140,60,.18);
-        border-color: rgba(20,140,60,.65);
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // ------------------------------------------------------------
   // Config
   // ------------------------------------------------------------
   const LOCAL_DATA_URL = "../config/words.json";
@@ -150,6 +97,7 @@
       const isSelected = Number.isFinite(i) && i === currentActivityIndex;
       const isActive = isSelected && Boolean(running);
 
+      // NEW class names for external CSS file:
       btn.classList.toggle("is-selected", isSelected);
       btn.classList.toggle("is-active", isActive);
 
@@ -577,36 +525,12 @@
   }
 
   const handlers = {
-    async tts(ctx) {
-      log("[words] Run activity tts", { id: ctx.item.id, word: ctx.item.word });
-      setActivityStatus("running (tts)");
-      return waitForDone(ctx.token);
-    },
-    async letters(ctx) {
-      log("[words] Run activity letters", { id: ctx.item.id });
-      setActivityStatus("running (letters)");
-      return waitForDoneOrActivityEnd(ctx.token);
-    },
-    async words(ctx) {
-      log("[words] Run activity words", { id: ctx.item.id });
-      setActivityStatus("running (words)");
-      return waitForDone(ctx.token);
-    },
-    async story(ctx) {
-      log("[words] Run activity story", { id: ctx.item.id });
-      setActivityStatus("running (story)");
-      return waitForDoneOrActivityEnd(ctx.token);
-    },
-    async sounds(ctx) {
-      log("[words] Run activity sounds", { id: ctx.item.id });
-      setActivityStatus("running (sounds)");
-      return waitForDone(ctx.token);
-    },
-    async default(ctx) {
-      log("[words] Run activity (default)", { id: ctx.item.id, activityId: ctx.activity.id });
-      setActivityStatus("running");
-      return waitForDone(ctx.token);
-    }
+    async tts(ctx) { setActivityStatus("running (tts)"); return waitForDone(ctx.token); },
+    async letters(ctx) { setActivityStatus("running (letters)"); return waitForDoneOrActivityEnd(ctx.token); },
+    async words(ctx) { setActivityStatus("running (words)"); return waitForDone(ctx.token); },
+    async story(ctx) { setActivityStatus("running (story)"); return waitForDoneOrActivityEnd(ctx.token); },
+    async sounds(ctx) { setActivityStatus("running (sounds)"); return waitForDone(ctx.token); },
+    async default(ctx) { setActivityStatus("running"); return waitForDone(ctx.token); }
   };
 
   async function startSelectedActivity({ autoStarted = false } = {}) {
@@ -641,7 +565,6 @@
 
     running = true;
     setRunnerUi({ isRunning: true });
-    setActivityStatus(autoStarted ? "running (auto)" : "running");
     updateActivityButtonStates();
 
     try {
@@ -680,9 +603,159 @@
     if (autoStart) startSelectedActivity({ autoStarted: true });
   }
 
+  // ------------------------------------------------------------
+  // Navigation handlers (buttons + keyboard only)
+  // ------------------------------------------------------------
+  function next() { if (!records.length) return; cancelRun(); currentIndex = (currentIndex + 1) % records.length; currentActivityIndex = 0; render(); }
+  function prev() { if (!records.length) return; cancelRun(); currentIndex = (currentIndex - 1 + records.length) % records.length; currentActivityIndex = 0; render(); }
+  function nextActivity() {
+    if (!records.length) return;
+    const item = records[currentIndex];
+    const activities = getActivities(item);
+    if (activities.length < 2) return;
+    cancelRun();
+    currentActivityIndex = (currentActivityIndex + 1) % activities.length;
+    renderActivity(item, activities);
+  }
+  function prevActivity() {
+    if (!records.length) return;
+    const item = records[currentIndex];
+    const activities = getActivities(item);
+    if (activities.length < 2) return;
+    cancelRun();
+    currentActivityIndex = (currentActivityIndex - 1 + activities.length) % activities.length;
+    renderActivity(item, activities);
+  }
+
+  // ------------------------------------------------------------
+  // Load JSON
+  // ------------------------------------------------------------
+  async function loadData() {
+    const params = new URLSearchParams(window.location.search || "");
+    const overrideUrl = params.get("data");
+    const preferred = overrideUrl ? overrideUrl : REMOTE_DATA_URL;
+    const resolvedUrl = new URL(preferred, window.location.href).toString();
+    setStatus("laden...");
+
+    try {
+      const res = await fetch(resolvedUrl, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (!Array.isArray(json)) throw new Error("words.json is not an array");
+
+      records = json;
+      currentIndex = 0;
+      currentActivityIndex = 0;
+      render();
+    } catch (err) {
+      log("[words] ERROR loading JSON", { message: err.message });
+
+      if (!overrideUrl && preferred === REMOTE_DATA_URL) {
+        const fallbackUrl = new URL(LOCAL_DATA_URL, window.location.href).toString();
+        setStatus("online mislukt, probeer lokaal...");
+        try {
+          const res = await fetch(fallbackUrl, { cache: "no-store" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const json = await res.json();
+          if (!Array.isArray(json)) throw new Error("words.json is not an array");
+          records = json;
+          currentIndex = 0;
+          currentActivityIndex = 0;
+          render();
+          return;
+        } catch (fallbackErr) {
+          log("[words] ERROR loading local JSON", { message: fallbackErr.message });
+        }
+      }
+
+      if (location.protocol === "file:") setStatus("laden mislukt: open via http:// (file:// blokkeert fetch)");
+      else setStatus("laden mislukt (zie log/console)");
+    }
+  }
+
+  // ------------------------------------------------------------
+  // Init
+  // ------------------------------------------------------------
+  document.addEventListener("DOMContentLoaded", () => {
+    log("[words] DOMContentLoaded");
+
+    // IMPORTANT: CSS is now external. Remove all injected style from JS.
+    // Put the CSS below in: /css/words.css (or your page css)
+    // and include it in your HTML:
+    // <link rel="stylesheet" href="../css/words.css" />
+
+    const nextBtn = $("next-btn");
+    const prevBtn = $("prev-btn");
+    const nextActivityBtn = $("next-activity-btn");
+    const prevActivityBtn = $("prev-activity-btn");
+    const startActivityBtn = $("start-activity-btn");
+    const toggleFieldsBtn = $("toggle-fields-btn");
+    const fieldsPanel = $("fields-panel");
+
+    if (window.BrailleBridge && typeof BrailleBridge.connect === "function") {
+      BrailleBridge.connect();
+      BrailleBridge.on("cursor", (evt) => {
+        if (typeof evt?.index !== "number") return;
+        dispatchCursorSelection({ index: evt.index }, "bridge");
+      });
+      BrailleBridge.on("connected", () => log("[words] BrailleBridge connected"));
+      BrailleBridge.on("disconnected", () => log("[words] BrailleBridge disconnected"));
+    }
+
+    if (window.BrailleMonitor && typeof BrailleMonitor.init === "function") {
+      brailleMonitor = BrailleMonitor.init({
+        containerId: "brailleMonitorComponent",
+        onCursorClick(info) {
+          dispatchCursorSelection(info, "monitor");
+        },
+
+        // Thumb keys ONLY start the selected activity (no navigation)
+        mapping: {
+          leftthumb: () => startSelectedActivity({ autoStarted: false }),
+          rightthumb: () => startSelectedActivity({ autoStarted: false }),
+          middleleftthumb: () => startSelectedActivity({ autoStarted: false }),
+          middlerightthumb: () => startSelectedActivity({ autoStarted: false })
+        }
+      });
+    }
+
+    if (nextBtn) nextBtn.addEventListener("click", next);
+    if (prevBtn) prevBtn.addEventListener("click", prev);
+    if (nextActivityBtn) nextActivityBtn.addEventListener("click", nextActivity);
+    if (prevActivityBtn) prevActivityBtn.addEventListener("click", prevActivity);
+    if (startActivityBtn) startActivityBtn.addEventListener("click", () => startSelectedActivity({ autoStarted: false }));
+
+    function setFieldsPanelVisible(visible) {
+      if (!toggleFieldsBtn || !fieldsPanel) return;
+      fieldsPanel.classList.toggle("hidden", !visible);
+      toggleFieldsBtn.textContent = visible ? "Verberg velden" : "Velden";
+      toggleFieldsBtn.setAttribute("aria-expanded", visible ? "true" : "false");
+    }
+
+    if (toggleFieldsBtn && fieldsPanel) {
+      setFieldsPanelVisible(false);
+      toggleFieldsBtn.addEventListener("click", () => {
+        const isHidden = fieldsPanel.classList.contains("hidden");
+        setFieldsPanelVisible(isHidden);
+      });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") nextActivity();
+      if (e.key === "ArrowLeft") prevActivity();
+      if (e.key === "ArrowDown") next();
+      if (e.key === "ArrowUp") prev();
+      if (e.key === "Enter") startSelectedActivity({ autoStarted: false });
+    });
+
+    loadData();
+  });
+
+  // ------------------------------------------------------------
+  // Render (kept at bottom in this file)
+  // ------------------------------------------------------------
   function render() {
     if (!records.length) {
-      log("[words] render() called with no records");
       setStatus("geen records");
       const allEl = $("field-all");
       if (allEl) allEl.textContent = "–";
@@ -690,15 +763,12 @@
     }
 
     const item = records[currentIndex];
-    log("[words] Rendering record", { index: currentIndex, id: item.id });
-
     const idEl = $("item-id");
     const indexEl = $("item-index");
     const wordEl = $("field-word");
     const emojiEl = $("field-emoji");
 
     if (!idEl || !indexEl || !wordEl) {
-      log("[words] Critical DOM elements missing; cannot render.");
       setStatus("HTML mist ids");
       return;
     }
@@ -711,7 +781,6 @@
       const em = getEmojiForItem(item);
       emojiEl.textContent = em || " ";
       emojiEl.style.display = em ? "" : "none";
-      emojiEl.setAttribute("aria-label", em ? `Emoji: ${em}` : "Geen emoji");
     }
 
     const wordBrailleEl = $("field-word-braille");
@@ -729,224 +798,9 @@
     const activities = getActivities(item);
     if (currentActivityIndex >= activities.length) currentActivityIndex = 0;
     renderActivity(item, activities);
+
     setRunnerUi({ isRunning: false });
     setActivityStatus("idle");
-
     setStatus(`geladen (${records.length})`);
   }
-
-  // ------------------------------------------------------------
-  // Navigation (buttons + keyboard only)
-  // ------------------------------------------------------------
-  function next() {
-    if (!records.length) return;
-    cancelRun();
-    currentIndex = (currentIndex + 1) % records.length;
-    currentActivityIndex = 0;
-    log("[words] Next pressed", { currentIndex });
-    render();
-  }
-
-  function prev() {
-    if (!records.length) return;
-    cancelRun();
-    currentIndex = (currentIndex - 1 + records.length) % records.length;
-    currentActivityIndex = 0;
-    log("[words] Prev pressed", { currentIndex });
-    render();
-  }
-
-  function nextActivity() {
-    if (!records.length) return;
-    const item = records[currentIndex];
-    const activities = getActivities(item);
-    if (activities.length < 2) return;
-    cancelRun();
-    currentActivityIndex = (currentActivityIndex + 1) % activities.length;
-    log("[words] Next activity", { currentActivityIndex });
-    renderActivity(item, activities);
-  }
-
-  function prevActivity() {
-    if (!records.length) return;
-    const item = records[currentIndex];
-    const activities = getActivities(item);
-    if (activities.length < 2) return;
-    cancelRun();
-    currentActivityIndex = (currentActivityIndex - 1 + activities.length) % activities.length;
-    log("[words] Prev activity", { currentActivityIndex });
-    renderActivity(item, activities);
-  }
-
-  // ------------------------------------------------------------
-  // Load JSON
-  // ------------------------------------------------------------
-  async function loadData() {
-    const params = new URLSearchParams(window.location.search || "");
-    const overrideUrl = params.get("data");
-    const preferred = overrideUrl ? overrideUrl : REMOTE_DATA_URL;
-    const resolvedUrl = new URL(preferred, window.location.href).toString();
-    log("[words] Loading JSON", { url: resolvedUrl, source: preferred });
-    setStatus("laden...");
-
-    try {
-      const res = await fetch(resolvedUrl, { cache: "no-store" });
-      log("[words] Fetch response", { status: res.status, ok: res.ok });
-
-      if (!res.ok) {
-        setStatus(`fout HTTP ${res.status}`);
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const json = await res.json();
-      if (!Array.isArray(json)) {
-        setStatus("fout: geen array");
-        throw new Error("words.json is not an array");
-      }
-
-      records = json;
-      currentIndex = 0;
-      currentActivityIndex = 0;
-
-      log("[words] JSON parsed", { count: records.length, firstId: records[0]?.id });
-      setStatus(`geladen (${records.length})`);
-
-      render();
-    } catch (err) {
-      log("[words] ERROR loading JSON", { message: err.message });
-
-      if (!overrideUrl && preferred === REMOTE_DATA_URL) {
-        const fallbackUrl = new URL(LOCAL_DATA_URL, window.location.href).toString();
-        log("[words] Fallback to local JSON", { url: fallbackUrl });
-        setStatus("online mislukt, probeer lokaal...");
-        try {
-          const res = await fetch(fallbackUrl, { cache: "no-store" });
-          log("[words] Fallback response", { status: res.status, ok: res.ok });
-          if (!res.ok) {
-            setStatus(`fout HTTP ${res.status}`);
-            throw new Error(`HTTP ${res.status}`);
-          }
-          const json = await res.json();
-          if (!Array.isArray(json)) {
-            setStatus("fout: geen array");
-            throw new Error("words.json is not an array");
-          }
-          records = json;
-          currentIndex = 0;
-          currentActivityIndex = 0;
-          log("[words] JSON parsed (local)", { count: records.length, firstId: records[0]?.id });
-          setStatus(`geladen (${records.length})`);
-          render();
-          return;
-        } catch (fallbackErr) {
-          log("[words] ERROR loading local JSON", { message: fallbackErr.message });
-        }
-      }
-
-      if (location.protocol === "file:") {
-        setStatus("laden mislukt: open via http:// (file:// blokkeert fetch)");
-      } else {
-        setStatus("laden mislukt (zie log/console)");
-      }
-    }
-  }
-
-  // ------------------------------------------------------------
-  // Init
-  // ------------------------------------------------------------
-  document.addEventListener("DOMContentLoaded", () => {
-    log("[words] DOMContentLoaded");
-
-    injectActivityChipStyles();
-
-    const nextBtn = $("next-btn");
-    const prevBtn = $("prev-btn");
-    const nextActivityBtn = $("next-activity-btn");
-    const prevActivityBtn = $("prev-activity-btn");
-    const startActivityBtn = $("start-activity-btn");
-    const toggleFieldsBtn = $("toggle-fields-btn");
-    const fieldsPanel = $("fields-panel");
-
-    if (window.BrailleBridge && typeof BrailleBridge.connect === "function") {
-      BrailleBridge.connect();
-
-      // NOTE: keep cursor events (not navigation)
-      BrailleBridge.on("cursor", (evt) => {
-        if (typeof evt?.index !== "number") return;
-        dispatchCursorSelection({ index: evt.index }, "bridge");
-      });
-
-      BrailleBridge.on("connected", () => log("[words] BrailleBridge connected"));
-      BrailleBridge.on("disconnected", () => log("[words] BrailleBridge disconnected"));
-    } else {
-      log("[words] BrailleBridge not available");
-    }
-
-    if (window.BrailleMonitor && typeof BrailleMonitor.init === "function") {
-      brailleMonitor = BrailleMonitor.init({
-        containerId: "brailleMonitorComponent",
-        onCursorClick(info) {
-          dispatchCursorSelection(info, "monitor");
-        },
-
-        // IMPORTANT CHANGE:
-        // Thumb keys are NOT used for navigation anymore.
-        // They ONLY start the currently selected activity.
-        mapping: {
-          leftthumb: () => startSelectedActivity({ autoStarted: false }),
-          rightthumb: () => startSelectedActivity({ autoStarted: false }),
-          middleleftthumb: () => startSelectedActivity({ autoStarted: false }),
-          middlerightthumb: () => startSelectedActivity({ autoStarted: false })
-        }
-      });
-    } else {
-      log("[words] BrailleMonitor component not available");
-    }
-
-    // Buttons still handle navigation
-    if (nextBtn) nextBtn.addEventListener("click", next);
-    if (prevBtn) prevBtn.addEventListener("click", prev);
-    if (nextActivityBtn) nextActivityBtn.addEventListener("click", nextActivity);
-    if (prevActivityBtn) prevActivityBtn.addEventListener("click", prevActivity);
-    if (startActivityBtn) startActivityBtn.addEventListener("click", () => startSelectedActivity({ autoStarted: false }));
-
-    function setFieldsPanelVisible(visible) {
-      if (!toggleFieldsBtn || !fieldsPanel) return;
-      fieldsPanel.classList.toggle("hidden", !visible);
-      toggleFieldsBtn.textContent = visible ? "Verberg velden" : "Velden";
-      toggleFieldsBtn.setAttribute("aria-expanded", visible ? "true" : "false");
-      if (visible) {
-        try {
-          fieldsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-        } catch (err) {
-          fieldsPanel.scrollIntoView();
-        }
-      }
-      log("[words] Fields panel", { visible });
-    }
-
-    if (toggleFieldsBtn && fieldsPanel) {
-      setFieldsPanelVisible(false);
-      toggleFieldsBtn.addEventListener("click", () => {
-        const isHidden = fieldsPanel.classList.contains("hidden");
-        setFieldsPanelVisible(isHidden);
-      });
-    } else {
-      log("[words] Fields toggle missing", {
-        hasToggleButton: Boolean(toggleFieldsBtn),
-        hasPanel: Boolean(fieldsPanel)
-      });
-    }
-
-    // Keyboard navigation unchanged
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight") nextActivity();
-      if (e.key === "ArrowLeft") prevActivity();
-      if (e.key === "ArrowDown") next();
-      if (e.key === "ArrowUp") prev();
-      if (e.key === "Enter") startSelectedActivity({ autoStarted: false });
-    });
-
-    loadData();
-  });
 })();

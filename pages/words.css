@@ -338,3 +338,55 @@ html[data-theme="dark"] .chip.active {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
 }
 
+/* /css/words.css */
+
+/* Activity "chip" buttons: default / selected / active */
+#activity-buttons .chip {
+  appearance: none;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.04);
+  color: inherit;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  line-height: 1.1;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.12s ease, border-color 0.12s ease,
+    box-shadow 0.12s ease, transform 0.04s ease;
+}
+
+#activity-buttons .chip:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+#activity-buttons .chip:active {
+  transform: translateY(1px);
+}
+
+#activity-buttons .chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 107, 237, 0.35);
+}
+
+/* SELECTED (but not running) */
+#activity-buttons .chip.is-selected {
+  background: rgba(79, 107, 237, 0.16);
+  border-color: rgba(79, 107, 237, 0.6);
+  box-shadow: 0 0 0 2px rgba(79, 107, 237, 0.12) inset;
+}
+
+/* ACTIVE = selected AND currently running */
+#activity-buttons .chip.is-active {
+  background: rgba(20, 140, 60, 0.18);
+  border-color: rgba(20, 140, 60, 0.65);
+  box-shadow: 0 0 0 2px rgba(20, 140, 60, 0.14) inset,
+    0 0 0 3px rgba(20, 140, 60, 0.18);
+}
+
+/* If both classes exist, active should win */
+#activity-buttons .chip.is-selected.is-active {
+  background: rgba(20, 140, 60, 0.18);
+  border-color: rgba(20, 140, 60, 0.65);
+}
+

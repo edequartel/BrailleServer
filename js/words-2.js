@@ -26,7 +26,7 @@
   log("[words] words.js loaded");
 
   // ------------------------------------------------------------
-  // Chip button styling injection (NEW)
+  // Chip button styling injection
   // States:
   // - default (non-selected)
   // - .is-selected (selected activity)
@@ -38,8 +38,6 @@
     const style = document.createElement("style");
     style.id = "words-activity-chip-styles";
     style.textContent = `
-      /* Activity "chip" buttons: default / selected / active */
-
       #activity-buttons .chip {
         appearance: none;
         border: 1px solid rgba(0,0,0,.18);
@@ -53,35 +51,25 @@
         user-select: none;
         transition: background-color .12s ease, border-color .12s ease, box-shadow .12s ease, transform .04s ease;
       }
+      #activity-buttons .chip:hover { background: rgba(0,0,0,.06); }
+      #activity-buttons .chip:active { transform: translateY(1px); }
+      #activity-buttons .chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(79,107,237,.35); }
 
-      #activity-buttons .chip:hover {
-        background: rgba(0,0,0,.06);
-      }
-
-      #activity-buttons .chip:active {
-        transform: translateY(1px);
-      }
-
-      #activity-buttons .chip:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(79,107,237,.35);
-      }
-
-      /* SELECTED (but not running) */
+      /* SELECTED */
       #activity-buttons .chip.is-selected {
         background: rgba(79,107,237,.16);
         border-color: rgba(79,107,237,.6);
         box-shadow: 0 0 0 2px rgba(79,107,237,.12) inset;
       }
 
-      /* ACTIVE = selected AND currently running */
+      /* ACTIVE (selected + running) */
       #activity-buttons .chip.is-active {
         background: rgba(20,140,60,.18);
         border-color: rgba(20,140,60,.65);
         box-shadow: 0 0 0 2px rgba(20,140,60,.14) inset, 0 0 0 3px rgba(20,140,60,.18);
       }
 
-      /* If both classes exist, active should win */
+      /* If both exist, active wins */
       #activity-buttons .chip.is-selected.is-active {
         background: rgba(20,140,60,.18);
         border-color: rgba(20,140,60,.65);
@@ -152,22 +140,6 @@
     if (el) el.textContent = "Status: " + text;
   }
 
-  function setRunnerUi({ isRunning }) {
-    const startBtn = $("start-activity-btn");
-    const doneBtn = $("done-activity-btn");
-    const autoRun = $("auto-run");
-
-    if (startBtn) startBtn.disabled = Boolean(isRunning);
-    if (doneBtn) doneBtn.disabled = !isRunning;
-    if (autoRun) autoRun.disabled = Boolean(isRunning);
-
-    // NEW: keep chip visual state in sync with running flag
-    updateActivityButtonStates();
-  }
-
-  // ------------------------------------------------------------
-  // Activity button state updater (NEW)
-  // ------------------------------------------------------------
   function updateActivityButtonStates() {
     const wrap = $("activity-buttons");
     if (!wrap) return;
@@ -181,11 +153,22 @@
       btn.classList.toggle("is-selected", isSelected);
       btn.classList.toggle("is-active", isActive);
 
-      // Accessibility hints
       btn.setAttribute("aria-pressed", isSelected ? "true" : "false");
       if (isSelected) btn.setAttribute("aria-current", "true");
       else btn.removeAttribute("aria-current");
     }
+  }
+
+  function setRunnerUi({ isRunning }) {
+    const startBtn = $("start-activity-btn");
+    const doneBtn = $("done-activity-btn");
+    const autoRun = $("auto-run");
+
+    if (startBtn) startBtn.disabled = Boolean(isRunning);
+    if (doneBtn) doneBtn.disabled = !isRunning;
+    if (autoRun) autoRun.disabled = Boolean(isRunning);
+
+    updateActivityButtonStates();
   }
 
   // ------------------------------------------------------------
@@ -211,24 +194,16 @@
     let out = "";
     for (let i = 0; i < raw.length; i++) {
       const ch = raw[i];
-      if (BRAILLE_UNICODE_MAP[ch]) {
-        out += BRAILLE_UNICODE_MAP[ch];
-        continue;
-      }
+      if (BRAILLE_UNICODE_MAP[ch]) { out += BRAILLE_UNICODE_MAP[ch]; continue; }
       const lower = ch.toLowerCase();
-      if (BRAILLE_UNICODE_MAP[lower]) {
-        out += BRAILLE_UNICODE_MAP[lower];
-        continue;
-      }
+      if (BRAILLE_UNICODE_MAP[lower]) { out += BRAILLE_UNICODE_MAP[lower]; continue; }
       out += "⣿";
     }
     return out;
   }
 
   function compactSingleLine(text) {
-    return String(text ?? "")
-      .replace(/\s+/g, " ")
-      .trim();
+    return String(text ?? "").replace(/\s+/g, " ").trim();
   }
 
   function normalizeBrailleText(text) {
@@ -396,7 +371,7 @@
     const nextIndex = Math.max(0, Math.min(index, activities.length - 1));
     currentActivityIndex = nextIndex;
     renderActivity(item, activities);
-    updateActivityButtonStates(); // NEW
+    updateActivityButtonStates();
   }
 
   function getCurrentActivity() {
@@ -448,6 +423,7 @@
     if (!active) return;
 
     activityIndexEl.textContent = `${currentActivityIndex + 1} / ${activities.length}`;
+
     const rawId = String(active.id ?? "");
     const id = rawId.trim().toLowerCase();
     const canonical =
@@ -477,7 +453,7 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "chip";
-      btn.dataset.index = String(i); // NEW
+      btn.dataset.index = String(i);
       btn.textContent = a.caption || a.id;
       btn.title = a.id;
 
@@ -490,9 +466,7 @@
       activityButtonsEl.appendChild(btn);
     }
 
-    // NEW: after buttons exist, apply selected/active classes
     updateActivityButtonStates();
-
     updateBrailleLine(getBrailleTextForCurrent(), { reason: "activity-change" });
   }
 
@@ -502,7 +476,7 @@
     stopActiveActivity({ reason: "cancelRun" });
     setRunnerUi({ isRunning: false });
     setActivityStatus("idle");
-    updateActivityButtonStates(); // NEW
+    updateActivityButtonStates();
   }
 
   function getActivityModule(activityKey) {
@@ -668,7 +642,7 @@
     running = true;
     setRunnerUi({ isRunning: true });
     setActivityStatus(autoStarted ? "running (auto)" : "running");
-    updateActivityButtonStates(); // NEW: show "active" color on selected button
+    updateActivityButtonStates();
 
     try {
       await handler({ ...cur, token });
@@ -680,8 +654,7 @@
       setActivityStatus("done");
 
       stopActiveActivity({ reason: "finally" });
-
-      updateActivityButtonStates(); // NEW: remove "active" color
+      updateActivityButtonStates();
 
       const autoRun = $("auto-run");
       if (autoRun && autoRun.checked) {
@@ -732,7 +705,6 @@
 
     idEl.textContent = "ID: " + (item.id ?? "–");
     indexEl.textContent = `${currentIndex + 1} / ${records.length}`;
-
     wordEl.textContent = item.word || "–";
 
     if (emojiEl) {
@@ -743,19 +715,13 @@
     }
 
     const wordBrailleEl = $("field-word-braille");
-    if (wordBrailleEl) {
-      wordBrailleEl.textContent = toBrailleUnicode(item.word || "");
-    }
+    if (wordBrailleEl) wordBrailleEl.textContent = toBrailleUnicode(item.word || "");
 
     const iconEl = $("field-icon");
-    if (iconEl) {
-      iconEl.textContent = "Icon: " + (item.icon || "–");
-    }
+    if (iconEl) iconEl.textContent = "Icon: " + (item.icon || "–");
 
     const shortFlagEl = $("short-flag");
-    if (shortFlagEl) {
-      shortFlagEl.style.display = item.short ? "inline-flex" : "none";
-    }
+    if (shortFlagEl) shortFlagEl.style.display = item.short ? "inline-flex" : "none";
 
     const allEl = $("field-all");
     if (allEl) allEl.textContent = formatAllFields(item);
@@ -770,7 +736,7 @@
   }
 
   // ------------------------------------------------------------
-  // Navigation
+  // Navigation (buttons + keyboard only)
   // ------------------------------------------------------------
   function next() {
     if (!records.length) return;
@@ -833,7 +799,6 @@
       }
 
       const json = await res.json();
-
       if (!Array.isArray(json)) {
         setStatus("fout: geen array");
         throw new Error("words.json is not an array");
@@ -869,12 +834,12 @@
           records = json;
           currentIndex = 0;
           currentActivityIndex = 0;
-          log("[words] JSON parsed (remote)", { count: records.length, firstId: records[0]?.id });
+          log("[words] JSON parsed (local)", { count: records.length, firstId: records[0]?.id });
           setStatus(`geladen (${records.length})`);
           render();
           return;
         } catch (fallbackErr) {
-          log("[words] ERROR loading remote JSON", { message: fallbackErr.message });
+          log("[words] ERROR loading local JSON", { message: fallbackErr.message });
         }
       }
 
@@ -892,7 +857,6 @@
   document.addEventListener("DOMContentLoaded", () => {
     log("[words] DOMContentLoaded");
 
-    // NEW: ensure chip colors exist (even if your CSS doesn't define them yet)
     injectActivityChipStyles();
 
     const nextBtn = $("next-btn");
@@ -905,10 +869,13 @@
 
     if (window.BrailleBridge && typeof BrailleBridge.connect === "function") {
       BrailleBridge.connect();
+
+      // NOTE: keep cursor events (not navigation)
       BrailleBridge.on("cursor", (evt) => {
         if (typeof evt?.index !== "number") return;
         dispatchCursorSelection({ index: evt.index }, "bridge");
       });
+
       BrailleBridge.on("connected", () => log("[words] BrailleBridge connected"));
       BrailleBridge.on("disconnected", () => log("[words] BrailleBridge disconnected"));
     } else {
@@ -921,17 +888,22 @@
         onCursorClick(info) {
           dispatchCursorSelection(info, "monitor");
         },
+
+        // IMPORTANT CHANGE:
+        // Thumb keys are NOT used for navigation anymore.
+        // They ONLY start the currently selected activity.
         mapping: {
-          leftthumb: () => prev(),
-          rightthumb: () => next(),
-          middleleftthumb: () => prevActivity(),
-          middlerightthumb: () => nextActivity()
+          leftthumb: () => startSelectedActivity({ autoStarted: false }),
+          rightthumb: () => startSelectedActivity({ autoStarted: false }),
+          middleleftthumb: () => startSelectedActivity({ autoStarted: false }),
+          middlerightthumb: () => startSelectedActivity({ autoStarted: false })
         }
       });
     } else {
       log("[words] BrailleMonitor component not available");
     }
 
+    // Buttons still handle navigation
     if (nextBtn) nextBtn.addEventListener("click", next);
     if (prevBtn) prevBtn.addEventListener("click", prev);
     if (nextActivityBtn) nextActivityBtn.addEventListener("click", nextActivity);
@@ -966,6 +938,7 @@
       });
     }
 
+    // Keyboard navigation unchanged
     document.addEventListener("keydown", (e) => {
       if (e.key === "ArrowRight") nextActivity();
       if (e.key === "ArrowLeft") prevActivity();
