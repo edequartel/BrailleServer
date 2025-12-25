@@ -3,24 +3,16 @@
   "use strict";
 
   // ------------------------------------------------------------
-  // Logging helper: uses logging.js (logMessage) if available.
-  // Falls back to console.log.
+  // Logging helper
   // ------------------------------------------------------------
   function log(msg, data) {
     const line = data ? `${msg} ${safeJson(data)}` : msg;
-    if (typeof window.logMessage === "function") {
-      window.logMessage(line);
-    } else {
-      console.log(line);
-    }
+    if (typeof window.logMessage === "function") window.logMessage(line);
+    else console.log(line);
   }
 
   function safeJson(x) {
-    try {
-      return JSON.stringify(x);
-    } catch (err) {
-      return String(x);
-    }
+    try { return JSON.stringify(x); } catch { return String(x); }
   }
 
   log("[words] words.js loaded");
@@ -41,6 +33,7 @@
   let running = false;
   let activeActivityModule = null;
   let activeActivityDonePromise = null;
+
   let brailleMonitor = null;
   let brailleLine = "";
   const BRAILLE_CELLS = 40;
@@ -97,7 +90,6 @@
       const isSelected = Number.isFinite(i) && i === currentActivityIndex;
       const isActive = isSelected && Boolean(running);
 
-      // NEW class names for external CSS file:
       btn.classList.toggle("is-selected", isSelected);
       btn.classList.toggle("is-active", isActive);
 
@@ -112,6 +104,7 @@
     const doneBtn = $("done-activity-btn");
     const autoRun = $("auto-run");
 
+    // If you later switch to a single toggle button, update here.
     if (startBtn) startBtn.disabled = Boolean(isRunning);
     if (doneBtn) doneBtn.disabled = !isRunning;
     if (autoRun) autoRun.disabled = Boolean(isRunning);
@@ -186,20 +179,6 @@
     log("[words] Braille line updated", { len: next.length, reason: meta.reason || "unspecified" });
   }
 
-  function getBrailleTextForCurrent() {
-    const item = records[currentIndex];
-    if (!item) return "";
-
-    const cur = getCurrentActivity();
-    if (cur && cur.activity) {
-      const { detail } = formatActivityDetail(cur.activity.id, item);
-      const detailText = compactSingleLine(detail);
-      if (detailText && detailText !== "–") return detailText;
-    }
-
-    return item.word != null ? String(item.word) : "";
-  }
-
   function computeWordAt(text, index) {
     if (!text) return "";
     const len = text.length;
@@ -258,7 +237,7 @@
   }
 
   // ------------------------------------------------------------
-  // Render
+  // Activities
   // ------------------------------------------------------------
   function getActivities(item) {
     if (Array.isArray(item.activities) && item.activities.length) {
@@ -311,11 +290,13 @@
   function setActiveActivity(index) {
     const item = records[currentIndex];
     if (!item) return;
+
     const activities = getActivities(item);
     if (!activities.length) {
       currentActivityIndex = 0;
       return;
     }
+
     const nextIndex = Math.max(0, Math.min(index, activities.length - 1));
     currentActivityIndex = nextIndex;
     renderActivity(item, activities);
@@ -325,23 +306,35 @@
   function getCurrentActivity() {
     const item = records[currentIndex];
     if (!item) return null;
+
     const activities = getActivities(item);
     if (!activities.length) return null;
+
     const active = activities[currentActivityIndex] ?? activities[0];
     if (!active) return null;
+
     return { item, activities, activity: active };
+  }
+
+  function getBrailleTextForCurrent() {
+    const item = records[currentIndex];
+    if (!item) return "";
+
+    const cur = getCurrentActivity();
+    if (cur && cur.activity) {
+      const { detail } = formatActivityDetail(cur.activity.id, item);
+      const detailText = compactSingleLine(detail);
+      if (detailText && detailText !== "–") return detailText;
+    }
+
+    return item.word != null ? String(item.word) : "";
   }
 
   function renderActivity(item, activities) {
     const activityIndexEl = $("activity-index");
     const activityIdEl = $("activity-id");
     const activityButtonsEl = $("activity-buttons");
-    const activityCaptionEl = document.getElementById("activity-caption");
-    const activityDetailEl = document.getElementById("activity-detail");
     const activityInstructionEl = document.getElementById("activity-instruction");
-    const activityInstructionLabelEl = document.getElementById("activity-instruction-label");
-    const prevActivityBtn = $("prev-activity-btn");
-    const nextActivityBtn = $("next-activity-btn");
 
     if (!activityIndexEl || !activityIdEl || !activityButtonsEl) {
       log("[words] Missing activity DOM elements; cannot render activity.");
@@ -351,21 +344,11 @@
     if (!activities.length) {
       activityIndexEl.textContent = "0 / 0";
       activityIdEl.textContent = "Activity: –";
-      if (activityCaptionEl) activityCaptionEl.textContent = "Details";
-      if (activityDetailEl) activityDetailEl.textContent = "–";
       if (activityInstructionEl) activityInstructionEl.textContent = "–";
-      if (activityInstructionEl) activityInstructionEl.style.display = "";
-      if (activityInstructionLabelEl) activityInstructionLabelEl.style.display = "";
       activityButtonsEl.innerHTML = "";
-      if (prevActivityBtn) prevActivityBtn.disabled = true;
-      if (nextActivityBtn) nextActivityBtn.disabled = true;
       updateBrailleLine(getBrailleTextForCurrent(), { reason: "activity-empty" });
       return;
     }
-
-    const canCycle = activities.length > 1;
-    if (prevActivityBtn) prevActivityBtn.disabled = !canCycle;
-    if (nextActivityBtn) nextActivityBtn.disabled = !canCycle;
 
     const active = activities[currentActivityIndex] ?? activities[0];
     if (!active) return;
@@ -386,14 +369,8 @@
       ? `Activity: ${rawId} (${canonical})`
       : `Activity: ${rawId}`;
 
-    const { caption, detail } = formatActivityDetail(active.id, item);
     const instruction = String(active.instruction ?? "").trim();
-
-    if (activityCaptionEl) activityCaptionEl.textContent = active.caption || caption || "Details";
-    if (activityDetailEl) activityDetailEl.textContent = detail ?? "–";
     if (activityInstructionEl) activityInstructionEl.textContent = instruction || "–";
-    if (activityInstructionEl) activityInstructionEl.style.display = "";
-    if (activityInstructionLabelEl) activityInstructionLabelEl.style.display = "";
 
     activityButtonsEl.innerHTML = "";
     for (let i = 0; i < activities.length; i++) {
@@ -418,6 +395,9 @@
     updateBrailleLine(getBrailleTextForCurrent(), { reason: "activity-change" });
   }
 
+  // ------------------------------------------------------------
+  // Runner
+  // ------------------------------------------------------------
   function cancelRun() {
     runToken += 1;
     running = false;
@@ -468,20 +448,12 @@
 
       const p = activeActivityDonePromise;
       if (p && typeof p.then === "function") {
-        p.then(() => {
-          stopActiveActivity({ reason: "activityDone" });
-          finish();
-        }).catch(() => {
-          stopActiveActivity({ reason: "activityError" });
-          finish();
-        });
+        p.then(() => { stopActiveActivity({ reason: "activityDone" }); finish(); })
+         .catch(() => { stopActiveActivity({ reason: "activityError" }); finish(); });
       }
 
       const poll = () => {
-        if (currentToken !== runToken) {
-          finish();
-          return;
-        }
+        if (currentToken !== runToken) { finish(); return; }
         requestAnimationFrame(poll);
       };
       requestAnimationFrame(poll);
@@ -565,7 +537,6 @@
 
     running = true;
     setRunnerUi({ isRunning: true });
-    updateActivityButtonStates();
 
     try {
       await handler({ ...cur, token });
@@ -577,7 +548,6 @@
       setActivityStatus("done");
 
       stopActiveActivity({ reason: "finally" });
-      updateActivityButtonStates();
 
       const autoRun = $("auto-run");
       if (autoRun && autoRun.checked) {
@@ -588,6 +558,7 @@
 
   function advanceToNextActivityOrWord({ autoStart = false } = {}) {
     if (!records.length) return;
+
     const item = records[currentIndex];
     const activities = getActivities(item);
     const nextIndex = currentActivityIndex + 1;
@@ -604,27 +575,22 @@
   }
 
   // ------------------------------------------------------------
-  // Navigation handlers (buttons + keyboard only)
+  // Navigation (buttons + keyboard only)
   // ------------------------------------------------------------
-  function next() { if (!records.length) return; cancelRun(); currentIndex = (currentIndex + 1) % records.length; currentActivityIndex = 0; render(); }
-  function prev() { if (!records.length) return; cancelRun(); currentIndex = (currentIndex - 1 + records.length) % records.length; currentActivityIndex = 0; render(); }
-  function nextActivity() {
+  function next() {
     if (!records.length) return;
-    const item = records[currentIndex];
-    const activities = getActivities(item);
-    if (activities.length < 2) return;
     cancelRun();
-    currentActivityIndex = (currentActivityIndex + 1) % activities.length;
-    renderActivity(item, activities);
+    currentIndex = (currentIndex + 1) % records.length;
+    currentActivityIndex = 0;
+    render();
   }
-  function prevActivity() {
+
+  function prev() {
     if (!records.length) return;
-    const item = records[currentIndex];
-    const activities = getActivities(item);
-    if (activities.length < 2) return;
     cancelRun();
-    currentActivityIndex = (currentActivityIndex - 1 + activities.length) % activities.length;
-    renderActivity(item, activities);
+    currentIndex = (currentIndex - 1 + records.length) % records.length;
+    currentActivityIndex = 0;
+    render();
   }
 
   // ------------------------------------------------------------
@@ -648,7 +614,7 @@
       currentActivityIndex = 0;
       render();
     } catch (err) {
-      log("[words] ERROR loading JSON", { message: err.message });
+      log("[words] ERROR loading JSON", { message: err?.message || String(err) });
 
       if (!overrideUrl && preferred === REMOTE_DATA_URL) {
         const fallbackUrl = new URL(LOCAL_DATA_URL, window.location.href).toString();
@@ -664,7 +630,7 @@
           render();
           return;
         } catch (fallbackErr) {
-          log("[words] ERROR loading local JSON", { message: fallbackErr.message });
+          log("[words] ERROR loading local JSON", { message: fallbackErr?.message || String(fallbackErr) });
         }
       }
 
@@ -679,18 +645,9 @@
   document.addEventListener("DOMContentLoaded", () => {
     log("[words] DOMContentLoaded");
 
-    // IMPORTANT: CSS is now external. Remove all injected style from JS.
-    // Put the CSS below in: /css/words.css (or your page css)
-    // and include it in your HTML:
-    // <link rel="stylesheet" href="../css/words.css" />
-
     const nextBtn = $("next-btn");
     const prevBtn = $("prev-btn");
-    const nextActivityBtn = $("next-activity-btn");
-    const prevActivityBtn = $("prev-activity-btn");
     const startActivityBtn = $("start-activity-btn");
-    const toggleFieldsBtn = $("toggle-fields-btn");
-    const fieldsPanel = $("fields-panel");
 
     if (window.BrailleBridge && typeof BrailleBridge.connect === "function") {
       BrailleBridge.connect();
@@ -709,40 +666,33 @@
           dispatchCursorSelection(info, "monitor");
         },
 
-        // Thumb keys ONLY start the selected activity (no navigation)
+        // Thumb keys:
+        // - RightThumb starts ONLY when not running (prevents restart during story toggle)
+        // - Others do nothing
         mapping: {
-          leftthumb: () => startSelectedActivity({ autoStarted: false }),
-          rightthumb: () => startSelectedActivity({ autoStarted: false }),
-          middleleftthumb: () => startSelectedActivity({ autoStarted: false }),
-          middlerightthumb: () => startSelectedActivity({ autoStarted: false })
+          rightthumb: () => {
+            if (running) return;
+            startSelectedActivity({ autoStarted: false });
+          },
+          leftthumb: () => {},
+          middleleftthumb: () => {},
+          middlerightthumb: () => {}
         }
       });
+    } else {
+      log("[words] BrailleMonitor component not available");
     }
 
     if (nextBtn) nextBtn.addEventListener("click", next);
     if (prevBtn) prevBtn.addEventListener("click", prev);
-    if (nextActivityBtn) nextActivityBtn.addEventListener("click", nextActivity);
-    if (prevActivityBtn) prevActivityBtn.addEventListener("click", prevActivity);
-    if (startActivityBtn) startActivityBtn.addEventListener("click", () => startSelectedActivity({ autoStarted: false }));
 
-    function setFieldsPanelVisible(visible) {
-      if (!toggleFieldsBtn || !fieldsPanel) return;
-      fieldsPanel.classList.toggle("hidden", !visible);
-      toggleFieldsBtn.textContent = visible ? "Verberg velden" : "Velden";
-      toggleFieldsBtn.setAttribute("aria-expanded", visible ? "true" : "false");
-    }
-
-    if (toggleFieldsBtn && fieldsPanel) {
-      setFieldsPanelVisible(false);
-      toggleFieldsBtn.addEventListener("click", () => {
-        const isHidden = fieldsPanel.classList.contains("hidden");
-        setFieldsPanelVisible(isHidden);
-      });
+    if (startActivityBtn) {
+      startActivityBtn.addEventListener("click", () => startSelectedActivity({ autoStarted: false }));
+    } else {
+      log("[words] Missing #start-activity-btn");
     }
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight") nextActivity();
-      if (e.key === "ArrowLeft") prevActivity();
       if (e.key === "ArrowDown") next();
       if (e.key === "ArrowUp") prev();
       if (e.key === "Enter") startSelectedActivity({ autoStarted: false });
@@ -752,7 +702,7 @@
   });
 
   // ------------------------------------------------------------
-  // Render (kept at bottom in this file)
+  // Render
   // ------------------------------------------------------------
   function render() {
     if (!records.length) {
@@ -763,6 +713,7 @@
     }
 
     const item = records[currentIndex];
+
     const idEl = $("item-id");
     const indexEl = $("item-index");
     const wordEl = $("field-word");
@@ -785,12 +736,6 @@
 
     const wordBrailleEl = $("field-word-braille");
     if (wordBrailleEl) wordBrailleEl.textContent = toBrailleUnicode(item.word || "");
-
-    const iconEl = $("field-icon");
-    if (iconEl) iconEl.textContent = "Icon: " + (item.icon || "–");
-
-    const shortFlagEl = $("short-flag");
-    if (shortFlagEl) shortFlagEl.style.display = item.short ? "inline-flex" : "none";
 
     const allEl = $("field-all");
     if (allEl) allEl.textContent = formatAllFields(item);

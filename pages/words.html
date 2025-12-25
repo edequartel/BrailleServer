@@ -43,13 +43,22 @@
 
     <div class="meta-bar meta-bar-tight">
       <span id="activity-status">Status: idle</span>
+
       <span class="runner-controls">
         <label class="auto-next">
           <input id="auto-run" type="checkbox" checked />
           Auto next
         </label>
-        <button id="start-activity-btn" class="secondary" type="button">Start</button>
-        <button id="done-activity-btn" type="button" disabled>Stop</button>
+
+        <!-- SINGLE TOGGLE BUTTON (Start/Stop) -->
+        <button
+          id="run-activity-btn"
+          class="secondary"
+          type="button"
+          aria-pressed="false"
+          aria-label="Start of stop de activiteit">
+          Start
+        </button>
       </span>
     </div>
 
@@ -185,6 +194,10 @@
   <script src="../activities/story.js"></script>
   <script src="../activities/sounds.js"></script>
 
+  <!-- If you use an external runner, it must load before words.js -->
+  <script src="../js/activity-runner.js"></script>
+
+  <!-- Main page logic -->
   <script src="../js/words.js"></script>
 </body>
 </html>

@@ -9,11 +9,7 @@
   }
 
   function safeJson(x) {
-    try {
-      return JSON.stringify(x);
-    } catch (err) {
-      return String(x);
-    }
+    try { return JSON.stringify(x); } catch { return String(x); }
   }
 
   const DEFAULT_LANG = "nl";
@@ -22,56 +18,59 @@
     let intervalId = null;
     let session = null;
     let playToken = 0;
+
     let currentHowl = null;
     let currentUrl = null;
+    let currentSoundId = null;
+
     let donePromise = null;
     let doneResolve = null;
 
-    // playback state
     let isPaused = false;
+
+    // Debounce to avoid double firing (keydown+keyup / duplicates)
+    let lastToggleAt = 0;
+    const TOGGLE_DEBOUNCE_MS = 220;
 
     function isRunning() {
       return Boolean(intervalId);
     }
 
     async function ensureSoundsReady() {
-      if (typeof Howl === "undefined") {
-        throw new Error("Howler.js not loaded");
-      }
+      if (typeof Howl === "undefined") throw new Error("Howler.js not loaded");
       if (typeof Sounds === "undefined" || !Sounds || typeof Sounds.init !== "function") {
         throw new Error("Sounds.js not loaded");
       }
-
       await Sounds.init("../config/sounds.json", (line) => log("[Sounds]", line));
     }
 
     function stopCurrentHowl() {
       if (!currentHowl) return;
       try {
-        currentHowl.stop();
-      } catch (err) {
+        if (currentSoundId != null) currentHowl.stop(currentSoundId);
+        else currentHowl.stop();
+      } catch {
         // ignore
       } finally {
         currentHowl = null;
         currentUrl = null;
+        currentSoundId = null;
         isPaused = false;
       }
     }
 
     function ensureDonePromise() {
       if (donePromise) return donePromise;
-      donePromise = new Promise((resolve) => {
-        doneResolve = resolve;
-      });
+      donePromise = new Promise((resolve) => { doneResolve = resolve; });
       return donePromise;
     }
 
     function resolveDone(payload) {
       if (!doneResolve) return;
-      const resolve = doneResolve;
+      const r = doneResolve;
       doneResolve = null;
       donePromise = null;
-      resolve(payload);
+      r(payload);
     }
 
     function playHowl(howl, token) {
@@ -90,7 +89,9 @@
         try {
           isPaused = false;
           howl.stop();
-          howl.play();
+
+          // IMPORTANT: store the soundId to resume correctly
+          currentSoundId = howl.play();
         } catch (err) {
           reject(err);
         }
@@ -106,6 +107,7 @@
 
     async function playStory(ctx) {
       const token = playToken;
+
       const record = ctx?.record || {};
       const storyFiles = Array.isArray(record.story) ? record.story : [];
       const lang = ctx?.lang || DEFAULT_LANG;
@@ -114,18 +116,16 @@
       const parsedIndex = Number(indexRaw);
       const hasValidIndex = Number.isFinite(parsedIndex);
 
-      log("[activity:story] audio sequence", { lang, count: storyFiles.length, index: hasValidIndex ? parsedIndex : indexRaw });
-      if (!storyFiles.length) {
-        log("[activity:story] no story files to play", { recordId: record?.id, word: record?.word });
-        return;
-      }
-      if (!hasValidIndex) {
-        log("[activity:story] missing/invalid index; nothing played", { index: indexRaw });
-        return;
-      }
+      log("[activity:story] audio sequence", {
+        lang,
+        count: storyFiles.length,
+        index: hasValidIndex ? parsedIndex : indexRaw
+      });
+
+      if (!storyFiles.length) return;
+      if (!hasValidIndex) return;
 
       await ensureSoundsReady();
-      log("[activity:story] Sounds ready");
 
       const filesToPlay =
         parsedIndex === -1
@@ -134,19 +134,18 @@
             ? [storyFiles[parsedIndex]]
             : [];
 
-      if (!filesToPlay.length) {
-        log("[activity:story] index out of range; nothing played", { index: parsedIndex, count: storyFiles.length });
-        return;
-      }
+      if (!filesToPlay.length) return;
 
       for (const fileName of filesToPlay) {
         if (token !== playToken) return;
+
         const key = normalizeStoryKey(fileName);
         if (!key) continue;
 
         const url = Sounds._buildUrl(lang, "stories", key);
         currentUrl = url;
         currentHowl = Sounds._getHowl(url);
+        currentSoundId = null;
         isPaused = false;
 
         log("[activity:story] play start", { key, url, fileName: String(fileName) });
@@ -161,68 +160,38 @@
       }
 
       if (token !== playToken) return;
-      log("[activity:story] audio done");
       stop({ reason: "audioEnd" });
     }
 
-    // ----------------------------
-    // Thumb key controls
-    // Right thumb: play/resume
-    // Left thumb: pause
-    // ----------------------------
+    // RightThumb ONLY: toggle play/pause (no restart)
+    function togglePlayPause(source) {
+      const now = Date.now();
+      if (now - lastToggleAt < TOGGLE_DEBOUNCE_MS) return;
+      lastToggleAt = now;
 
-    function pausePlayback(source) {
-      if (!currentHowl) {
-        log("[activity:story] pause ignored (no currentHowl)", { source });
-        return;
-      }
+      if (!isRunning() || !currentHowl) return;
+
       try {
-        if (currentHowl.playing()) {
-          currentHowl.pause();
-          isPaused = true;
-          log("[activity:story] paused", { source, url: currentUrl });
-        } else {
-          // already not playing (maybe already paused or stopped)
-          isPaused = true;
-          log("[activity:story] pause (already not playing)", { source, url: currentUrl });
-        }
-      } catch (err) {
-        log("[activity:story] pause error", { source, message: err?.message || String(err) });
-      }
-    }
+        const id = currentSoundId;
 
-    function resumePlayback(source) {
-      // If we have a paused howl, resume it.
-      if (currentHowl) {
-        try {
-          if (!currentHowl.playing() && isPaused) {
-            currentHowl.play(); // resumes from pause position in Howler
-            isPaused = false;
-            log("[activity:story] resumed", { source, url: currentUrl });
-            return;
-          }
-          if (currentHowl.playing()) {
-            log("[activity:story] resume ignored (already playing)", { source, url: currentUrl });
-            return;
-          }
-        } catch (err) {
-          log("[activity:story] resume error", { source, message: err?.message || String(err) });
+        if (currentHowl.playing(id)) {
+          currentHowl.pause(id);
+          isPaused = true;
+          log("[activity:story] paused", { source, url: currentUrl, soundId: id });
           return;
         }
-      }
 
-      // If activity is running but nothing is currently loaded/playing, restart the story from the current ctx.
-      if (isRunning() && session?.ctx) {
-        log("[activity:story] resume triggers restart of story sequence", { source });
-        playToken += 1;
-        playStory(session.ctx).catch((err) => {
-          log("[activity:story] audio error", { message: err?.message || String(err) });
-          resolveDone({ ok: false, error: err?.message || String(err) });
-        });
-        return;
-      }
+        if (isPaused && id != null) {
+          currentHowl.play(id); // resumes same instance
+          isPaused = false;
+          log("[activity:story] resumed", { source, url: currentUrl, soundId: id });
+          return;
+        }
 
-      log("[activity:story] resume ignored (not running)", { source });
+        log("[activity:story] toggle ignored (not playing, not paused)", { source, url: currentUrl, soundId: id });
+      } catch (err) {
+        log("[activity:story] toggle error", { source, message: err?.message || String(err) });
+      }
     }
 
     function normalizeKeyName(x) {
@@ -234,23 +203,10 @@
     }
 
     function extractKeyNameFromEvent(ev) {
-      // supports several event shapes:
-      // - CustomEvent.detail.key / detail.name / detail.keyName
-      // - { key, code }-like objects
-      // - direct string
       if (!ev) return "";
       if (typeof ev === "string") return ev;
-
       const d = ev.detail || {};
-      return (
-        d.keyName ||
-        d.key ||
-        d.name ||
-        ev.keyName ||
-        ev.key ||
-        ev.code ||
-        ""
-      );
+      return d.keyName || d.key || d.name || ev.keyName || ev.key || ev.code || "";
     }
 
     function handleThumbKeys(ev, sourceLabel) {
@@ -258,44 +214,30 @@
       const k = normalizeKeyName(raw);
       if (!k) return;
 
-      // Accept a few likely spellings coming from BrailleBridge keymaps
       const isRightThumb =
         k === "rightthumb" ||
         k === "rt" ||
         k === "thumbright" ||
         k === "rightthumbkey";
 
-      const isLeftThumb =
-        k === "leftthumb" ||
-        k === "lt" ||
-        k === "thumbleft" ||
-        k === "leftthumbkey";
-
-      if (isRightThumb) {
-        resumePlayback(sourceLabel || raw);
-      } else if (isLeftThumb) {
-        pausePlayback(sourceLabel || raw);
-      }
+      if (isRightThumb) togglePlayPause(sourceLabel || raw);
+      // All other keys ignored
     }
 
-    // Register listeners once per activity instance
     (function attachKeyListenersOnce() {
       if (window.__storyThumbKeysAttached) return;
       window.__storyThumbKeysAttached = true;
 
-      // Preferred: whatever your websocket bridge emits as CustomEvent
       window.addEventListener("braillebridge:key", (ev) => handleThumbKeys(ev, "braillebridge:key"));
       window.addEventListener("braille-key", (ev) => handleThumbKeys(ev, "braille-key"));
       window.addEventListener("braillebridgeKey", (ev) => handleThumbKeys(ev, "braillebridgeKey"));
 
-      // Optional dev fallback: keyboard testing
+      // Dev fallback: Space toggles
       window.addEventListener("keydown", (ev) => {
-        // Space = pause, Enter = play/resume
-        if (ev.code === "Space") handleThumbKeys({ detail: { keyName: "LeftThumb" } }, "keydown:Space");
-        if (ev.code === "Enter") handleThumbKeys({ detail: { keyName: "RightThumb" } }, "keydown:Enter");
+        if (ev.code === "Space") handleThumbKeys({ detail: { keyName: "RightThumb" } }, "keydown:Space");
       });
 
-      log("[activity:story] thumb key listeners attached");
+      log("[activity:story] right-thumb toggle listeners attached");
     })();
 
     function start(ctx) {
@@ -303,6 +245,7 @@
       ensureDonePromise();
 
       isPaused = false;
+      currentSoundId = null;
 
       session = {
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -312,8 +255,7 @@
       log("[activity:story] start", {
         sessionId: session.id,
         recordId: ctx?.record?.id,
-        word: ctx?.record?.word,
-        storyLines: Array.isArray(ctx?.record?.story) ? ctx.record.story.length : null
+        word: ctx?.record?.word
       });
 
       let tick = 0;
@@ -336,11 +278,12 @@
         window.clearInterval(intervalId);
         intervalId = null;
       }
+
       playToken += 1;
-      const url = currentUrl;
-      if (payload?.reason && url) log("[activity:story] play stop", { url, reason: payload.reason });
+
       stopCurrentHowl();
       log("[activity:story] stop", { sessionId: session?.id, payload });
+
       session = null;
       resolveDone({ ok: true, payload });
     }

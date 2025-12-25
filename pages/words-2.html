@@ -49,22 +49,31 @@
           Auto next
         </label>
         <button id="start-activity-btn" class="secondary" type="button">Start</button>
-        <button id="done-activity-btn" type="button" disabled>Done</button>
+        <button id="done-activity-btn" type="button" disabled>Stop</button>
       </span>
     </div>
 
+    <!-- BUTTONS: word navigation kept, activity navigation removed -->
     <div class="buttons">
       <button id="prev-btn" class="secondary" type="button">Vorige</button>
       <button id="next-btn" type="button">Volgende</button>
-      <button id="prev-activity-btn" class="secondary" type="button">◀</button>
-      <button id="next-activity-btn" type="button">▶</button>
 
-      <button id="toggle-fields-btn" class="secondary" type="button"
-        aria-controls="fields-panel" aria-expanded="false">Velden</button>
+      <button
+        id="toggle-fields-btn"
+        class="secondary"
+        type="button"
+        aria-controls="fields-panel"
+        aria-expanded="false">
+        Velden
+      </button>
 
       <button id="toggle-log-btn" class="secondary" type="button">Log</button>
 
-      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+      <button
+        id="themeToggle"
+        class="theme-toggle"
+        type="button"
+        aria-label="Toggle theme">
         <span class="theme-dot" aria-hidden="true"></span>
         <span id="themeLabel">Theme: light</span>
       </button>
@@ -102,7 +111,8 @@
       function getInitialTheme() {
         const saved = localStorage.getItem(THEME_KEY);
         if (saved === "light" || saved === "dark") return saved;
-        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+        return window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
           ? "dark"
           : "light";
       }
@@ -113,11 +123,14 @@
         const tbtn = document.getElementById("themeToggle");
         if (tbtn) {
           tbtn.addEventListener("click", () => {
-            const current = html.getAttribute("data-theme") === "dark" ? "dark" : "light";
+            const current =
+              html.getAttribute("data-theme") === "dark" ? "dark" : "light";
             const next = current === "dark" ? "light" : "dark";
             localStorage.setItem(THEME_KEY, next);
             applyTheme(next);
-            if (typeof window.logMessage === "function") window.logMessage("[theme] " + next);
+            if (typeof window.logMessage === "function") {
+              window.logMessage("[theme] " + next);
+            }
           });
         }
       });
@@ -139,10 +152,12 @@
 
       document.addEventListener("DOMContentLoaded", () => {
         const btn = document.getElementById("clear-log-btn");
-        if (btn) btn.addEventListener("click", () => {
-          const el = document.getElementById("log");
-          if (el) el.textContent = "";
-        });
+        if (btn) {
+          btn.addEventListener("click", () => {
+            const el = document.getElementById("log");
+            if (el) el.textContent = "";
+          });
+        }
 
         const toggle = document.getElementById("toggle-log-btn");
         const panel = document.getElementById("log-panel");
