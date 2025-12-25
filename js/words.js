@@ -26,6 +26,71 @@
   log("[words] words.js loaded");
 
   // ------------------------------------------------------------
+  // Chip button styling injection (NEW)
+  // States:
+  // - default (non-selected)
+  // - .is-selected (selected activity)
+  // - .is-active (selected AND currently running)
+  // ------------------------------------------------------------
+  function injectActivityChipStyles() {
+    if (document.getElementById("words-activity-chip-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "words-activity-chip-styles";
+    style.textContent = `
+      /* Activity "chip" buttons: default / selected / active */
+
+      #activity-buttons .chip {
+        appearance: none;
+        border: 1px solid rgba(0,0,0,.18);
+        background: rgba(0,0,0,.04);
+        color: inherit;
+        border-radius: 999px;
+        padding: 0.35rem 0.7rem;
+        font: inherit;
+        line-height: 1.1;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color .12s ease, border-color .12s ease, box-shadow .12s ease, transform .04s ease;
+      }
+
+      #activity-buttons .chip:hover {
+        background: rgba(0,0,0,.06);
+      }
+
+      #activity-buttons .chip:active {
+        transform: translateY(1px);
+      }
+
+      #activity-buttons .chip:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79,107,237,.35);
+      }
+
+      /* SELECTED (but not running) */
+      #activity-buttons .chip.is-selected {
+        background: rgba(79,107,237,.16);
+        border-color: rgba(79,107,237,.6);
+        box-shadow: 0 0 0 2px rgba(79,107,237,.12) inset;
+      }
+
+      /* ACTIVE = selected AND currently running */
+      #activity-buttons .chip.is-active {
+        background: rgba(20,140,60,.18);
+        border-color: rgba(20,140,60,.65);
+        box-shadow: 0 0 0 2px rgba(20,140,60,.14) inset, 0 0 0 3px rgba(20,140,60,.18);
+      }
+
+      /* If both classes exist, active should win */
+      #activity-buttons .chip.is-selected.is-active {
+        background: rgba(20,140,60,.18);
+        border-color: rgba(20,140,60,.65);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // ------------------------------------------------------------
   // Config
   // ------------------------------------------------------------
   const LOCAL_DATA_URL = "../config/words.json";
@@ -95,17 +160,41 @@
     if (startBtn) startBtn.disabled = Boolean(isRunning);
     if (doneBtn) doneBtn.disabled = !isRunning;
     if (autoRun) autoRun.disabled = Boolean(isRunning);
+
+    // NEW: keep chip visual state in sync with running flag
+    updateActivityButtonStates();
   }
 
   // ------------------------------------------------------------
-  // Emoji/icon helpers (NEW)
+  // Activity button state updater (NEW)
+  // ------------------------------------------------------------
+  function updateActivityButtonStates() {
+    const wrap = $("activity-buttons");
+    if (!wrap) return;
+
+    const buttons = wrap.querySelectorAll("button.chip");
+    for (const btn of buttons) {
+      const i = Number(btn.dataset.index);
+      const isSelected = Number.isFinite(i) && i === currentActivityIndex;
+      const isActive = isSelected && Boolean(running);
+
+      btn.classList.toggle("is-selected", isSelected);
+      btn.classList.toggle("is-active", isActive);
+
+      // Accessibility hints
+      btn.setAttribute("aria-pressed", isSelected ? "true" : "false");
+      if (isSelected) btn.setAttribute("aria-current", "true");
+      else btn.removeAttribute("aria-current");
+    }
+  }
+
+  // ------------------------------------------------------------
+  // Emoji/icon helpers
   // ------------------------------------------------------------
   function getEmojiForItem(item) {
-    // Prefer explicit emoji in JSON
     const direct = String(item?.emoji ?? "").trim();
     if (direct) return direct;
 
-    // Optional fallback: map known icons -> emoji (keeps UI working if emoji missing)
     const icon = String(item?.icon ?? "").trim().toLowerCase();
     const map = {
       "ball.icon": "⚽",
@@ -233,7 +322,7 @@
       `id: ${item.id ?? "–"}`,
       `word: ${item.word ?? "–"}`,
       `icon: ${item.icon ?? "–"}`,
-      `emoji: ${item.emoji ?? "–"}`, // NEW: show emoji in fields panel
+      `emoji: ${item.emoji ?? "–"}`,
       `short: ${typeof item.short === "boolean" ? item.short : (item.short ?? "–")}`,
       `letters: ${Array.isArray(item.letters) ? item.letters.join(" ") : "–"}`,
       `words: ${Array.isArray(item.words) ? item.words.join(", ") : "–"}`,
@@ -261,7 +350,6 @@
         .filter(a => a.id);
     }
 
-    // Backwards-compatible fallback for older words.json
     const activities = [{ id: "tts", caption: "Luister (woord)" }];
     if (Array.isArray(item.letters) && item.letters.length) activities.push({ id: "letters", caption: "Oefen letters" });
     if (Array.isArray(item.words) && item.words.length) activities.push({ id: "words", caption: "Maak woorden" });
@@ -283,35 +371,17 @@
 
     switch (canonical) {
       case "tts":
-        return {
-          caption: "Luister (woord)",
-          detail: item.word ? String(item.word) : "–"
-        };
+        return { caption: "Luister (woord)", detail: item.word ? String(item.word) : "–" };
       case "letters":
-        return {
-          caption: "Oefen letters",
-          detail: Array.isArray(item.letters) && item.letters.length ? item.letters.join(" ") : "–"
-        };
+        return { caption: "Oefen letters", detail: Array.isArray(item.letters) && item.letters.length ? item.letters.join(" ") : "–" };
       case "words":
-        return {
-          caption: "Maak woorden",
-          detail: Array.isArray(item.words) && item.words.length ? item.words.join(", ") : "–"
-        };
+        return { caption: "Maak woorden", detail: Array.isArray(item.words) && item.words.length ? item.words.join(", ") : "–" };
       case "story":
-        return {
-          caption: "Luister (verhaal)",
-          detail: Array.isArray(item.story) && item.story.length ? item.story.join("\n") : "–"
-        };
+        return { caption: "Luister (verhaal)", detail: Array.isArray(item.story) && item.story.length ? item.story.join("\n") : "–" };
       case "sounds":
-        return {
-          caption: "Geluiden",
-          detail: Array.isArray(item.sounds) && item.sounds.length ? item.sounds.join("\n") : "–"
-        };
+        return { caption: "Geluiden", detail: Array.isArray(item.sounds) && item.sounds.length ? item.sounds.join("\n") : "–" };
       default:
-        return {
-          caption: rawId ? `Activity: ${rawId}` : "Details",
-          detail: safeJson(item)
-        };
+        return { caption: rawId ? `Activity: ${rawId}` : "Details", detail: safeJson(item) };
     }
   }
 
@@ -326,6 +396,7 @@
     const nextIndex = Math.max(0, Math.min(index, activities.length - 1));
     currentActivityIndex = nextIndex;
     renderActivity(item, activities);
+    updateActivityButtonStates(); // NEW
   }
 
   function getCurrentActivity() {
@@ -386,7 +457,10 @@
       id.startsWith("story") ? "story" :
       id.startsWith("sounds") ? "sounds" :
       id;
-    activityIdEl.textContent = canonical && canonical !== id ? `Activity: ${rawId} (${canonical})` : `Activity: ${rawId}`;
+
+    activityIdEl.textContent = canonical && canonical !== id
+      ? `Activity: ${rawId} (${canonical})`
+      : `Activity: ${rawId}`;
 
     const { caption, detail } = formatActivityDetail(active.id, item);
     const instruction = String(active.instruction ?? "").trim();
@@ -402,16 +476,22 @@
       const a = activities[i];
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "chip" + (i === currentActivityIndex ? " active" : "");
+      btn.className = "chip";
+      btn.dataset.index = String(i); // NEW
       btn.textContent = a.caption || a.id;
       btn.title = a.id;
+
       btn.addEventListener("click", () => {
         log("[words] Activity selected", { id: a.id, index: i });
         cancelRun();
         setActiveActivity(i);
       });
+
       activityButtonsEl.appendChild(btn);
     }
+
+    // NEW: after buttons exist, apply selected/active classes
+    updateActivityButtonStates();
 
     updateBrailleLine(getBrailleTextForCurrent(), { reason: "activity-change" });
   }
@@ -422,6 +502,7 @@
     stopActiveActivity({ reason: "cancelRun" });
     setRunnerUi({ isRunning: false });
     setActivityStatus("idle");
+    updateActivityButtonStates(); // NEW
   }
 
   function getActivityModule(activityKey) {
@@ -490,10 +571,10 @@
     const id = rawId.trim().toLowerCase();
     return id.startsWith("tts") ? "tts"
       : id.startsWith("letters") ? "letters"
-        : id.startsWith("words") ? "words"
-          : id.startsWith("story") ? "story"
-            : id.startsWith("sounds") ? "sounds"
-              : id;
+      : id.startsWith("words") ? "words"
+      : id.startsWith("story") ? "story"
+      : id.startsWith("sounds") ? "sounds"
+      : id;
   }
 
   function waitForDone(currentToken) {
@@ -509,7 +590,6 @@
 
       doneBtn.addEventListener("click", onDone);
 
-      // If cancelled/restarted, resolve silently and detach.
       const poll = () => {
         if (currentToken !== runToken) {
           doneBtn.removeEventListener("click", onDone);
@@ -588,17 +668,20 @@
     running = true;
     setRunnerUi({ isRunning: true });
     setActivityStatus(autoStarted ? "running (auto)" : "running");
+    updateActivityButtonStates(); // NEW: show "active" color on selected button
 
     try {
       await handler({ ...cur, token });
     } finally {
-      // If a new run started, ignore.
       if (token !== runToken) return;
+
       running = false;
       setRunnerUi({ isRunning: false });
       setActivityStatus("done");
 
       stopActiveActivity({ reason: "finally" });
+
+      updateActivityButtonStates(); // NEW: remove "active" color
 
       const autoRun = $("auto-run");
       if (autoRun && autoRun.checked) {
@@ -639,9 +722,8 @@
     const idEl = $("item-id");
     const indexEl = $("item-index");
     const wordEl = $("field-word");
-    const emojiEl = $("field-emoji"); // NEW: emoji target
+    const emojiEl = $("field-emoji");
 
-    // Critical elements must exist (emoji is optional, but we still try)
     if (!idEl || !indexEl || !wordEl) {
       log("[words] Critical DOM elements missing; cannot render.");
       setStatus("HTML mist ids");
@@ -653,7 +735,6 @@
 
     wordEl.textContent = item.word || "–";
 
-    // NEW: render emoji (from JSON or icon fallback map)
     if (emojiEl) {
       const em = getEmojiForItem(item);
       emojiEl.textContent = em || " ";
@@ -758,7 +839,6 @@
         throw new Error("words.json is not an array");
       }
 
-      // Basic validation/logging
       records = json;
       currentIndex = 0;
       currentActivityIndex = 0;
@@ -798,7 +878,6 @@
         }
       }
 
-      // Helpful hint for the common case (opening via file://)
       if (location.protocol === "file:") {
         setStatus("laden mislukt: open via http:// (file:// blokkeert fetch)");
       } else {
@@ -813,12 +892,14 @@
   document.addEventListener("DOMContentLoaded", () => {
     log("[words] DOMContentLoaded");
 
+    // NEW: ensure chip colors exist (even if your CSS doesn't define them yet)
+    injectActivityChipStyles();
+
     const nextBtn = $("next-btn");
     const prevBtn = $("prev-btn");
     const nextActivityBtn = $("next-activity-btn");
     const prevActivityBtn = $("prev-activity-btn");
     const startActivityBtn = $("start-activity-btn");
-    const doneActivityBtn = $("done-activity-btn");
     const toggleFieldsBtn = $("toggle-fields-btn");
     const fieldsPanel = $("fields-panel");
 
@@ -856,7 +937,6 @@
     if (nextActivityBtn) nextActivityBtn.addEventListener("click", nextActivity);
     if (prevActivityBtn) prevActivityBtn.addEventListener("click", prevActivity);
     if (startActivityBtn) startActivityBtn.addEventListener("click", () => startSelectedActivity({ autoStarted: false }));
-    // doneActivityBtn is handled by waitForDone() per run.
 
     function setFieldsPanelVisible(visible) {
       if (!toggleFieldsBtn || !fieldsPanel) return;
