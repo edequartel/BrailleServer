@@ -142,10 +142,10 @@
       thumbRow.className = "button-row thumb-row";
 
       const thumbDefs = [
-        { key: "leftthumb", label: "." },
-        { key: "middleleftthumb", label: ".." },
-        { key: "middlerightthumb", label: ".." },
-        { key: "rightthumb", label: "." }
+        { key: "leftthumb", label: "•" },
+        { key: "middleleftthumb", label: "••" },
+        { key: "middlerightthumb", label: "••" },
+        { key: "rightthumb", label: "• ▶" }
       ];
 
       thumbDefs.forEach((def) => {

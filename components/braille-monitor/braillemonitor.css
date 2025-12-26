@@ -73,12 +73,21 @@
   width: 100%;
 }
 
+/* -----------------------------------------
+   Thumb keys (LARGE TEXT UPDATE)
+------------------------------------------ */
+
 /* Base thumb keys (already present) */
 .thumb-key {
   min-height: 3rem;
   padding: 0.6rem 0.75rem;
-  font-size: 0.9rem;
-  line-height: 1.2;
+
+  /* CHANGED: larger, clearer text */
+  font-size: 1.15rem;     /* was 0.9rem */
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+
   border-radius: 14px; /* round corners */
 }
 
@@ -88,6 +97,10 @@
   background: #e6f0ff; /* light blue */
   border-color: #7aa2ff;
   color: #0b1f4d;
+
+  /* CHANGED: even larger for primary controls */
+  font-size: 1.3rem;
+  font-weight: 900;
 }
 
 /* Active state for middle buttons */
@@ -96,7 +109,13 @@
   box-shadow: inset 0 0 0 2px rgba(26, 76, 255, 0.35);
 }
 
-/* Dark mode */
+/* If you use symbols like ▶ ■ etc, add class="symbol" */
+.thumb-key.symbol {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+/* Dark mode for middle keys */
 @media (prefers-color-scheme: dark) {
   .thumb-key[data-thumb="middleleftthumb"],
   .thumb-key[data-thumb="middlerightthumb"] {
@@ -106,11 +125,22 @@
   }
 }
 
-/* Optional: even taller on touch devices */
+/* Optional: even taller + larger on touch devices */
 @media (pointer: coarse) {
   .thumb-key {
     min-height: 3.5rem;
-    font-size: 1rem;
+
+    /* CHANGED: increase further on touch */
+    font-size: 1.35rem;
+  }
+
+  .thumb-key[data-thumb="middleleftthumb"],
+  .thumb-key[data-thumb="middlerightthumb"] {
+    font-size: 1.45rem;
+  }
+
+  .thumb-key.symbol {
+    font-size: 1.85rem;
   }
 }
 

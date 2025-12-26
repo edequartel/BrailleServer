@@ -1,0 +1,406 @@
+/* /css/words.css */
+
+/* ----------------------------
+   Theme tokens
+---------------------------- */
+:root {
+  --bg: #f3f4f6;
+  --fg: #111827;
+  --panel: #ffffff;
+  --muted: #6b7280;
+  --label: #4b5563;
+  --code-bg: #f9fafb;
+
+  --btn-bg: #111827;
+  --btn-fg: #f9fafb;
+  --btn2-bg: #e5e7eb;
+  --btn2-fg: #111827;
+
+  --chip-bg: #f9fafb;
+  --chip-fg: #111827;
+  --chip-border: #e5e7eb;
+
+  --shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
+
+  --log-head-bg: #111827;
+  --log-head-fg: #f9fafb;
+  --log-body-bg: #0b1220;
+  --log-body-fg: #e5e7eb;
+
+  --flag-bg: #ecfdf3;
+  --flag-fg: #15803d;
+}
+
+html[data-theme="dark"] {
+  --bg: #0b1220;
+  --fg: #e5e7eb;
+  --panel: #0f172a;
+  --muted: #94a3b8;
+  --label: #cbd5e1;
+  --code-bg: #111827;
+
+  --btn-bg: #e5e7eb;
+  --btn-fg: #0b1220;
+  --btn2-bg: #1f2937;
+  --btn2-fg: #e5e7eb;
+
+  --chip-bg: #0b1220;
+  --chip-fg: #e5e7eb;
+  --chip-border: #243041;
+
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+
+  --log-head-bg: #0b1220;
+  --log-head-fg: #e5e7eb;
+  --log-body-bg: #070b14;
+  --log-body-fg: #e5e7eb;
+
+  --flag-bg: rgba(16, 185, 129, 0.12);
+  --flag-fg: #34d399;
+
+  color-scheme: dark;
+}
+
+/* ----------------------------
+   Layout
+---------------------------- */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: var(--bg);
+  color: var(--fg);
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  max-width: 760px;
+  width: 100%;
+  background: var(--panel);
+  padding: 20px 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.braille-panel { margin-bottom: 16px; }
+
+.meta-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 14px 0 16px 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.meta-bar-tight { margin-top: 8px; }
+
+.field-label {
+  font-weight: 600;
+  margin: 10px 0 4px 0;
+  font-size: 0.9rem;
+  color: var(--label);
+}
+
+.field-value {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Cascadia Code", "Fira Code", "Liberation Mono", "Courier New", monospace;
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ----------------------------
+   Buttons
+---------------------------- */
+.buttons {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.buttons-left {
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+
+button {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+}
+
+button.secondary {
+  background: var(--btn2-bg);
+  color: var(--btn2-fg);
+}
+
+.runner-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.auto-next {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Theme toggle */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--chip-border);
+  color: var(--fg);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.theme-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--fg);
+  opacity: 0.9;
+}
+
+/* ----------------------------
+   Activity chips (highlight selected)
+---------------------------- */
+.chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.chip.active {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border-color: transparent;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+}
+
+html[data-theme="dark"] .chip.active {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+}
+
+/* ----------------------------
+   Log panel
+---------------------------- */
+.log-panel {
+  margin-top: 18px;
+  border: 1px solid var(--chip-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.log-panel.hidden { display: none; }
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--log-head-bg);
+  color: var(--log-head-fg);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.log-body {
+  padding: 10px 12px;
+  background: var(--log-body-bg);
+  color: var(--log-body-fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Cascadia Code", "Fira Code", "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  height: 180px;
+  overflow: auto;
+}
+
+.log-controls button {
+  background: #374151;
+  color: #f9fafb;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+}
+
+html[data-theme="dark"] .log-controls button {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+/* ----------------------------
+   Word header
+---------------------------- */
+.word-header {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  column-gap: 12px;
+  margin-bottom: 12px;
+}
+
+.word-emoji {
+  width: 44px;
+  text-align: left;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.word-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 16px;
+  min-width: 0;
+}
+
+.word-text {
+  font-size: 1.35rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.word-braille {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Cascadia Code", "Fira Code", "Liberation Mono", "Courier New", monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.18em;
+  text-align: right;
+  white-space: nowrap;
+  opacity: 0.95;
+}
+
+
+/* ---------------------------------
+   Activity chips (selection highlight)
+--------------------------------- */
+.chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* SELECTED activity */
+.chip.active {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border-color: transparent;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Dark mode fine-tuning */
+html[data-theme="dark"] .chip.active {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+}
+
+/* /css/words.css */
+
+/* Activity "chip" buttons: default / selected / active */
+#activity-buttons .chip {
+  appearance: none;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.04);
+  color: inherit;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  line-height: 1.1;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.12s ease, border-color 0.12s ease,
+    box-shadow 0.12s ease, transform 0.04s ease;
+}
+
+#activity-buttons .chip:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+#activity-buttons .chip:active {
+  transform: translateY(1px);
+}
+
+#activity-buttons .chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 107, 237, 0.35);
+}
+
+/* SELECTED (but not running) */
+#activity-buttons .chip.is-selected {
+  background: rgba(79, 107, 237, 0.16);
+  border-color: rgba(79, 107, 237, 0.6);
+  box-shadow: 0 0 0 2px rgba(79, 107, 237, 0.12) inset;
+}
+
+/* ACTIVE = selected AND currently running */
+#activity-buttons .chip.is-active {
+  background: rgba(20, 140, 60, 0.18);
+  border-color: rgba(20, 140, 60, 0.65);
+  box-shadow: 0 0 0 2px rgba(20, 140, 60, 0.14) inset,
+    0 0 0 3px rgba(20, 140, 60, 0.18);
+}
+
+/* If both classes exist, active should win */
+#activity-buttons .chip.is-selected.is-active {
+  background: rgba(20, 140, 60, 0.18);
+  border-color: rgba(20, 140, 60, 0.65);
+}
+
+/* Add this to /pages/activity-runner.css (or your main page CSS)
+   Keeps prev/next inside the braille-panel, aligned and full-width. */
+
+.braille-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.braille-nav button {
+  flex: 1;
+}
+
