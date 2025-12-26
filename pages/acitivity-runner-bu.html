@@ -26,15 +26,6 @@
       <!-- MOVED HERE: prev/next buttons inside braille-panel -->
       <div class="braille-nav">
         <button id="prev-btn" class="secondary" type="button">prev</button>
-        
-         <span class="runner-controls">
-        <label class="auto-next">
-          <input id="auto-run" type="checkbox" checked />
-          Auto next
-        </label>
-      </span>
-        
-        
         <button id="next-btn" type="button">next</button>
       </div>
     </div>
@@ -61,8 +52,22 @@
     <div class="meta-bar meta-bar-tight">
       <span id="activity-status">Status: idle</span>
 
-      
-      
+      <span class="runner-controls">
+        <label class="auto-next">
+          <input id="auto-run" type="checkbox" checked />
+          Auto next
+        </label>
+
+        <!-- SINGLE TOGGLE BUTTON (Start/Stop) -->
+        <button
+          id="run-activity-btn"
+          class="secondary"
+          type="button"
+          aria-pressed="false"
+          aria-label="Start of stop de activiteit">
+          Start
+        </button>
+      </span>
     </div>
 
     <!-- TOP CONTROLS BAR: left (activities), right (tools) -->
