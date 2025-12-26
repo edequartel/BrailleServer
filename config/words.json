@@ -7,7 +7,7 @@
     "story": ["bal.mp3"],
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
-      { "id": "story", "index": 0, "caption": "bal", "instruction": "Luister naar het verhaal, bal." },
+      { "id": "story", "index": 0, "caption": "bal verhaal", "instruction": "Luister naar het verhaal, bal." },
       { "id": "letters", "caption": "Oefen letter b a l", "instruction": "Oefen de letters van het woord." },
       { "id": "story", "index": 0, "caption": "ballen", "instruction": "Luister naar het verhaal: bal." },
       { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." },
@@ -25,7 +25,7 @@
     "story": ["kam.mp3", "kam.mp3"],
     "sounds": ["scratch.mp3", "hair.mp3", "tap.mp3"],
     "activities": [
-      { "id": "story", "index": 0, "caption": "kam", "instruction": "Luister naar het verhaal, kam." },
+      { "id": "story", "index": 0, "caption": "kam verhaal", "instruction": "Luister naar het verhaal, kam." },
       { "id": "tts", "caption": "Luister (woord)", "instruction": "Luister naar het woord." },
       { "id": "letters", "caption": "Oefen letters", "instruction": "Oefen de letters van het woord." },
       { "id": "words", "caption": "Maak woorden", "instruction": "Maak woorden met de letters." },
