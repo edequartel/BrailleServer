@@ -6,9 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BrailleStudio - Bartiméus Onderwijs</title>
 
-  <link rel="stylesheet" href="./components/braille-monitor/braillemonitor.css" />
-  <link rel="stylesheet" href="./pages/activity-runner.css" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <!-- Use BASE-aware absolute paths -->
+  <link rel="stylesheet" href="/components/braille-monitor/braillemonitor.css" data-bs-href />
+  <link rel="stylesheet" href="/pages/activity-runner.css" data-bs-href />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" data-bs-href />
 
   <style>
     /* Minimal floating settings button */
@@ -37,12 +38,8 @@
       background: rgba(20,24,36,.55);
       border-color: rgba(255,255,255,.16);
     }
-    .settings-fab:hover{
-      transform: translateY(-1px);
-    }
-    .settings-fab:active{
-      transform: translateY(0);
-    }
+    .settings-fab:hover{ transform: translateY(-1px); }
+    .settings-fab:active{ transform: translateY(0); }
     .settings-fab svg{
       width: 24px;
       height: 24px;
@@ -53,6 +50,51 @@
       outline-offset: 3px;
     }
   </style>
+
+  <!-- BASE bootstrap:
+       - GitHub Pages: https://edequartel.github.io/BrailleServer/  => BASE="/BrailleServer"
+       - Local/other hosting at domain root                        => BASE=""
+  -->
+  <script>
+    (function () {
+      const BASE = (location.hostname === "edequartel.github.io") ? "/BrailleServer" : "";
+
+      // Expose for other scripts (words.js / activity-runner.js etc.)
+      window.BS_BASE = BASE;
+      window.BS_JSON_URL = `${BASE}/config/instructions.json`;
+      window.BS_AUDIO_BASE = `${BASE}/audio/`;
+
+      // Patch any <link>/<script>/<a> that has data-bs-href / data-bs-src to be BASE-aware.
+      function applyBaseToAttrs() {
+        // <link ... href="/...">
+        document.querySelectorAll("[data-bs-href]").forEach(el => {
+          const href = el.getAttribute("href");
+          if (!href) return;
+          // only patch absolute site-root paths
+          if (href.startsWith("/")) el.setAttribute("href", BASE + href);
+        });
+
+        // <script ... src="/...">
+        document.querySelectorAll("[data-bs-src]").forEach(el => {
+          const src = el.getAttribute("src");
+          if (!src) return;
+          if (src.startsWith("/")) el.setAttribute("src", BASE + src);
+        });
+
+        // <a ... href="/...">
+        document.querySelectorAll("[data-bs-a]").forEach(el => {
+          const href = el.getAttribute("href");
+          if (!href) return;
+          if (href.startsWith("/")) el.setAttribute("href", BASE + href);
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", applyBaseToAttrs);
+
+      // Useful debug
+      // console.log("[BASE]", BASE, window.BS_JSON_URL, window.BS_AUDIO_BASE);
+    })();
+  </script>
 </head>
 
 <body>
@@ -66,19 +108,16 @@
           <span id="field-word-braille" class="word-braille">–</span>
         </div>
       </div>
-      
-      <!-- MOVED HERE: prev/next buttons inside braille-panel -->
+
       <div class="braille-nav">
         <button id="prev-btn" class="secondary" type="button">prev</button>
-        
-         <span class="runner-controls">
-        <label class="auto-next">
-          <input id="auto-run" type="checkbox" checked />
-          
-        </label>
-      </span>
-        
-        
+
+        <span class="runner-controls">
+          <label class="auto-next">
+            <input id="auto-run" type="checkbox" checked />
+          </label>
+        </span>
+
         <button id="next-btn" type="button">next</button>
       </div>
     </div>
@@ -103,7 +142,6 @@
       <span id="activity-status">Status: idle</span>
     </div>
 
-    <!-- TOP CONTROLS BAR: left (activities), right (tools) -->
     <div class="top-controls">
       <div class="top-controls__left">
         <div id="activity-buttons" class="buttons buttons-left"></div>
@@ -123,7 +161,7 @@
           <button id="toggle-log-btn" class="secondary" type="button">Log</button>
 
           <button
-            id="themeToggle"
+            id="themeToggleu"
             class="theme-toggle"
             type="button"
             aria-label="Toggle theme">
@@ -153,8 +191,7 @@
   </main>
 
   <!-- Settings button (bottom-right) -->
-  <a class="settings-fab" href="../pages/settings.html" aria-label="Settings">
-    <!-- Gear icon -->
+  <a class="settings-fab" href="/pages/settings.html" data-bs-a aria-label="Settings">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path fill="currentColor"
         d="M19.14,12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58
@@ -243,26 +280,28 @@
       });
 
       window.logMessage("[words.html] Inline logger ready.");
+      // Expose BASE-aware URLs for debugging
+      window.logMessage("[paths] BASE=" + (window.BS_BASE || ""));
+      window.logMessage("[paths] JSON=" + (window.BS_JSON_URL || ""));
+      window.logMessage("[paths] AUDIO=" + (window.BS_AUDIO_BASE || ""));
     })();
   </script>
 
-  <script src="../js/logging.js"></script>
-  <script src="../js/braillebridge.js"></script>
-  <script src="../components/braille-monitor/braillemonitor.js"></script>
+  <!-- BASE-aware scripts -->
+  <script src="/js/logging.js" data-bs-src></script>
+  <script src="/js/braillebridge.js" data-bs-src></script>
+  <script src="/components/braille-monitor/braillemonitor.js" data-bs-src></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-  <script src="../js/sounds.js"></script>
+  <script src="/js/sounds.js" data-bs-src></script>
 
-  <script src="../activities/tts.js"></script>
-  <script src="../activities/letters.js"></script>
-  <script src="../activities/words.js"></script>
-  <script src="../activities/story.js"></script>
-  <script src="../activities/sounds.js"></script>
+  <script src="/activities/tts.js" data-bs-src></script>
+  <script src="/activities/letters.js" data-bs-src></script>
+  <script src="/activities/words.js" data-bs-src></script>
+  <script src="/activities/story.js" data-bs-src></script>
+  <script src="/activities/sounds.js" data-bs-src></script>
 
-  <!-- If you use an external runner, it must load before words.js -->
-  <script src="../js/activity-runner.js"></script>
-
-  <!-- Main page logic -->
-  <script src="../js/words.js"></script>
+  <script src="/js/activity-runner.js" data-bs-src></script>
+  <script src="/js/words.js" data-bs-src></script>
 </body>
 </html>
