@@ -1,831 +1,265 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BrailleServer – Settings (Mock)</title>
+  <title>Settings (Mock)</title>
 
   <style>
-    :root{
-      --bg:#f5f7fb;
-      --fg:#111827;
-      --muted:#6b7280;
-      --panel:#ffffff;
-      --panel2:#f9fafb;
-      --border:#d1d5db;
-      --accent:#4f6bed;
-      --accent2:#7aa2ff;
-      --danger:#b91c1c;
-      --ok:#065f46;
-
-      --radius:12px;
-      --shadow: 0 8px 20px rgba(0,0,0,.08);
-      color-scheme: light;
-    }
-    html[data-theme="dark"]{
-      --bg:#0f1117;
-      --fg:#e5e7eb;
-      --muted:#9ca3af;
-      --panel:#141824;
-      --panel2:#0f1320;
-      --border:#2a2f3a;
-      --accent:#7aa2ff;
-      --accent2:#9cc0ff;
-      --danger:#f87171;
-      --ok:#34d399;
+    :root {
       color-scheme: dark;
+
+      /* Background bands */
+      --bg-left:  #0b0d12;
+      --bg-mid:   #121726;
+      --bg-right: #0b0d12;
+
+      /* UI colors */
+      --panel: #151a2c;
+      --fg: #e7eaf1;
+      --muted: #a9b1c3;
+      --border: #273049;
+      --accent: #7aa2ff;
+      --radius: 12px;
     }
 
-    *{box-sizing:border-box}
-    body{
-      margin:0;
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 10% -10%, rgba(79,107,237,.22), transparent 60%),
-                  radial-gradient(900px 500px at 110% 10%, rgba(122,162,255,.20), transparent 60%),
-                  var(--bg);
-      color:var(--fg);
-    }
-
-    header{
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: linear-gradient(to bottom, rgba(0,0,0,.06), transparent), var(--bg);
-      backdrop-filter: blur(6px);
-      border-bottom: 1px solid var(--border);
-    }
-    .header-inner{
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 1rem 1rem;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 1rem;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:.75rem;
-      min-width: 220px;
-    }
-    .logo{
-      width:38px;height:38px;
-      border-radius:10px;
-      background: linear-gradient(135deg, var(--accent), rgba(255,255,255,.15));
-      box-shadow: 0 10px 20px rgba(79,107,237,.25);
-      display:grid;
-      place-items:center;
-      border: 1px solid rgba(255,255,255,.15);
-    }
-    .logo span{
-      font-weight: 900;
-      letter-spacing:.5px;
-      color:white;
-    }
-    .brand h1{
-      font-size: 1rem;
-      margin:0;
-      line-height: 1.1;
-    }
-    .brand small{
-      display:block;
-      color: var(--muted);
-      font-weight: 600;
-      margin-top:.1rem;
-    }
-
-    .header-actions{
-      display:flex;
-      gap:.5rem;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:.5rem;
-      padding:.45rem .7rem;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.06);
-      color:var(--fg);
-      font-weight: 650;
-      font-size:.9rem;
-    }
-    .pill .dot{
-      width:9px;height:9px;border-radius:99px;
-      background: var(--ok);
-      box-shadow: 0 0 0 3px rgba(52,211,153,.18);
-    }
-    .btn{
-      appearance:none;
-      border:1px solid var(--border);
-      background: var(--panel);
       color: var(--fg);
-      border-radius: 10px;
-      padding: .55rem .8rem;
-      font-weight: 750;
-      cursor:pointer;
-      box-shadow: 0 1px 0 rgba(0,0,0,.05);
-    }
-    .btn:hover{ border-color: rgba(122,162,255,.55) }
-    .btn.primary{
-      border-color: rgba(79,107,237,.55);
-      background: linear-gradient(135deg, rgba(79,107,237,.18), rgba(255,255,255,.06)), var(--panel);
-    }
-    .btn.danger{
-      border-color: rgba(185,28,28,.4);
-      background: linear-gradient(135deg, rgba(185,28,28,.15), rgba(255,255,255,.04)), var(--panel);
+
+      /* Vertical center shade */
+      background: linear-gradient(
+        90deg,
+        var(--bg-left) 0%,
+        var(--bg-left) 20%,
+        var(--bg-mid) 50%,
+        var(--bg-right) 80%,
+        var(--bg-right) 100%
+      );
     }
 
-    main{
-      max-width: 1100px;
+    .wrap {
+      max-width: 960px;
       margin: 0 auto;
-      padding: 1.2rem 1rem 2rem 1rem;
-      display:grid;
-      grid-template-columns: 280px 1fr;
-      gap: 1rem;
+      padding: 24px 16px 48px;
     }
 
-    nav{
-      background: var(--panel);
+    header {
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .sub {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.03);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: .75rem;
-      height: fit-content;
-      position: sticky;
-      top: 78px;
+      padding: 16px;
+      margin-bottom: 14px;
     }
-    .nav-title{
-      font-size:.85rem;
-      letter-spacing:.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin: .25rem .4rem .6rem .4rem;
-      font-weight: 800;
-    }
-    .nav a{
-      display:flex;
-      gap:.6rem;
-      align-items:center;
-      text-decoration:none;
-      color: var(--fg);
-      padding:.6rem .6rem;
-      border-radius: 10px;
-      font-weight: 700;
-      border: 1px solid transparent;
-    }
-    .nav a:hover{
-      background: var(--panel2);
-      border-color: rgba(122,162,255,.25);
-    }
-    .nav a.active{
-      background: linear-gradient(135deg, rgba(79,107,237,.16), rgba(255,255,255,.04));
-      border-color: rgba(79,107,237,.35);
-    }
-    .icon{
-      width:26px;height:26px;border-radius:8px;
-      display:grid;place-items:center;
-      background: rgba(122,162,255,.12);
-      border: 1px solid rgba(122,162,255,.18);
+
+    .card h2 {
+      margin: 0 0 10px;
       font-size: 14px;
     }
 
-    section{
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 1rem;
-    }
-    .section-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:1rem;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: .75rem;
-      margin-bottom: .9rem;
-    }
-    .section-head h2{
-      margin:0;
-      font-size:1.1rem;
-    }
-    .section-head p{
-      margin:.25rem 0 0 0;
-      color: var(--muted);
-      max-width: 72ch;
-      font-weight: 550;
+    .field {
+      margin-bottom: 12px;
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: .9rem;
-    }
-    @media (max-width: 920px){
-      main{ grid-template-columns: 1fr; }
-      nav{ position: relative; top: 0; }
-      .grid{ grid-template-columns: 1fr; }
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
     }
 
-    .card{
-      border: 1px solid var(--border);
-      background: linear-gradient(to bottom, rgba(255,255,255,.04), transparent), var(--panel);
-      border-radius: 12px;
-      padding: .9rem;
-    }
-    .card h3{
-      margin:0;
-      font-size: 1rem;
-    }
-    .card p{
-      margin:.35rem 0 .7rem 0;
-      color: var(--muted);
-      font-weight: 550;
-    }
-    .row{
-      display:flex;
-      gap:.75rem;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:space-between;
-    }
-
-    label{
-      display:block;
-      font-weight: 750;
-      margin-bottom: .35rem;
-    }
-    .hint{
-      color: var(--muted);
-      font-size: .92rem;
-      font-weight: 560;
-      margin-top: .25rem;
-      line-height: 1.35;
-    }
-    input[type="text"], input[type="url"], select{
+    input, select {
       width: 100%;
-      padding: .65rem .7rem;
+      margin-top: 6px;
+      padding: 9px 11px;
+      background: #0f1422;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--fg);
+    }
+
+    .toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      margin-top: 8px;
+    }
+
+    .toggle small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    /* Mock switch (non-interactive visual) */
+    .switch {
+      width: 42px;
+      height: 24px;
+      background: #1a2236;
+      border-radius: 999px;
+      position: relative;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 22px;
+      width: 18px;
+      height: 18px;
+      background: #cbd5e1;
+      border-radius: 50%;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      padding: 9px 14px;
       border-radius: 10px;
       border: 1px solid var(--border);
-      background: var(--panel2);
+      background: rgba(255,255,255,0.04);
       color: var(--fg);
-      font-weight: 650;
-      outline: none;
-    }
-    input[type="text"]:focus, input[type="url"]:focus, select:focus{
-      border-color: rgba(122,162,255,.6);
-      box-shadow: 0 0 0 3px rgba(122,162,255,.16);
-    }
-
-    .toggle{
-      display:flex;
-      align-items:center;
-      gap:.8rem;
-      justify-content:space-between;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: .7rem .8rem;
-      background: var(--panel2);
-    }
-    .toggle strong{ font-weight: 800; }
-    .switch{
-      position: relative;
-      width: 48px;
-      height: 28px;
-      flex: 0 0 auto;
-    }
-    .switch input{ display:none; }
-    .slider{
-      position:absolute; inset:0;
-      border-radius: 999px;
-      background: rgba(107,114,128,.35);
-      border:1px solid var(--border);
-      transition: .2s ease;
-    }
-    .slider::after{
-      content:"";
-      position:absolute;
-      width: 22px; height: 22px;
-      top: 50%; left: 3px;
-      transform: translateY(-50%);
-      border-radius: 999px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      transition: .2s ease;
-      box-shadow: 0 6px 14px rgba(0,0,0,.18);
-    }
-    .switch input:checked + .slider{
-      background: rgba(79,107,237,.35);
-      border-color: rgba(79,107,237,.55);
-    }
-    .switch input:checked + .slider::after{
-      left: 23px;
-      border-color: rgba(79,107,237,.55);
-    }
-
-    .foot{
-      display:flex;
-      gap:.6rem;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      align-items:center;
-      border-top: 1px solid var(--border);
-      padding-top: .9rem;
-      margin-top: 1rem;
-    }
-    .note{
-      margin-right:auto;
-      color: var(--muted);
       font-weight: 600;
-      font-size: .92rem;
-      line-height: 1.35;
+      cursor: pointer;
     }
 
-    .kbd{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size: .85rem;
-      padding: .12rem .4rem;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.06);
-      color: var(--fg);
-      font-weight: 800;
+    button.primary {
+      border-color: rgba(122,162,255,0.6);
+      background: rgba(122,162,255,0.15);
+    }
+
+    footer {
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <div class="header-inner">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"><span>BS</span></div>
+  <div class="wrap">
+    <header>
+      <h1>Settings</h1>
+      <p class="sub">Simple dark mock with center shade</p>
+    </header>
+
+    <section class="card">
+      <h2>Connection</h2>
+
+      <div class="field">
+        <label>WebSocket URL</label>
+        <input type="text" value="ws://localhost:7123/ws" />
+      </div>
+
+      <div class="field">
+        <label>API Base URL</label>
+        <input type="text" value="http://localhost:7123" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Audio</h2>
+
+      <div class="field">
+        <label>Language</label>
+        <select>
+          <option>nl</option>
+          <option>en</option>
+        </select>
+      </div>
+
+      <div class="toggle">
         <div>
-          <h1>BrailleServer <small>Settings (Mock)</small></h1>
+          <strong>Autoplay instructions</strong>
+          <small>Play audio when activity starts</small>
         </div>
+        <div class="switch"></div>
       </div>
 
-      <div class="header-actions">
-        <span class="pill" title="Mock status">
-          <span class="dot" aria-hidden="true"></span>
-          Bridge connected (mock)
-        </span>
-        <button class="btn" id="toggleThemeBtn" type="button">Toggle theme</button>
-        <button class="btn primary" type="button" id="saveBtn">Save</button>
+      <div class="toggle">
+        <div>
+          <strong>Sound effects</strong>
+          <small>UI feedback sounds</small>
+        </div>
+        <div class="switch"></div>
       </div>
-    </div>
-  </header>
+    </section>
 
-  <main>
-    <nav aria-label="Settings navigation">
-      <div class="nav-title">Settings</div>
-      <div class="nav">
-        <a class="active" href="#connection"><span class="icon">🔌</span> Connection</a>
-        <a href="#display"><span class="icon">⠿</span> Braille display</a>
-        <a href="#audio"><span class="icon">🔊</span> Audio</a>
-        <a href="#content"><span class="icon">📦</span> Content</a>
-        <a href="#privacy"><span class="icon">🔒</span> Privacy</a>
-        <a href="#advanced"><span class="icon">⚙️</span> Advanced</a>
+    <section class="card">
+      <h2>Braille display</h2>
+
+      <div class="field">
+        <label>Cells</label>
+        <select>
+          <option>20</option>
+          <option>32</option>
+          <option selected>40</option>
+          <option>80</option>
+        </select>
       </div>
 
-      <div style="margin-top:.9rem; padding:.6rem .6rem;">
-        <div class="hint">
-          Tip: use <span class="kbd">Ctrl</span> + <span class="kbd">S</span> to save (mock).
+      <div class="toggle">
+        <div>
+          <strong>Show cursor</strong>
+          <small>Mirror cursor position</small>
         </div>
+        <div class="switch"></div>
       </div>
-    </nav>
+    </section>
 
-    <div style="display:flex; flex-direction:column; gap: 1rem;">
-      <section id="connection">
-        <div class="section-head">
-          <div>
-            <h2>Connection</h2>
-            <p>Configure the localhost endpoints used for BrailleBridge HTTP calls and WebSocket key events.</p>
-          </div>
+    <section class="card">
+      <h2>Privacy</h2>
+
+      <div class="toggle">
+        <div>
+          <strong>Store progress locally</strong>
+          <small>Saved only in this browser</small>
         </div>
+        <div class="switch"></div>
+      </div>
 
-        <div class="grid">
-          <div class="card">
-            <h3>Local API</h3>
-            <p>Used to write text to the braille display and clear output.</p>
+      <div class="actions">
+        <button>Cancel</button>
+        <button class="primary">Save</button>
+      </div>
+    </section>
 
-            <label for="apiBase">API base URL</label>
-            <input id="apiBase" type="url" value="http://localhost:5000" />
-            <div class="hint">Example endpoints: <span class="kbd">/braille</span>, <span class="kbd">/clear</span>, <span class="kbd">/status</span></div>
-          </div>
-
-          <div class="card">
-            <h3>WebSocket</h3>
-            <p>Used to receive generalized key events from the braille display.</p>
-
-            <label for="wsUrl">WebSocket URL</label>
-            <input id="wsUrl" type="url" value="ws://localhost:5000/ws" />
-            <div class="hint">Typical usage: subscribe to key events and map them to actions.</div>
-          </div>
-
-          <div class="card">
-            <h3>Auto connect</h3>
-            <p>Behavior when the page loads.</p>
-
-            <div class="toggle">
-              <div>
-                <strong>Connect on startup</strong>
-                <div class="hint">Attempt to connect to WebSocket and probe API status.</div>
-              </div>
-              <label class="switch" aria-label="Connect on startup">
-                <input id="connectOnStartup" type="checkbox" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div style="height:.6rem"></div>
-
-            <div class="toggle">
-              <div>
-                <strong>Auto reconnect</strong>
-                <div class="hint">Retry after disconnect with exponential backoff.</div>
-              </div>
-              <label class="switch" aria-label="Auto reconnect">
-                <input id="autoReconnect" type="checkbox" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>Bridge profile</h3>
-            <p>Select how strictly BrailleServer should follow the bridge capabilities.</p>
-
-            <label for="bridgeProfile">Profile</label>
-            <select id="bridgeProfile">
-              <option value="standard" selected>Standard (recommended)</option>
-              <option value="safe">Safe mode (minimal features)</option>
-              <option value="dev">Developer (verbose logging)</option>
-            </select>
-            <div class="hint">Safe mode disables advanced formatting and reduces API calls.</div>
-          </div>
-        </div>
-      </section>
-
-      <section id="display">
-        <div class="section-head">
-          <div>
-            <h2>Braille display</h2>
-            <p>Settings for braille output, cursor behavior, and optional on-screen braille monitor.</p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="card">
-            <h3>Output format</h3>
-            <p>How text should be rendered on the physical display.</p>
-
-            <label for="wrapMode">Wrap mode</label>
-            <select id="wrapMode">
-              <option value="cell" selected>Cell wrap</option>
-              <option value="word">Word wrap</option>
-              <option value="none">No wrap</option>
-            </select>
-
-            <div style="height:.6rem"></div>
-
-            <div class="toggle">
-              <div>
-                <strong>Show cursor</strong>
-                <div class="hint">Display a cursor cell in the output (if supported).</div>
-              </div>
-              <label class="switch" aria-label="Show cursor">
-                <input id="showCursor" type="checkbox" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>Braille monitor</h3>
-            <p>Optional visual mirror of braille cells for sighted support staff.</p>
-
-            <div class="toggle">
-              <div>
-                <strong>Enable monitor</strong>
-                <div class="hint">Show the monitor component on activity pages.</div>
-              </div>
-              <label class="switch" aria-label="Enable monitor">
-                <input id="enableMonitor" type="checkbox" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div style="height:.6rem"></div>
-
-            <label for="monitorSize">Monitor size</label>
-            <select id="monitorSize">
-              <option value="s">Small</option>
-              <option value="m" selected>Medium</option>
-              <option value="l">Large</option>
-              <option value="xl">Extra large</option>
-            </select>
-
-            <div class="hint">This is only UI; it does not affect the physical display.</div>
-          </div>
-        </div>
-      </section>
-
-      <section id="audio">
-        <div class="section-head">
-          <div>
-            <h2>Audio</h2>
-            <p>Configure audio playback, voice settings, and latency mitigation for short prompts.</p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="card">
-            <h3>Playback</h3>
-            <p>How the UI plays instruction audio and effects.</p>
-
-            <div class="toggle">
-              <div>
-                <strong>Preload audio</strong>
-                <div class="hint">Preload next audio file(s) to reduce gaps.</div>
-              </div>
-              <label class="switch" aria-label="Preload audio">
-                <input id="preloadAudio" type="checkbox" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div style="height:.6rem"></div>
-
-            <div class="toggle">
-              <div>
-                <strong>Play short "lead-in"</strong>
-                <div class="hint">Optional micro-sound before TTS/streaming audio.</div>
-              </div>
-              <label class="switch" aria-label="Lead-in sound">
-                <input id="leadIn" type="checkbox" />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>Voice</h3>
-            <p>Mock voice selection (for TTS engines like ElevenLabs or local TTS).</p>
-
-            <label for="voiceMode">Voice mode</label>
-            <select id="voiceMode">
-              <option value="files" selected>Pre-produced MP3 files (recommended)</option>
-              <option value="tts">On-the-fly TTS</option>
-              <option value="hybrid">Hybrid</option>
-            </select>
-
-            <div class="hint">
-              For large instruction sets, MP3 files reduce runtime cost and latency.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="content">
-        <div class="section-head">
-          <div>
-            <h2>Content</h2>
-            <p>Pick language packs and base URLs for audio and JSON content.</p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="card">
-            <h3>Language</h3>
-            <p>Select the primary content language.</p>
-
-            <label for="language">Language</label>
-            <select id="language">
-              <option value="nl" selected>Nederlands</option>
-              <option value="en">English</option>
-            </select>
-
-            <div class="hint">This selects the language folder paths in sounds.json (mock).</div>
-          </div>
-
-          <div class="card">
-            <h3>Base URL</h3>
-            <p>Where audio and JSON are served from (GitHub Pages, server, etc.).</p>
-
-            <label for="contentBase">Content base URL</label>
-            <input id="contentBase" type="url" value="https://www.tastenbraille.com/braillestudio" />
-            <div class="hint">If you change this, ensure CORS and correct paths for MP3/JSON.</div>
-          </div>
-        </div>
-      </section>
-
-      <section id="privacy">
-        <div class="section-head">
-          <div>
-            <h2>Privacy</h2>
-            <p>Student progress can be stored locally in the browser without sending data to a server.</p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="card">
-            <h3>Local progress</h3>
-            <p>Mock settings for local-only tracking.</p>
-
-            <div class="toggle">
-              <div>
-                <strong>Enable local progress tracking</strong>
-                <div class="hint">Stores progress in LocalStorage/IndexedDB on this device.</div>
-              </div>
-              <label class="switch" aria-label="Enable progress tracking">
-                <input id="trackProgress" type="checkbox" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div style="height:.6rem"></div>
-
-            <div class="toggle">
-              <div>
-                <strong>Anonymous mode</strong>
-                <div class="hint">Do not store student identifiers; store only activity completion.</div>
-              </div>
-              <label class="switch" aria-label="Anonymous mode">
-                <input id="anonymousMode" type="checkbox" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>Reset</h3>
-            <p>Clear all local settings and progress (mock action).</p>
-
-            <button class="btn danger" type="button" id="resetBtn">Reset local data</button>
-            <div class="hint">This would clear LocalStorage/IndexedDB for this origin.</div>
-          </div>
-        </div>
-      </section>
-
-      <section id="advanced">
-        <div class="section-head">
-          <div>
-            <h2>Advanced</h2>
-            <p>Developer options: logging verbosity, diagnostics overlays, and feature flags.</p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="card">
-            <h3>Logging</h3>
-            <p>Mock logging levels for browser console and on-page event log.</p>
-
-            <label for="logLevel">Log level</label>
-            <select id="logLevel">
-              <option value="error">Error</option>
-              <option value="warn">Warn</option>
-              <option value="info" selected>Info</option>
-              <option value="debug">Debug</option>
-              <option value="trace">Trace</option>
-            </select>
-
-            <div class="hint">Developer mode should never be default for student use.</div>
-          </div>
-
-          <div class="card">
-            <h3>Feature flags</h3>
-            <p>Mock feature toggles used during refactors.</p>
-
-            <div class="toggle">
-              <div>
-                <strong>Use new activity controller</strong>
-                <div class="hint">Switch between legacy and unified activity flow.</div>
-              </div>
-              <label class="switch" aria-label="Use new activity controller">
-                <input id="flagActivityController" type="checkbox" />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div style="height:.6rem"></div>
-
-            <div class="toggle">
-              <div>
-                <strong>Strict JSON schema</strong>
-                <div class="hint">Reject content that does not validate.</div>
-              </div>
-              <label class="switch" aria-label="Strict JSON schema">
-                <input id="flagStrictSchema" type="checkbox" />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="foot">
-          <div class="note">
-            Mock page only. No data is persisted. Intended as a UI template for your repo.
-          </div>
-          <button class="btn" type="button" id="exportBtn">Export JSON</button>
-          <button class="btn primary" type="button" id="saveBtn2">Save</button>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <script>
-    // Mock-only: theme toggle + pretend persistence.
-    const htmlEl = document.documentElement;
-
-    function toggleTheme() {
-      const next = (htmlEl.getAttribute("data-theme") === "dark") ? "light" : "dark";
-      htmlEl.setAttribute("data-theme", next);
-    }
-
-    function collectSettings() {
-      const get = (id) => document.getElementById(id);
-      return {
-        connection: {
-          apiBase: get("apiBase").value,
-          wsUrl: get("wsUrl").value,
-          connectOnStartup: get("connectOnStartup").checked,
-          autoReconnect: get("autoReconnect").checked,
-          bridgeProfile: get("bridgeProfile").value
-        },
-        display: {
-          wrapMode: get("wrapMode").value,
-          showCursor: get("showCursor").checked,
-          enableMonitor: get("enableMonitor").checked,
-          monitorSize: get("monitorSize").value
-        },
-        audio: {
-          preloadAudio: get("preloadAudio").checked,
-          leadIn: get("leadIn").checked,
-          voiceMode: get("voiceMode").value
-        },
-        content: {
-          language: get("language").value,
-          contentBase: get("contentBase").value
-        },
-        privacy: {
-          trackProgress: get("trackProgress").checked,
-          anonymousMode: get("anonymousMode").checked
-        },
-        advanced: {
-          logLevel: get("logLevel").value,
-          flags: {
-            activityController: get("flagActivityController").checked,
-            strictSchema: get("flagStrictSchema").checked
-          }
-        },
-        meta: {
-          savedAt: new Date().toISOString(),
-          version: "mock-1"
-        }
-      };
-    }
-
-    function mockSave() {
-      const settings = collectSettings();
-      console.log("SETTINGS (mock save):", settings);
-      alert("Saved (mock). Check console for JSON.");
-    }
-
-    function exportJson() {
-      const settings = collectSettings();
-      const blob = new Blob([JSON.stringify(settings, null, 2)], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "settings.mock.json";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(a.href);
-    }
-
-    function resetLocal() {
-      // Mock action; in real implementation you would clear localStorage/indexedDB keys.
-      alert("Reset (mock). Implement localStorage/IndexedDB clearing here.");
-    }
-
-    document.getElementById("toggleThemeBtn").addEventListener("click", toggleTheme);
-    document.getElementById("saveBtn").addEventListener("click", mockSave);
-    document.getElementById("saveBtn2").addEventListener("click", mockSave);
-    document.getElementById("exportBtn").addEventListener("click", exportJson);
-    document.getElementById("resetBtn").addEventListener("click", resetLocal);
-
-    // Keyboard shortcut (mock): Ctrl+S / Cmd+S triggers save.
-    window.addEventListener("keydown", (e) => {
-      const isSave = (e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "s");
-      if (isSave) {
-        e.preventDefault();
-        mockSave();
-      }
-    });
-  </script>
+    <footer>
+      Version 0.1 · Mock UI
+    </footer>
+  </div>
+</body>
 </html>
