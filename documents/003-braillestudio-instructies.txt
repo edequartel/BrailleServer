@@ -1,0 +1,61 @@
+STORY
+de computer leest een verhaal voor. <audio.mp3>
+
+WOORD
+lees het woord <bal>. 
+druk op de volgende toets voor het volgende woord.
+
+LETTER
+op de leesregel zie je een letter. 
+dit is de <b>. 
+omdat het een <b> is druk je op de rechterduimtoets. 
+er komen nog mee letters.
+bij de <b> druk je op de rechterduimtoets.
+als het geen <b> is, kies je de linkerduimtoets.
+
+TYPEN
+op de leesregel zie je een <b>.
+de <b> type je met toets 1 en 2.
+type de letter en druk op de rechterduimtoets.
+type tot je de stuiterende bal hoor.
+
+AUDITIEF HERKENNEN
+de computer lees een woord voor.
+hoor je een <l> in het woord.
+druk op de rechterduimtoets.
+hoor je geen <l> in het woord.
+druk dan op de linkerduimtoets.
+
+LEZEN WOORD EN LETTERS 
+op de leesregel komen woorden of letters.
+lees ze hardop. 
+druk op de rechterduimtoets voor de volgende regel.
+
+TACTIEL HERKENNEN
+op de leesregel komen woorden.
+druk op de rechterduimtoets als het woord met een <b> begint.
+druk anders op de linkerduimtoets.
+als je het goed hebt gedaan hoor je een geluid.
+daarna komt de volgende.
+als het niet goed is hoor je een ander geluid en kom het woord nog een keer.
+
+AUDITIEVE SYNTHESE
+je hoort letters.
+de computer maakt er een woord van.
+soms is het fout.
+druk dan op de linkerduimtoets.
+druk op de rechterduimtoets als het goed is.
+
+TACTIELE DISCRIMINATIE
+op de leesregel staan woorden.
+zet de cursor in het woord dat hetzelfde is als het eerste woord.
+
+DICTEE
+luister naar het woord, type het en druk de rechterduimtoets.
+
+MEMORY
+op de leesregel zijn 6 woorden verstopt.
+zoek 2 dezelfde woorden.
+je vindt de woorden door de cursortoetsen te gebruiken
+druk op de rechterduimtoets als je 2 dezelfde hebt.
+druk de linkerduimtoets als ze niet hetzelfde zijn.
