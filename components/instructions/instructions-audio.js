@@ -1,8 +1,14 @@
+/* File: /js/instructions-click-list.js */
 /* global Howl */
 
 (() => {
-  const JSON_URL = "/config/instructions.json";
-  const AUDIO_BASE = "../audio/";
+  // Auto-detect base path:
+  // - GitHub Pages: https://edequartel.github.io/BrailleServer/  => BASE="/BrailleServer"
+  // - Local/other hosting at domain root                        => BASE=""
+  const BASE = (location.hostname === "edequartel.github.io") ? "/BrailleServer" : "";
+
+  const JSON_URL   = `${BASE}/config/instructions.json`;
+  const AUDIO_BASE = `${BASE}/audio/`;
 
   const ul = document.getElementById("list");
 
@@ -19,7 +25,7 @@
   }
 
   function normalizePath(base, file) {
-    return base.replace(/\/+$/, "") + "/" + file.replace(/^\/+/, "");
+    return String(base).replace(/\/+$/, "") + "/" + String(file || "").replace(/^\/+/, "");
   }
 
   function setItemState(index, stateText, isPlaying = false, isError = false) {
@@ -34,8 +40,8 @@
 
     state.textContent = stateText;
 
-    if (isError && pathEl) {
-      pathEl.style.color = "#ff6b6b";
+    if (pathEl) {
+      pathEl.style.color = isError ? "#ff6b6b" : "";
     }
   }
 
@@ -44,20 +50,18 @@
       try { currentHowl.stop(); } catch {}
       currentHowl = null;
     }
-    if (currentIndex >= 0) {
-      setItemState(currentIndex, "Play", false, false);
-    }
+    if (currentIndex >= 0) setItemState(currentIndex, "Play", false, false);
     currentIndex = -1;
   }
 
   function playIndex(index, item) {
-    if (!item.audio) {
-      logWarn("Missing audio field", item);
+    if (!item || !("audio" in item)) {
+      logWarn("Missing 'audio' field in JSON item", item);
       setItemState(index, "No audio", false, true);
       return;
     }
 
-    const audioFile = String(item.audio).trim();
+    const audioFile = String(item.audio || "").trim();
     if (!audioFile) {
       logWarn("Empty audio filename", item);
       setItemState(index, "No audio", false, true);
@@ -103,7 +107,7 @@
   async function init() {
     const res = await fetch(JSON_URL, { cache: "no-store" });
     if (!res.ok) {
-      logError(`Failed to fetch ${JSON_URL}`, res.status);
+      logError(`Failed to fetch ${JSON_URL} (HTTP ${res.status})`);
       throw new Error("JSON fetch failed");
     }
 
@@ -136,9 +140,7 @@
 
       const path = document.createElement("span");
       path.className = "path";
-      path.textContent = item.audio
-        ? normalizePath(AUDIO_BASE, item.audio)
-        : "";
+      path.textContent = item.audio ? normalizePath(AUDIO_BASE, item.audio) : "";
       path.style.fontSize = "0.75rem";
       path.style.opacity = "0.6";
 
