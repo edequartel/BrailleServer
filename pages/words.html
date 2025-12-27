@@ -9,6 +9,50 @@
   <link rel="stylesheet" href="../components/braille-monitor/braillemonitor.css" />
   <link rel="stylesheet" href="./activity-runner.css" />
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+  <style>
+    /* Minimal floating settings button */
+    .settings-fab{
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      z-index: 9999;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      border: 1px solid rgba(127,127,127,.35);
+      background: rgba(255,255,255,.10);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: inherit;
+      text-decoration: none;
+      box-shadow: 0 10px 22px rgba(0,0,0,.22);
+      cursor: pointer;
+      user-select: none;
+    }
+    html[data-theme="dark"] .settings-fab{
+      background: rgba(20,24,36,.55);
+      border-color: rgba(255,255,255,.16);
+    }
+    .settings-fab:hover{
+      transform: translateY(-1px);
+    }
+    .settings-fab:active{
+      transform: translateY(0);
+    }
+    .settings-fab svg{
+      width: 24px;
+      height: 24px;
+      display: block;
+    }
+    .settings-fab:focus-visible{
+      outline: 3px solid rgba(122,162,255,.55);
+      outline-offset: 3px;
+    }
+  </style>
 </head>
 
 <body>
@@ -40,11 +84,8 @@
     </div>
 
     <!-- IMPORTANT: only one element with this id -->
-      
+    <div id="brailleMonitorComponent"></div>
 
-      <div id="brailleMonitorComponent"></div>
-
-      
     <p class="field-value" id="activity-instruction">–</p>
 
     <div class="meta-bar">
@@ -60,9 +101,6 @@
 
     <div class="meta-bar meta-bar-tight">
       <span id="activity-status">Status: idle</span>
-
-      
-      
     </div>
 
     <!-- TOP CONTROLS BAR: left (activities), right (tools) -->
@@ -70,8 +108,6 @@
       <div class="top-controls__left">
         <div id="activity-buttons" class="buttons buttons-left"></div>
       </div>
-
-      <!-- REMOVED: top-controls__center (prev/next moved into braille-panel) -->
 
       <div class="top-controls__right">
         <div class="buttons buttons-right">
@@ -115,6 +151,25 @@
       <div id="log" class="log-body">Log start…</div>
     </section>
   </main>
+
+  <!-- Settings button (bottom-right) -->
+  <a class="settings-fab" href="/pages/settings.html" aria-label="Settings">
+    <!-- Gear icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path fill="currentColor"
+        d="M19.14,12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58
+        c.18-.14.23-.4.12-.61l-1.92-3.32c-.11-.2-.35-.28-.56-.2l-2.39.96
+        c-.5-.38-1.04-.69-1.64-.92l-.36-2.54C14.4,2.18,14.2,2,13.96,2h-3.92
+        C9.8,2,9.6,2.18,9.56,2.42L9.2,4.96c-.6.23-1.14.54-1.64.92l-2.39-.96
+        c-.21-.08-.45,0-.56.2L2.69,8.44c-.11.21-.06.47.12.61l2.03,1.58
+        c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03,1.58c-.18.14-.23.4-.12.61
+        l1.92,3.32c.11.2.35.28.56.2l2.39-.96c.5.38,1.04.69,1.64.92l.36,2.54
+        c.04.24.24.42.48.42h3.92c.24,0,.44-.18.48-.42l.36-2.54
+        c.6-.23,1.14-.54,1.64-.92l2.39.96c.21.08.45,0,.56-.2l1.92-3.32
+        c.11-.21.06-.47-.12-.61L19.14,12.94z M12,15.5c-1.93,0-3.5-1.57-3.5-3.5
+        s1.57-3.5,3.5-3.5s3.5,1.57,3.5,3.5S13.93,15.5,12,15.5z" />
+    </svg>
+  </a>
 
   <script>
     (function () {
