@@ -9,7 +9,7 @@
     :root {
       --bg: #f3f4f6;
       --panel: #ffffff;
-      --text: #111827;  /* Donkere, heldere kleur */
+      --text: #111827;
       --border: #cfd6e4;
       --link-bg: #f9fafb;
       --link-hover: #eef2ff;
@@ -23,7 +23,7 @@
       :root {
         --bg: #0f1117;
         --panel: #161a23;
-        --text: #f5f6f7;  /* Helder witgrijs in dark mode */
+        --text: #f5f6f7;
         --border: #343a48;
         --link-bg: #1e2431;
         --link-hover: #293043;
@@ -51,13 +51,12 @@
       box-shadow: 0 6px 24px var(--shadow);
     }
 
-    /* TITEL FIX */
     h1 {
       margin-top: 0;
       font-size: 1.8rem;
       font-weight: 800;
-      color: var(--text) !important;   /* FORCED visible color */
-      text-shadow: 0 0 1px rgba(0,0,0,0.2);  /* Extra leesbaarheid zonder opvallend effect */
+      color: var(--text) !important;
+      text-shadow: 0 0 1px rgba(0,0,0,0.2);
     }
 
     ul {
@@ -86,7 +85,6 @@
       background: var(--link-hover);
     }
 
-    /* SCROLLBOX */
     #readme-box {
       margin-top: 1.5rem;
       padding: 1.5rem;
@@ -101,7 +99,6 @@
       line-height: 1.6;
     }
 
-    /* Markdown styling */
     #readme-box h1,
     #readme-box h2,
     #readme-box h3 {
@@ -150,6 +147,11 @@
     <ul>
       <li><a href="./pages/words.html">Letter en woorden oefenen</a></li>
       <li><a href="./pages/stories.html">Verhalen lezen</a></li>
+      <li>
+        <a href="./components/instructions/instructions-audio.html">
+          Instructies – audio overzicht
+        </a>
+      </li>
     </ul>
 
     <div id="readme-box">Laden...</div>
