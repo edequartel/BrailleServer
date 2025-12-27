@@ -6,37 +6,34 @@
   <title>BrailleServer</title>
 
   <style>
-    /* -----------------------------------------
-       Theme variables (light default)
-    ----------------------------------------- */
     :root {
       --bg: #f3f4f6;
       --panel: #ffffff;
-      --text: #111827;
-      --border: #e5e7eb;
+      --text: #111827;  /* Donkere, heldere kleur */
+      --border: #cfd6e4;
       --link-bg: #f9fafb;
       --link-hover: #eef2ff;
-      --shadow: rgba(0, 0, 0, 0.12);
+      --shadow: rgba(0, 0, 0, 0.15);
+
+      --md-bg: #ffffff;
+      --md-text: #1c1f25;
     }
 
-    /* -----------------------------------------
-       Dark theme (system preference)
-    ----------------------------------------- */
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #0f1117;
         --panel: #161a23;
-        --text: #e5e7eb;
-        --border: #2a2f3a;
-        --link-bg: #1f2430;
-        --link-hover: #2a3050;
-        --shadow: rgba(0, 0, 0, 0.6);
+        --text: #f5f6f7;  /* Helder witgrijs in dark mode */
+        --border: #343a48;
+        --link-bg: #1e2431;
+        --link-hover: #293043;
+        --shadow: rgba(0, 0, 0, 0.55);
+
+        --md-bg: #1b1f2a;
+        --md-text: #ffffff;
       }
     }
 
-    /* -----------------------------------------
-       Base layout
-    ----------------------------------------- */
     body {
       margin: 0;
       padding: 2rem;
@@ -54,15 +51,19 @@
       box-shadow: 0 6px 24px var(--shadow);
     }
 
+    /* TITEL FIX */
     h1 {
       margin-top: 0;
-      font-size: 1.6rem;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text) !important;   /* FORCED visible color */
+      text-shadow: 0 0 1px rgba(0,0,0,0.2);  /* Extra leesbaarheid zonder opvallend effect */
     }
 
     ul {
       list-style: none;
       padding: 0;
-      margin: 1.5rem 0 0;
+      margin: 1rem 0 0;
     }
 
     li {
@@ -84,27 +85,87 @@
     a:hover {
       background: var(--link-hover);
     }
+
+    /* SCROLLBOX */
+    #readme-box {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: var(--md-bg);
+      color: var(--md-text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-height: 420px;
+      overflow-y: auto;
+      box-shadow: inset 0 2px 8px var(--shadow);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    /* Markdown styling */
+    #readme-box h1,
+    #readme-box h2,
+    #readme-box h3 {
+      margin-top: 1.4rem;
+      margin-bottom: 0.6rem;
+      color: var(--md-text);
+      font-weight: 700;
+    }
+
+    #readme-box p {
+      margin: 0.7rem 0;
+    }
+
+    #readme-box ul {
+      list-style: disc;
+      padding-left: 1.4rem;
+      margin: 0.6rem 0;
+    }
+
+    #readme-box code {
+      background: rgba(0, 0, 0, 0.07);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #readme-box code {
+        background: rgba(255, 255, 255, 0.08);
+      }
+    }
+
+    #readme-box a {
+      color: #3b82f6;
+    }
   </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
+
 <body>
 
   <main>
     <h1>BrailleServer</h1>
 
     <ul>
-      <li>
-        <a href="./pages/words.html">
-          Letter en woorden oefenen
-        </a>
-      </li>
-
-      <li>
-        <a href="./pages/stories.html">
-          Verhalen lezen
-        </a>
-      </li>
+      <li><a href="./pages/words.html">Letter en woorden oefenen</a></li>
+      <li><a href="./pages/stories.html">Verhalen lezen</a></li>
     </ul>
+
+    <div id="readme-box">Laden...</div>
   </main>
+
+  <script>
+    fetch('./README.md')
+      .then(r => r.text())
+      .then(md => {
+        document.getElementById('readme-box').innerHTML = marked.parse(md);
+      })
+      .catch(() => {
+        document.getElementById('readme-box').innerText =
+          'README.md kon niet worden geladen.';
+      });
+  </script>
 
 </body>
 </html>
