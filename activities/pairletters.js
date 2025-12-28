@@ -13,11 +13,12 @@
   }
 
   const DEFAULT_ROUNDS = 5;
-  const DEFAULT_LINE_LEN = 18; // aantal letters in set (wordt gepadded door BrailleBridge/words.js)
+  const DEFAULT_LINE_LEN = 18; // aantal letters in set
   const FLASH_MS = 450;
 
   function create() {
     let running = false;
+
     let donePromise = null;
     let doneResolve = null;
 
@@ -25,14 +26,17 @@
     let round = 0;
     let totalRounds = DEFAULT_ROUNDS;
 
-    let line = "";          // de huidige regel die naar de leesregel is gestuurd
-    let target = "";        // de letter die 2x voorkomt
-    let hits = new Set();   // indices waar target is gekozen
+    let line = "";     // huidige regel die we tonen
+    let target = "";   // letter die 2x voorkomt
+    let hits = new Set();
 
     let known = [];
     let fresh = [];
 
     let playToken = 0;
+    let currentCtx = null;
+
+    let roundDoneResolve = null;
 
     function ensureDonePromise() {
       if (donePromise) return donePromise;
@@ -54,7 +58,6 @@
       for (const x of (Array.isArray(arr) ? arr : [])) {
         const s = String(x || "").trim().toLowerCase();
         if (!s) continue;
-        // neem alleen 1-char letters
         if (s.length !== 1) continue;
         if (seen.has(s)) continue;
         seen.add(s);
@@ -66,46 +69,35 @@
     function computePools(record) {
       const knownLetters = uniqLetters(record?.knownLetters);
       const letters = uniqLetters(record?.letters);
-
-      // "Nieuw te leren" = letters in record.letters die nog niet bekend zijn
       const knownSet = new Set(knownLetters);
       const freshLetters = letters.filter(ch => !knownSet.has(ch));
-
       return { knownLetters, freshLetters };
     }
 
     function pickTarget() {
-      // voorkeur: een nieuwe letter; fallback: bekende letter; fallback: eerste uit record
       if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
       if (known.length) return known[Math.floor(Math.random() * known.length)];
       return "a";
     }
 
     function buildLine(targetLetter, lineLen) {
-      // Plaats target 2x op twee verschillende posities.
-      // Andere posities: allemaal unieke letters, niet gelijk aan target.
       const len = Math.max(6, Math.min(40, Number(lineLen) || DEFAULT_LINE_LEN));
 
-      // Candidate pool voor fillers: combineer known + fresh, maar zonder target
       const pool = [...known, ...fresh].filter(ch => ch !== targetLetter);
-      // Als pool te klein is, vul met alfabet
       const alphabet = "abcdefghijklmnopqrstuvwxyz".split("").filter(ch => ch !== targetLetter);
       const candidates = [...pool, ...alphabet];
 
       const used = new Set();
       used.add(targetLetter);
 
-      // kies twee target posities
       const pos1 = Math.floor(Math.random() * len);
       let pos2 = Math.floor(Math.random() * len);
       while (pos2 === pos1) pos2 = Math.floor(Math.random() * len);
 
       const arr = new Array(len).fill("?");
-
       arr[pos1] = targetLetter;
       arr[pos2] = targetLetter;
 
-      // vul rest met unieke fillers
       for (let i = 0; i < len; i++) {
         if (i === pos1 || i === pos2) continue;
 
@@ -117,20 +109,30 @@
           chosen = c;
           break;
         }
-        if (!chosen) chosen = "x"; // uiterste fallback
+        if (!chosen) chosen = "x";
         used.add(chosen);
         arr[i] = chosen;
       }
 
+      // met spaties zodat het "cel-achtig" voelt
       return arr.join(" ");
     }
 
-    async function sendToBraille(text) {
-      // We sturen direct naar BrailleBridge, want words.js toont bij running anders activity detail.
-      // Cursor events blijven binnenkomen; wij gebruiken index op onze eigen `line`.
-      if (window.BrailleBridge && typeof window.BrailleBridge.sendText === "function") {
-        await window.BrailleBridge.sendText(String(text || ""));
+    function sendToBraille(text) {
+      const t = String(text || "");
+
+      // 1) Preferred: go through words.js pipeline (monitor + bridge best-effort)
+      if (window.BrailleUI && typeof window.BrailleUI.setLine === "function") {
+        window.BrailleUI.setLine(t, { reason: "pairletters" });
+        return Promise.resolve();
       }
+
+      // 2) Fallback: direct bridge call, but NEVER throw
+      if (window.BrailleBridge && typeof window.BrailleBridge.sendText === "function") {
+        return window.BrailleBridge.sendText(t).catch(() => {});
+      }
+
+      return Promise.resolve();
     }
 
     async function flashMessage(msg) {
@@ -143,32 +145,52 @@
       }
     }
 
+    function waitForRoundCompletion(token) {
+      return new Promise((resolve) => {
+        if (token !== playToken) return resolve();
+        roundDoneResolve = resolve;
+      });
+    }
+
+    function resolveRound() {
+      const r = roundDoneResolve;
+      roundDoneResolve = null;
+      if (typeof r === "function") r();
+    }
+
     async function nextRound(token) {
       if (token !== playToken) return;
 
       hits.clear();
       target = pickTarget();
 
-      // Je kunt via activity config ook lineLen meegeven
       const lineLen = currentCtx?.activity?.lineLen ?? DEFAULT_LINE_LEN;
-
       line = buildLine(target, lineLen);
-      log("[pairletters] round line", { round: round + 1, totalRounds, target, line });
+
+      log("[pairletters] round line", {
+        round: round + 1,
+        totalRounds,
+        target,
+        line
+      });
 
       await sendToBraille(line);
     }
 
-    let currentCtx = null;
-
     async function run(ctx, token) {
       currentCtx = ctx;
-
       const rec = ctx?.record || {};
+
       const { knownLetters, freshLetters } = computePools(rec);
       known = knownLetters;
       fresh = freshLetters;
 
-      totalRounds = Number(ctx?.activity?.nrof ?? ctx?.activity?.nrOf ?? ctx?.activity?.nRounds ?? rec?.nrof);
+      totalRounds = Number(
+        ctx?.activity?.nrof ??
+        ctx?.activity?.nrOf ??
+        ctx?.activity?.nRounds ??
+        rec?.nrof
+      );
       if (!Number.isFinite(totalRounds) || totalRounds <= 0) totalRounds = DEFAULT_ROUNDS;
 
       log("[pairletters] start run", {
@@ -180,13 +202,10 @@
       });
 
       round = 0;
-
       while (round < totalRounds) {
         if (token !== playToken) return;
-        await nextRound(token);
 
-        // wacht totdat deze ronde klaar is (2 correcte keuzes)
-        // dit wordt afgehandeld in onCursor()
+        await nextRound(token);
         await waitForRoundCompletion(token);
 
         round += 1;
@@ -198,19 +217,6 @@
       stop({ reason: "done" });
     }
 
-    let roundDoneResolve = null;
-    function waitForRoundCompletion(token) {
-      return new Promise((resolve) => {
-        if (token !== playToken) return resolve();
-        roundDoneResolve = resolve;
-      });
-    }
-    function resolveRound() {
-      const r = roundDoneResolve;
-      roundDoneResolve = null;
-      if (typeof r === "function") r();
-    }
-
     function start(ctx) {
       stop({ reason: "restart" });
       ensureDonePromise();
@@ -220,6 +226,7 @@
       const token = playToken;
 
       run(ctx, token).catch((err) => {
+        // keep it visible in log but do not crash the whole app
         log("[pairletters] error", { message: err?.message || String(err) });
         resolveDone({ ok: false, error: err?.message || String(err) });
       });
@@ -233,7 +240,6 @@
       running = false;
       playToken += 1;
 
-      // laat de leesregel weer door words.js bepalen na stop (idle = woord)
       log("[pairletters] stop", payload || {});
       resolveDone({ ok: true, payload });
     }
@@ -243,9 +249,8 @@
     }
 
     // ------------------------------------------------------------
-    // Cursor keuze: routing key op een cel
-    // info.index is 0..39 (van BrailleBridge/words.js)
-    // We gebruiken index om in onze eigen `line` te kijken.
+    // Cursor keuze (routing key / cursor keys)
+    // info.index is 0..39 (cel index)
     // ------------------------------------------------------------
     function onCursor(info) {
       if (!running) return;
@@ -253,13 +258,9 @@
       const idx = typeof info?.index === "number" ? info.index : null;
       if (idx == null) return;
 
-      // Onze line bevat spaties: "b a l k ..."
-      // Index uit bridge is cell index. In de praktijk matcht dit het karakter in de string op de leesregel.
-      // Daarom maken we een "display string" zonder extra padding: we gebruiken exact `line` zoals gestuurd.
+      // We sent `line` including spaces, so index should match what is on the display.
       const s = String(line || "");
       const ch = s[idx] || "";
-
-      // Alleen letters tellen (geen spaties)
       const letter = String(ch).trim().toLowerCase();
       if (!letter) return;
 
@@ -271,7 +272,6 @@
         return;
       }
 
-      // juiste letter
       if (!hits.has(idx)) hits.add(idx);
 
       if (hits.size >= 2) {

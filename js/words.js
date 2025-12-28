@@ -71,6 +71,10 @@
     return el;
   }
 
+  function $opt(id) {
+    return document.getElementById(id);
+  }
+
   function setStatus(text) {
     const el = $("data-status");
     if (el) el.textContent = "Data: " + text;
@@ -104,11 +108,11 @@
   }
 
   // ------------------------------------------------------------
-  // SINGLE toggle run button UI
+  // SINGLE toggle run button UI (optional)
   // ------------------------------------------------------------
   function setRunnerUi({ isRunning }) {
-    const runBtn = $("run-activity-btn");
-    const autoRun = $("auto-run");
+    const runBtn = $opt("run-activity-btn"); // optional
+    const autoRun = $opt("auto-run");
 
     if (autoRun) autoRun.disabled = Boolean(isRunning);
 
@@ -167,12 +171,14 @@
     if (next === brailleLine) return;
     brailleLine = next;
 
+    // on-screen monitor
     if (brailleMonitor && typeof brailleMonitor.setText === "function") {
       if (next) brailleMonitor.setText(next);
       else if (typeof brailleMonitor.clear === "function") brailleMonitor.clear();
       else brailleMonitor.setText("");
     }
 
+    // hardware via bridge (best-effort)
     if (window.BrailleBridge) {
       if (!next && typeof BrailleBridge.clearDisplay === "function") {
         BrailleBridge.clearDisplay().catch((err) => {
@@ -189,36 +195,13 @@
   }
 
   // ------------------------------------------------------------
-  // IMPORTANT:
-  // - Idle (activity inactive): ALWAYS show the WORD on the display.
-  // - Running:
-  //     - story: ALWAYS show the WORD (never filenames)
-  //     - others: show activity detail
+  // Rule you want:
+  // - NOT running => runner controls display (word)
+  // - running => activity controls display (runner MUST NOT overwrite)
   // ------------------------------------------------------------
-  function getBrailleTextForCurrent() {
+  function getIdleBrailleText() {
     const item = records[currentIndex];
-    if (!item) return "";
-
-    const word = item.word != null ? String(item.word) : "";
-
-    // ✅ When not running, the page controls what is on the display:
-    // always show the word (stable, no filenames).
-    if (!running) return word;
-
-    const cur = getCurrentActivity();
-    const activityKey = canonicalActivityId(cur?.activity?.id);
-
-    // ✅ Story: always show the word (also while running)
-    if (activityKey === "story") return word;
-
-    // Default: show activity detail
-    if (cur && cur.activity) {
-      const { detail } = formatActivityDetail(cur.activity.id, item);
-      const detailText = compactSingleLine(detail);
-      if (detailText && detailText !== "–") return detailText;
-    }
-
-    return word;
+    return item && item.word != null ? String(item.word) : "";
   }
 
   function computeWordAt(text, index) {
@@ -254,21 +237,11 @@
         const id = String(a.id ?? "").trim();
         const caption = String(a.caption ?? "").trim();
         const instruction = String(a.instruction ?? "").trim();
-        const nrof = a.nrof ?? a.nrOf ?? a.nRounds;
-        const lineLen = a.lineLen;
-
         if (!id && !caption) return null;
-
-        const extras = [];
-        if (nrof != null) extras.push(`nrof=${nrof}`);
-        if (lineLen != null) extras.push(`lineLen=${lineLen}`);
-
-        const extraStr = extras.length ? ` -- ${extras.join(" ")}` : "";
-
-        if (caption && instruction) return `${id} -- ${caption} -- ${instruction}${extraStr}`;
-        if (caption) return `${id} -- ${caption}${extraStr}`;
-        if (instruction) return `${id} -- ${instruction}${extraStr}`;
-        return `${id}${extraStr}`;
+        if (caption && instruction) return `${id} -- ${caption} -- ${instruction}`;
+        if (caption) return `${id} -- ${caption}`;
+        if (instruction) return `${id} -- ${instruction}`;
+        return id;
       })
       .filter(Boolean);
 
@@ -301,9 +274,7 @@
           caption: String(a.caption ?? "").trim(),
           instruction: String(a.instruction ?? "").trim(),
           index: a.index,
-
-          // pass-through config for custom activities (e.g. pairletters)
-          nrof: a.nrof ?? a.nrOf ?? a.nRounds,
+          nrof: a.nrof,
           lineLen: a.lineLen
         }))
         .filter(a => a.id);
@@ -314,47 +285,7 @@
     if (Array.isArray(item.words) && item.words.length) activities.push({ id: "words", caption: "Maak woorden" });
     if (Array.isArray(item.story) && item.story.length) activities.push({ id: "story", caption: "Luister (verhaal)" });
     if (Array.isArray(item.sounds) && item.sounds.length) activities.push({ id: "sounds", caption: "Geluiden" });
-
-    // Note: pairletters is usually explicitly configured per record in JSON.
     return activities;
-  }
-
-  function formatActivityDetail(activityId, item) {
-    const rawId = String(activityId ?? "");
-    const id = rawId.trim().toLowerCase();
-    const canonical =
-      id.startsWith("tts") ? "tts" :
-      id.startsWith("letters") ? "letters" :
-      id.startsWith("words") ? "words" :
-      id.startsWith("story") ? "story" :
-      id.startsWith("sounds") ? "sounds" :
-      id.startsWith("pair") ? "pairletters" :
-      id;
-
-    switch (canonical) {
-      case "tts":
-        return { caption: "Luister (woord)", detail: item.word ? String(item.word) : "–" };
-
-      case "letters":
-        return { caption: "Oefen letters", detail: Array.isArray(item.letters) && item.letters.length ? item.letters.join(" ") : "–" };
-
-      case "words":
-        return { caption: "Maak woorden", detail: Array.isArray(item.words) && item.words.length ? item.words.join(", ") : "–" };
-
-      case "story":
-        // ✅ do not expose filenames in "detail"
-        return { caption: "Luister (verhaal)", detail: item.word ? String(item.word) : "–" };
-
-      case "sounds":
-        // unchanged (still shows sounds list as detail while running)
-        return { caption: "Geluiden", detail: Array.isArray(item.sounds) && item.sounds.length ? item.sounds.join("\n") : "–" };
-
-      case "pairletters":
-        return { caption: "Zoek het letterpaar", detail: item.word ? String(item.word) : "–" };
-
-      default:
-        return { caption: rawId ? `Activity: ${rawId}` : "Details", detail: safeJson(item) };
-    }
   }
 
   function canonicalActivityId(activityId) {
@@ -365,7 +296,6 @@
       : id.startsWith("words") ? "words"
       : id.startsWith("story") ? "story"
       : id.startsWith("sounds") ? "sounds"
-      : id.startsWith("pair") ? "pairletters"
       : id;
   }
 
@@ -415,7 +345,7 @@
       activityIdEl.textContent = "Activity: –";
       if (activityInstructionEl) activityInstructionEl.textContent = "–";
       activityButtonsEl.innerHTML = "";
-      updateBrailleLine(getBrailleTextForCurrent(), { reason: "activity-empty" });
+      if (!running) updateBrailleLine(getIdleBrailleText(), { reason: "activity-empty-idle" });
       return;
     }
 
@@ -425,10 +355,8 @@
     activityIndexEl.textContent = `${currentActivityIndex + 1} / ${activities.length}`;
     activityIdEl.textContent = `Activity: ${String(active.id ?? "–")}`;
 
-    const { caption } = formatActivityDetail(active.id, item);
     const instruction = String(active.instruction ?? "").trim();
-
-    if (activityInstructionEl) activityInstructionEl.textContent = instruction || caption || "–";
+    if (activityInstructionEl) activityInstructionEl.textContent = instruction || active.caption || "–";
 
     activityButtonsEl.innerHTML = "";
     for (let i = 0; i < activities.length; i++) {
@@ -449,7 +377,9 @@
     }
 
     updateActivityButtonStates();
-    updateBrailleLine(getBrailleTextForCurrent(), { reason: "activity-change" });
+
+    // IMPORTANT: during running, activity controls display -> do not overwrite.
+    if (!running) updateBrailleLine(getIdleBrailleText(), { reason: "activity-change-idle" });
   }
 
   // ------------------------------------------------------------
@@ -482,13 +412,10 @@
     setRunnerUi({ isRunning: false });
     setActivityStatus("idle");
 
-    // After stopping, show stable idle braille (word)
-    updateBrailleLine(getBrailleTextForCurrent(), { reason: "cancelRun" });
+    // back to idle display rule
+    updateBrailleLine(getIdleBrailleText(), { reason: "cancelRun-idle" });
   }
 
-  // Wait until:
-  // - activity module resolves its promise, OR
-  // - user stops (runToken changes)
   function waitForStopOrDone(currentToken) {
     return new Promise((resolve) => {
       let settled = false;
@@ -517,7 +444,6 @@
     const cur = getCurrentActivity();
     if (!cur) return;
 
-    // stop any current run first
     cancelRun();
     const token = runToken;
 
@@ -550,10 +476,11 @@
     setRunnerUi({ isRunning: true });
     setActivityStatus(autoStarted ? "running (auto)" : "running");
 
+    // IMPORTANT: do NOT set braille line here. Activity owns display now.
+
     try {
       await waitForStopOrDone(token);
     } finally {
-      // if a new run started, ignore
       if (token !== runToken) return;
 
       running = false;
@@ -562,10 +489,10 @@
 
       stopActiveActivity({ reason: "finally" });
 
-      // After running, return to stable idle braille (word)
-      updateBrailleLine(getBrailleTextForCurrent(), { reason: "run-finished" });
+      // after activity finished => back to idle display rule
+      updateBrailleLine(getIdleBrailleText(), { reason: "activity-done-idle" });
 
-      const autoRun = $("auto-run");
+      const autoRun = $opt("auto-run");
       if (autoRun && autoRun.checked) {
         advanceToNextActivityOrWord({ autoStart: true });
       }
@@ -573,11 +500,8 @@
   }
 
   function toggleRun() {
-    if (running) {
-      cancelRun();
-    } else {
-      startSelectedActivity({ autoStarted: false });
-    }
+    if (running) cancelRun();
+    else startSelectedActivity({ autoStarted: false });
   }
 
   function advanceToNextActivityOrWord({ autoStart = false } = {}) {
@@ -617,12 +541,6 @@
     render();
   }
 
-  // ------------------------------------------------------------
-  // Right thumb logic:
-  // - If story is running: toggle play/pause inside story module
-  // - Else: start selected activity (same as Start button)
-  // Left thumb: does nothing
-  // ------------------------------------------------------------
   function rightThumbAction() {
     const cur = getCurrentActivity();
     const key = canonicalActivityId(cur?.activity?.id);
@@ -632,7 +550,6 @@
       return;
     }
 
-    // otherwise behave like Start
     if (!running) startSelectedActivity({ autoStarted: false });
   }
 
@@ -733,9 +650,20 @@
     setActivityStatus("idle");
     setStatus(`geladen (${records.length})`);
 
-    // Ensure idle braille is stable
-    updateBrailleLine(getBrailleTextForCurrent(), { reason: "render" });
+    // only in idle: show word
+    if (!running) updateBrailleLine(getIdleBrailleText(), { reason: "render-idle" });
   }
+
+  // ------------------------------------------------------------
+  // Public helper for activities (pairletters)
+  // ------------------------------------------------------------
+  window.BrailleUI = window.BrailleUI || {};
+  window.BrailleUI.setLine = function (text, meta) {
+    updateBrailleLine(String(text ?? ""), meta || { reason: "activity" });
+  };
+  window.BrailleUI.clear = function (meta) {
+    updateBrailleLine("", meta || { reason: "activity-clear" });
+  };
 
   // ------------------------------------------------------------
   // Init
@@ -745,7 +673,7 @@
 
     const nextBtn = $("next-btn");
     const prevBtn = $("prev-btn");
-    const runBtn = $("run-activity-btn");
+    const runBtn = $opt("run-activity-btn"); // optional
     const toggleFieldsBtn = $("toggle-fields-btn");
     const fieldsPanel = $("fields-panel");
 
@@ -762,19 +690,10 @@
     if (window.BrailleMonitor && typeof BrailleMonitor.init === "function") {
       brailleMonitor = BrailleMonitor.init({
         containerId: "brailleMonitorComponent",
-        onCursorClick(info) {
-          dispatchCursorSelection(info, "monitor");
-        },
+        onCursorClick(info) { dispatchCursorSelection(info, "monitor"); },
         mapping: {
-          // Left thumb does nothing
           leftthumb: () => leftThumbAction(),
-
-          // Right thumb:
-          // - story running => toggle play/pause
-          // - else => start selected activity
           rightthumb: () => rightThumbAction(),
-
-          // other thumbs do nothing to avoid unintended restarts
           middleleftthumb: () => {},
           middlerightthumb: () => {}
         }
@@ -803,8 +722,6 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "ArrowDown") next();
       if (e.key === "ArrowUp") prev();
-
-      // Enter toggles start/stop
       if (e.key === "Enter") toggleRun();
     });
 
