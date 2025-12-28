@@ -188,18 +188,29 @@
     log("[words] Braille line updated", { len: next.length, reason: meta.reason || "unspecified" });
   }
 
+  // ------------------------------------------------------------
+  // FIX: story activity should show WORD, not filenames
+  // ------------------------------------------------------------
   function getBrailleTextForCurrent() {
     const item = records[currentIndex];
     if (!item) return "";
 
+    const word = item.word != null ? String(item.word) : "";
+
     const cur = getCurrentActivity();
+    const activityKey = canonicalActivityId(cur?.activity?.id);
+
+    // ✅ Story: always show the JSON word on the braille display
+    if (activityKey === "story") return word;
+
+    // Default: show activity detail if available
     if (cur && cur.activity) {
       const { detail } = formatActivityDetail(cur.activity.id, item);
       const detailText = compactSingleLine(detail);
       if (detailText && detailText !== "–") return detailText;
     }
 
-    return item.word != null ? String(item.word) : "";
+    return word;
   }
 
   function computeWordAt(text, index) {
@@ -301,10 +312,15 @@
         return { caption: "Oefen letters", detail: Array.isArray(item.letters) && item.letters.length ? item.letters.join(" ") : "–" };
       case "words":
         return { caption: "Maak woorden", detail: Array.isArray(item.words) && item.words.length ? item.words.join(", ") : "–" };
+
       case "story":
-        return { caption: "Luister (verhaal)", detail: Array.isArray(item.story) && item.story.length ? item.story.join("\n") : "–" };
+        // ✅ FIX: do NOT expose story filenames as the "detail" (prevents braille showing filenames)
+        return { caption: "Luister (verhaal)", detail: item.word ? String(item.word) : "–" };
+
       case "sounds":
+        // unchanged (still shows sounds list as detail)
         return { caption: "Geluiden", detail: Array.isArray(item.sounds) && item.sounds.length ? item.sounds.join("\n") : "–" };
+
       default:
         return { caption: rawId ? `Activity: ${rawId}` : "Details", detail: safeJson(item) };
     }
