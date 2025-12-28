@@ -1,4 +1,3 @@
-<!-- /pages/words.html -->
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -6,13 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BrailleStudio - Bartiméus Onderwijs</title>
 
-  <!-- Use BASE-aware absolute paths -->
+  <!-- =========================================================
+       Bootstrap loader (works in BOTH environments)
+       - GitHub Pages: /BrailleServer/js/bootstrap.js
+       - Working Copy / local: ./js/bootstrap.js
+       ========================================================= -->
+  <script>
+    (function () {
+      var isGh = location.hostname === "edequartel.github.io";
+      var src  = isGh ? "/BrailleServer/js/bootstrap.js" : "./js/bootstrap.js";
+
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = function(){ console.log("[words.html] bootstrap loaded:", src); };
+      s.onerror = function(){
+        document.documentElement.innerHTML =
+          "<pre style='padding:12px;border:1px solid #c00;'>BOOTSTRAP NOT LOADED: " + src + "</pre>";
+      };
+      document.head.appendChild(s);
+    })();
+  </script>
+
+  <!-- BASE-aware CSS (patched by bootstrap.js) -->
   <link rel="stylesheet" href="/components/braille-monitor/braillemonitor.css" data-bs-href />
   <link rel="stylesheet" href="/pages/activity-runner.css" data-bs-href />
   <link rel="icon" type="image/x-icon" href="/favicon.ico" data-bs-href />
 
   <style>
-    /* Minimal floating settings button */
     .settings-fab{
       position: fixed;
       right: 14px;
@@ -40,64 +59,28 @@
     }
     .settings-fab:hover{ transform: translateY(-1px); }
     .settings-fab:active{ transform: translateY(0); }
-    .settings-fab svg{
-      width: 24px;
-      height: 24px;
-      display: block;
-    }
-    .settings-fab:focus-visible{
-      outline: 3px solid rgba(122,162,255,.55);
-      outline-offset: 3px;
-    }
   </style>
-
-  <!-- BASE bootstrap:
-       - GitHub Pages: https://edequartel.github.io/BrailleServer/  => BASE="/BrailleServer"
-       - Local/other hosting at domain root                        => BASE=""
-  -->
-  <script>
-    (function () {
-      const BASE = (location.hostname === "edequartel.github.io") ? "/BrailleServer" : "";
-
-      // Expose for other scripts (words.js / activity-runner.js etc.)
-      window.BS_BASE = BASE;
-      window.BS_JSON_URL = `${BASE}/config/instructions.json`;
-      window.BS_AUDIO_BASE = `${BASE}/audio/`;
-
-      // Patch any <link>/<script>/<a> that has data-bs-href / data-bs-src to be BASE-aware.
-      function applyBaseToAttrs() {
-        // <link ... href="/...">
-        document.querySelectorAll("[data-bs-href]").forEach(el => {
-          const href = el.getAttribute("href");
-          if (!href) return;
-          // only patch absolute site-root paths
-          if (href.startsWith("/")) el.setAttribute("href", BASE + href);
-        });
-
-        // <script ... src="/...">
-        document.querySelectorAll("[data-bs-src]").forEach(el => {
-          const src = el.getAttribute("src");
-          if (!src) return;
-          if (src.startsWith("/")) el.setAttribute("src", BASE + src);
-        });
-
-        // <a ... href="/...">
-        document.querySelectorAll("[data-bs-a]").forEach(el => {
-          const href = el.getAttribute("href");
-          if (!href) return;
-          if (href.startsWith("/")) el.setAttribute("href", BASE + href);
-        });
-      }
-
-      document.addEventListener("DOMContentLoaded", applyBaseToAttrs);
-
-      // Useful debug
-      // console.log("[BASE]", BASE, window.BS_JSON_URL, window.BS_AUDIO_BASE);
-    })();
-  </script>
 </head>
 
 <body>
+  <!-- Visible diagnostics (remove when stable) -->
+  <!--
+  <pre id="diag" style="padding:8px;border:1px solid #ccc;">loading…</pre>
+  <script>
+    (function(){
+      var d = document.getElementById("diag");
+      function set(txt){ if (d) d.textContent = txt; }
+      window.addEventListener("error", function(e){
+        set("JS ERROR:\n" + (e.message || e.error || e));
+      });
+      set("host=" + location.hostname + "\npath=" + location.pathname);
+      document.addEventListener("bootstrap:ready", function(){
+        set("bootstrap:ready\nBASE=" + (window.BOOTSTRAP ? window.BOOTSTRAP.BASE : "(missing)"));
+      });
+    })();
+  </script>
+  -->
+
   <main class="container" aria-live="polite">
     <div class="braille-panel">
       <div class="word-header">
@@ -122,7 +105,6 @@
       </div>
     </div>
 
-    <!-- IMPORTANT: only one element with this id -->
     <div id="brailleMonitorComponent"></div>
 
     <p class="field-value" id="activity-instruction">–</p>
@@ -161,7 +143,7 @@
           <button id="toggle-log-btn" class="secondary" type="button">Log</button>
 
           <button
-            id="themeToggleu"
+            id="themeToggle"
             class="theme-toggle"
             type="button"
             aria-label="Toggle theme">
@@ -190,24 +172,10 @@
     </section>
   </main>
 
-  <!-- Settings button (bottom-right) -->
-  <a class="settings-fab" href="/pages/settings.html" data-bs-a aria-label="Settings">
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path fill="currentColor"
-        d="M19.14,12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58
-        c.18-.14.23-.4.12-.61l-1.92-3.32c-.11-.2-.35-.28-.56-.2l-2.39.96
-        c-.5-.38-1.04-.69-1.64-.92l-.36-2.54C14.4,2.18,14.2,2,13.96,2h-3.92
-        C9.8,2,9.6,2.18,9.56,2.42L9.2,4.96c-.6.23-1.14.54-1.64.92l-2.39-.96
-        c-.21-.08-.45,0-.56.2L2.69,8.44c-.11.21-.06.47.12.61l2.03,1.58
-        c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03,1.58c-.18.14-.23.4-.12.61
-        l1.92,3.32c.11.2.35.28.56.2l2.39-.96c.5.38,1.04.69,1.64.92l.36,2.54
-        c.04.24.24.42.48.42h3.92c.24,0,.44-.18.48-.42l.36-2.54
-        c.6-.23,1.14-.54,1.64-.92l2.39.96c.21.08.45,0,.56-.2l1.92-3.32
-        c.11-.21.06-.47-.12-.61L19.14,12.94z M12,15.5c-1.93,0-3.5-1.57-3.5-3.5
-        s1.57-3.5,3.5-3.5s3.5,1.57,3.5,3.5S13.93,15.5,12,15.5z" />
-    </svg>
-  </a>
+  <!-- Settings button -->
+  <a class="settings-fab" href="/pages/settings.html" data-bs-a aria-label="Settings">⚙</a>
 
+  <!-- Theme + inline logger (unchanged except themeToggle id fix) -->
   <script>
     (function () {
       const THEME_KEY = "bs_theme";
@@ -228,24 +196,6 @@
           : "light";
       }
 
-      document.addEventListener("DOMContentLoaded", () => {
-        applyTheme(getInitialTheme());
-
-        const tbtn = document.getElementById("themeToggle");
-        if (tbtn) {
-          tbtn.addEventListener("click", () => {
-            const current =
-              html.getAttribute("data-theme") === "dark" ? "dark" : "light";
-            const next = current === "dark" ? "light" : "dark";
-            localStorage.setItem(THEME_KEY, next);
-            applyTheme(next);
-            if (typeof window.logMessage === "function") {
-              window.logMessage("[theme] " + next);
-            }
-          });
-        }
-      });
-
       function appendToPanel(line) {
         const el = document.getElementById("log");
         if (!el) return;
@@ -262,6 +212,20 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
+        applyTheme(getInitialTheme());
+
+        const tbtn = document.getElementById("themeToggle");
+        if (tbtn) {
+          tbtn.addEventListener("click", () => {
+            const current =
+              html.getAttribute("data-theme") === "dark" ? "dark" : "light";
+            const next = current === "dark" ? "light" : "dark";
+            localStorage.setItem(THEME_KEY, next);
+            applyTheme(next);
+            window.logMessage("[theme] " + next);
+          });
+        }
+
         const btn = document.getElementById("clear-log-btn");
         if (btn) {
           btn.addEventListener("click", () => {
@@ -280,19 +244,16 @@
       });
 
       window.logMessage("[words.html] Inline logger ready.");
-      // Expose BASE-aware URLs for debugging
-      window.logMessage("[paths] BASE=" + (window.BS_BASE || ""));
-      window.logMessage("[paths] JSON=" + (window.BS_JSON_URL || ""));
-      window.logMessage("[paths] AUDIO=" + (window.BS_AUDIO_BASE || ""));
     })();
   </script>
 
-  <!-- BASE-aware scripts -->
+  <!-- BASE-aware scripts (bootstrap patches these src attributes) -->
   <script src="/js/logging.js" data-bs-src></script>
   <script src="/js/braillebridge.js" data-bs-src></script>
   <script src="/components/braille-monitor/braillemonitor.js" data-bs-src></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
   <script src="/js/sounds.js" data-bs-src></script>
 
   <script src="/activities/tts.js" data-bs-src></script>
