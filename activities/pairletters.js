@@ -7,14 +7,16 @@
     if (typeof window.logMessage === "function") window.logMessage(line);
     else console.log(line);
   }
-
   function safeJson(x) {
     try { return JSON.stringify(x); } catch { return String(x); }
   }
 
   const DEFAULT_ROUNDS = 5;
-  const DEFAULT_LINE_LEN = 18; // number of CELLS (not string chars)
-  const FLASH_MS = 450;
+  const DEFAULT_LINE_LEN = 18; // number of CELLS
+
+  // Tunables (separate concerns)
+  const FEEDBACK_MS = 300;  // how long "goed/fout/klaar" is shown
+  const FLIPBACK_MS = 650;  // how long the 2 open cards remain visible before flipping back
 
   function create() {
     let running = false;
@@ -22,34 +24,44 @@
     let donePromise = null;
     let doneResolve = null;
 
-    // state per run
+    // run config
     let round = 0;
     let totalRounds = DEFAULT_ROUNDS;
     let lineLenCells = DEFAULT_LINE_LEN;
 
-    // We keep TWO representations:
-    // - cells[]: array of letters per cell index (length = effectiveLen)
-    // - lineText: the string that is sent to the display (spaces between letters)
-    let cells = [];
-    let lineText = "";
-
-    let target = "";      // letter that appears twice
-    let hits = new Set(); // store CELL indices (not string indices)
-
+    // round state
+    let cells = [];      // letters per cell index 0..cells.length-1
+    let lineText = "";   // rendered as "a b c ..."
     let known = [];
     let fresh = [];
 
+    // memory selection state
+    // stage 0: none selected
+    // stage 1: first selected
+    // stage 2: second selected (waiting for eval/flipback/next)
+    let stage = 0;
+    let firstIdx = null;
+    let firstLetter = "";
+    let secondIdx = null;
+    let secondLetter = "";
+
+    // mapping support
+    let cellCharStarts = [];
+
+    // control / safety
     let playToken = 0;
-    let currentCtx = null;
-
     let roundDoneResolve = null;
+    let inputLocked = false;
+    let selectionEpoch = 0;
 
+    // ------------------------------------------------------------
+    // Promise helpers
+    // ------------------------------------------------------------
     function ensureDonePromise() {
       if (donePromise) return donePromise;
       donePromise = new Promise((resolve) => { doneResolve = resolve; });
       return donePromise;
     }
-
     function resolveDone(payload) {
       if (!doneResolve) return;
       const r = doneResolve;
@@ -58,6 +70,9 @@
       r(payload);
     }
 
+    // ------------------------------------------------------------
+    // Utility
+    // ------------------------------------------------------------
     function uniqLetters(arr) {
       const out = [];
       const seen = new Set();
@@ -89,59 +104,36 @@
 
     function readConfigFromCtx(ctx) {
       const a = ctx?.activity || {};
-
-      totalRounds = clampInt(
-        a.nrof ?? a.nrOf ?? a.nRounds,
-        1, 200,
-        DEFAULT_ROUNDS
-      );
-
-      lineLenCells = clampInt(
-        a.lineLen ?? a.lineLength ?? a.len,
-        2, 40,
-        DEFAULT_LINE_LEN
-      );
-
+      totalRounds = clampInt(a.nrof ?? a.nrOf ?? a.nRounds, 1, 200, DEFAULT_ROUNDS);
+      lineLenCells = clampInt(a.lineLen ?? a.lineLength ?? a.len, 2, 40, DEFAULT_LINE_LEN);
       log("[pairletters] config", { totalRounds, lineLen: lineLenCells });
     }
 
     function pickTarget() {
-      // target must be from fresh/known only
       if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
       if (known.length) return known[Math.floor(Math.random() * known.length)];
-      // last resort (should not happen if JSON is correct)
       return "a";
     }
 
-    // Enforces: ONLY letters from known+fresh are used.
-    // Enforces: target appears twice; all other letters are unique.
     function buildCells(targetLetter, requestedLenCells) {
-      // Allowed pool = known + fresh only
+      // IMPORTANT: only from knownLetters + new letters (fresh)
       const poolAll = uniqLetters([...(known || []), ...(fresh || [])]);
-
-      // Candidates for other positions (must not be target)
       const candidates = poolAll.filter(ch => ch && ch !== targetLetter);
 
-      // We need (len - 2) unique other letters.
-      // So: candidates.length >= len - 2  =>  len <= candidates.length + 2
-      const maxLenPossible = candidates.length + 2;
-
+      const maxLenPossible = candidates.length + 2; // target twice + all others unique
       let len = clampInt(requestedLenCells, 2, 40, DEFAULT_LINE_LEN);
+
       if (len > maxLenPossible) {
-        log("[pairletters] warning: lineLen reduced (not enough unique letters in pool)", {
+        log("[pairletters] warning: lineLen reduced (pool too small)", {
           requested: len,
           maxPossible: maxLenPossible,
-          poolAll: poolAll.join(""),
-          candidates: candidates.join(""),
+          pool: poolAll.join(""),
           target: targetLetter
         });
         len = maxLenPossible;
       }
-
-      // If still too small to be meaningful, force at least 2
       len = Math.max(2, len);
 
-      // positions for the two target letters
       const pos1 = Math.floor(Math.random() * len);
       let pos2 = Math.floor(Math.random() * len);
       while (pos2 === pos1) pos2 = Math.floor(Math.random() * len);
@@ -150,10 +142,8 @@
       arr[pos1] = targetLetter;
       arr[pos2] = targetLetter;
 
-      // choose unique letters for the remaining positions
-      // (we do NOT allow duplicates among non-target letters)
+      // shuffle candidates
       const available = candidates.slice();
-      // shuffle available
       for (let i = available.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         const tmp = available[i];
@@ -164,30 +154,75 @@
       let takeIdx = 0;
       for (let i = 0; i < len; i++) {
         if (i === pos1 || i === pos2) continue;
-
-        const chosen = available[takeIdx++];
-        // If JSON is consistent, chosen exists. If not, use target (but that would violate uniqueness)
-        // Better: use "x" (still violates "only from pool"). So we just guard:
-        arr[i] = chosen || targetLetter;
+        arr[i] = available[takeIdx++] || targetLetter; // should not happen due to reduction
       }
 
       return arr;
     }
 
-    function cellsToDisplayText(arr) {
-      return (Array.isArray(arr) ? arr : []).join(" ");
+    function renderLineAndMapping() {
+      const parts = [];
+      cellCharStarts = [];
+      let charPos = 0;
+
+      for (let i = 0; i < cells.length; i++) {
+        if (i > 0) {
+          parts.push(" ");
+          charPos += 1;
+        }
+        cellCharStarts[i] = charPos;
+
+        const shown = (i === firstIdx || i === secondIdx) ? "é" : (cells[i] || " ");
+        parts.push(shown);
+        charPos += 1;
+      }
+
+      lineText = parts.join("");
+      return lineText;
+    }
+
+    // ------------------------------------------------------------
+    // Index mapping:
+    // Prefer char-index mapping (monitor returns indices in lineText space)
+    // ------------------------------------------------------------
+    function toCellIndex(rawIndex) {
+      if (rawIndex == null) return null;
+      const idx = Number(rawIndex);
+      if (!Number.isFinite(idx)) return null;
+      const i = Math.floor(idx);
+
+      if (!cells || !cells.length) return null;
+
+      // 1) Prefer char-index if inside lineText
+      if (lineText && i >= 0 && i < lineText.length) {
+        let best = 0;
+        for (let k = 0; k < cellCharStarts.length; k++) {
+          if (cellCharStarts[k] <= i) best = k;
+          else break;
+        }
+        if (best >= 0 && best < cells.length) return best;
+      }
+
+      // 2) Fallback: treat as cell-index
+      if (i >= 0 && i < cells.length) return i;
+
+      return null;
+    }
+
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
     }
 
     function sendToBraille(text) {
       const t = String(text || "");
 
-      // Preferred: go through words.js pipeline (monitor + bridge best-effort)
+      // preferred: through BrailleUI pipeline (if present)
       if (window.BrailleUI && typeof window.BrailleUI.setLine === "function") {
         window.BrailleUI.setLine(t, { reason: "pairletters" });
         return Promise.resolve();
       }
 
-      // Fallback: direct bridge call, but NEVER throw
+      // fallback: direct bridge
       if (window.BrailleBridge && typeof window.BrailleBridge.sendText === "function") {
         return window.BrailleBridge.sendText(t).catch(() => {});
       }
@@ -199,7 +234,7 @@
       const saved = lineText;
       try {
         await sendToBraille(msg);
-        await new Promise(r => setTimeout(r, FLASH_MS));
+        await sleep(FEEDBACK_MS);
       } finally {
         await sendToBraille(saved);
       }
@@ -218,32 +253,52 @@
       if (typeof r === "function") r();
     }
 
+    function resetSelectionState() {
+      stage = 0;
+      firstIdx = null;
+      firstLetter = "";
+      secondIdx = null;
+      secondLetter = "";
+    }
+
+    async function redraw(reason) {
+      renderLineAndMapping();
+      log("[pairletters] redraw", {
+        reason,
+        stage,
+        firstIdx,
+        firstLetter,
+        secondIdx,
+        secondLetter,
+        lineText
+      });
+      await sendToBraille(lineText);
+    }
+
     async function nextRound(token) {
       if (token !== playToken) return;
 
-      hits.clear();
-      target = pickTarget();
+      selectionEpoch += 1;
+      inputLocked = false;
 
+      resetSelectionState();
+
+      const target = pickTarget();
       cells = buildCells(target, lineLenCells);
-      lineText = cellsToDisplayText(cells);
 
-      log("[pairletters] round line", {
+      await redraw("new-round");
+
+      log("[pairletters] round start", {
         round: round + 1,
         totalRounds,
         lineLenRequested: lineLenCells,
         lineLenEffective: cells.length,
-        target,
-        pool: uniqLetters([...(known || []), ...(fresh || [])]).join(""),
-        line: lineText
+        epoch: selectionEpoch
       });
-
-      await sendToBraille(lineText);
     }
 
     async function run(ctx, token) {
-      currentCtx = ctx;
       const rec = ctx?.record || {};
-
       const { knownLetters, freshLetters } = computePools(rec);
       known = knownLetters;
       fresh = freshLetters;
@@ -297,6 +352,8 @@
       running = false;
       playToken += 1;
 
+      inputLocked = false;
+
       log("[pairletters] stop", payload || {});
       resolveDone({ ok: true, payload });
     }
@@ -305,30 +362,151 @@
       return Boolean(running);
     }
 
-    // info.index is CELL index (0..39)
+    // ------------------------------------------------------------
+    // Cursor selection: robust against inconsistent (index, letter) from monitor
+    // ------------------------------------------------------------
+    function normLetter(x) {
+      const s = String(x ?? "").trim().toLowerCase();
+      if (!s) return "";
+      if (s === "é") return "";
+      if (s.length !== 1) return "";
+      if (s < "a" || s > "z") return "";
+      return s;
+    }
+
+    function findNearestIndexWithLetter(letter, aroundIdx, excludeIdxSet) {
+      if (!letter) return null;
+      let bestIdx = null;
+      let bestDist = Infinity;
+
+      for (let i = 0; i < cells.length; i++) {
+        if (excludeIdxSet && excludeIdxSet.has(i)) continue;
+        if (cells[i] !== letter) continue;
+
+        const d = Math.abs(i - aroundIdx);
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx = i;
+        }
+      }
+      return bestIdx;
+    }
+
+    async function handleMismatch(epochAtPick) {
+      // show feedback briefly
+      await flashMessage("fout");
+
+      // keep the two selected visible for a moment (cards "open")
+      await sleep(FLIPBACK_MS);
+
+      // If a new round started or activity stopped, do nothing
+      if (!running) return;
+      if (epochAtPick !== selectionEpoch) return;
+
+      // flip back
+      resetSelectionState();
+      await redraw("flipback");
+      inputLocked = false;
+    }
+
+    async function handleMatch(epochAtPick) {
+      await flashMessage("goed");
+      if (!running) return;
+      if (epochAtPick !== selectionEpoch) return;
+
+      // proceed to next line
+      resolveRound();
+    }
+
     function onCursor(info) {
       if (!running) return;
+      if (inputLocked) return;
 
-      const idx = typeof info?.index === "number" ? info.index : null;
+      const rawIdx = info?.index;
+
+      // 1) map raw index -> cell index
+      let idx = toCellIndex(rawIdx);
       if (idx == null) return;
+      if (idx < 0 || idx >= cells.length) return;
 
-      const letter = String(cells[idx] || "").trim().toLowerCase();
+      // 2) compare mapped cell letter with monitor-provided letter (if any)
+      const mappedLetter = normLetter(cells[idx]);
+      const providedLetter = normLetter(info?.letter);
+
+      if (providedLetter && providedLetter !== mappedLetter) {
+        const exclude = new Set();
+        if (firstIdx != null) exclude.add(firstIdx);
+        if (secondIdx != null) exclude.add(secondIdx);
+
+        const corrected = findNearestIndexWithLetter(providedLetter, idx, exclude);
+
+        log("[pairletters] cursor adjust", {
+          rawIdx,
+          providedLetter,
+          mappedIdx: idx,
+          mappedLetter,
+          correctedIdx: corrected,
+          correctedLetter: corrected != null ? cells[corrected] : null,
+          lineText,
+          cellCharStarts
+        });
+
+        if (corrected == null) return;
+        idx = corrected;
+      } else {
+        log("[pairletters] cursor", {
+          rawIdx,
+          providedLetter: providedLetter || null,
+          mappedIdx: idx,
+          mappedLetter,
+          lineText,
+          cellCharStarts
+        });
+      }
+
+      const letter = normLetter(cells[idx]);
       if (!letter) return;
 
-      log("[pairletters] cursor", { idx, letter, target, hits: Array.from(hits) });
+      // ignore selecting same open card again
+      if (idx === firstIdx || idx === secondIdx) return;
 
-      if (letter !== target) {
-        hits.clear();
-        flashMessage("fout").catch(() => {});
+      // Stage 0 -> first pick
+      if (stage === 0) {
+        firstIdx = idx;
+        firstLetter = letter;
+        secondIdx = null;
+        secondLetter = "";
+        stage = 1;
+
+        redraw("pick-first").catch(() => {});
         return;
       }
 
-      if (!hits.has(idx)) hits.add(idx);
+      // Stage 1 -> second pick + compare
+      if (stage === 1) {
+        secondIdx = idx;
+        secondLetter = letter;
+        stage = 2;
 
-      if (hits.size >= 2) {
-        flashMessage("goed").catch(() => {});
-        resolveRound();
+        redraw("pick-second").catch(() => {});
+
+        const epochAtPick = selectionEpoch;
+        const isMatch = (secondLetter === firstLetter);
+
+        inputLocked = true;
+
+        if (isMatch) {
+          // do not flip back; just advance
+          handleMatch(epochAtPick).catch(() => {});
+          return;
+        }
+
+        // mismatch: show feedback, wait, flip back, unlock
+        handleMismatch(epochAtPick).catch(() => {});
+        return;
       }
+
+      // Stage 2: waiting; ignore
     }
 
     return { start, stop, isRunning, onCursor };
