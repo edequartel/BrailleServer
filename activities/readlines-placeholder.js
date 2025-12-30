@@ -1,4 +1,4 @@
-// /activities/words.js
+// /activities/readlines.js
 (function () {
   "use strict";
 
