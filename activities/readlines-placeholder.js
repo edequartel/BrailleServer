@@ -24,7 +24,7 @@
       return Boolean(intervalId);
     }
 
-    function start(ctx) {
+    function start(ctx) y{
       stop({ reason: "restart" });
       session = {
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,

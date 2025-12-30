@@ -13,6 +13,12 @@
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
       { "id": "story", "index": 0, "caption": "bal verhaal", "instruction": "Luister naar het verhaal, bal." },
+      
+      
+      { "id": "readlines", "index": 0, "caption": "lezen", "instruction": "Lees het verhaal." },
+
+      
+      
       { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "Zoek de letter die twee keer voorkomt.", "nrof": 4, "lineLen": 10 },
       { "id": "letters", "caption": "Oefen letter b a l", "instruction": "Oefen de letters van het woord." },
       { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." }
