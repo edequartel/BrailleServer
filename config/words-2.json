@@ -12,11 +12,11 @@
     "story": ["bal.mp3"],
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
-      { "id": "story", "index": 0, "caption": "bal verhaal", "instruction": "Luister naar het verhaal, bal." },
-      { "id": "readlines", "index": 0, "caption": "lezen", "instruction": "Lees het verhaal." },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "Zoek de letter die twee keer voorkomt.", "nrof": 4, "lineLen": 10 },
-      { "id": "letters", "caption": "Oefen letter b a l", "instruction": "Oefen de letters van het woord." },
-      { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." }
+      { "id": "story", "index": 0, "caption": "bal verhaal", "instruction": "bal-story-instruction.mp3" },
+      { "id": "readlines", "index": 0, "caption": "lezen", "instruction": "bal-readlines-instruction.mp3" },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "bal-pairletters-instruction.mp3", "nrof": 4, "lineLen": 10 },
+      { "id": "letters", "caption": "Oefen letter b a l", "instruction": "bal-letters-instruction.mp3" },
+      { "id": "sounds", "caption": "Geluiden", "instruction": "bal-sounds-instruction.mp3" }
     ],
     "short": true,
     "icon": "ball.icon",
@@ -35,13 +35,13 @@
     "story": ["kam.mp3"],
     "sounds": ["scratch.mp3", "hair.mp3", "tap.mp3"],
     "activities": [
-      { "id": "story", "index": 0, "caption": "kam verhaal", "instruction": "Luister naar het verhaal, kam." },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "Zoek de letter die twee keer voorkomt.", "nrof": 4, "lineLen": 10 },
-      { "id": "tts", "caption": "Luister (woord)", "instruction": "Luister naar het woord." },
-      { "id": "letters", "caption": "Oefen letters", "instruction": "Oefen de letters van het woord." },
-      { "id": "words", "caption": "Maak woorden", "instruction": "Maak woorden met de letters." },
-      { "id": "story", "index": 0, "caption": "Luister (verhaal)", "instruction": "Luister naar het verhaal." },
-      { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." }
+      { "id": "story", "index": 0, "caption": "kam verhaal", "instruction": "kam-story-instruction.mp3" },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "kam-pairletters-instruction.mp3", "nrof": 4, "lineLen": 10 },
+      { "id": "tts", "caption": "Luister (woord)", "instruction": "kam-tts-instruction.mp3" },
+      { "id": "letters", "caption": "Oefen letters", "instruction": "kam-letters-instruction.mp3" },
+      { "id": "words", "caption": "Maak woorden", "instruction": "kam-words-instruction.mp3" },
+      { "id": "story", "index": 0, "caption": "Luister (verhaal)", "instruction": "kam-story2-instruction.mp3" },
+      { "id": "sounds", "caption": "Geluiden", "instruction": "kam-sounds-instruction.mp3" }
     ],
     "short": true,
     "icon": "comb.icon",
@@ -60,12 +60,12 @@
     "story": ["aap1.mp3", "aap2.mp3"],
     "sounds": ["monkey1.mp3", "monkey2.mp3", "jump.mp3"],
     "activities": [
-      { "id": "tts", "caption": "Luister (woord)", "instruction": "Luister naar het woord." },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "Zoek de letter die twee keer voorkomt.", "nrof": 4, "lineLen": 10 },
-      { "id": "letters", "caption": "Oefen letters", "instruction": "Oefen de letters van het woord." },
-      { "id": "words", "caption": "Maak woorden", "instruction": "Maak woorden met de letters." },
-      { "id": "story", "index": 1, "caption": "Luister (verhaal)", "instruction": "Luister naar het verhaal." },
-      { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." }
+      { "id": "tts", "caption": "Luister (woord)", "instruction": "aap-tts-instruction.mp3" },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "aap-pairletters-instruction.mp3", "nrof": 4, "lineLen": 10 },
+      { "id": "letters", "caption": "Oefen letters", "instruction": "aap-letters-instruction.mp3" },
+      { "id": "words", "caption": "Maak woorden", "instruction": "aap-words-instruction.mp3" },
+      { "id": "story", "index": 1, "caption": "Luister (verhaal)", "instruction": "aap-story-instruction.mp3" },
+      { "id": "sounds", "caption": "Geluiden", "instruction": "aap-sounds-instruction.mp3" }
     ],
     "short": true,
     "icon": "monkey.icon",
@@ -84,12 +84,12 @@
     "story": ["tak1.mp3", "tak2.mp3"],
     "sounds": ["branch.mp3", "snap.mp3", "wind.mp3"],
     "activities": [
-      { "id": "tts", "caption": "Luister (woord)", "instruction": "Luister naar het woord." },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "Zoek de letter die twee keer voorkomt.", "nrof": 4, "lineLen": 10 },
-      { "id": "letters", "caption": "Oefen letters", "instruction": "Oefen de letters van het woord." },
-      { "id": "words", "caption": "Maak woorden", "instruction": "Maak woorden met de letters." },
-      { "id": "story", "index": 1, "caption": "Luister (verhaal)", "instruction": "Luister naar het verhaal." },
-      { "id": "sounds", "caption": "Geluiden", "instruction": "Luister naar de geluiden." }
+      { "id": "tts", "caption": "Luister (woord)", "instruction": "tak-tts-instruction.mp3" },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "tak-pairletters-instruction.mp3", "nrof": 4, "lineLen": 10 },
+      { "id": "letters", "caption": "Oefen letters", "instruction": "tak-letters-instruction.mp3" },
+      { "id": "words", "caption": "Maak woorden", "instruction": "tak-words-instruction.mp3" },
+      { "id": "story", "index": 1, "caption": "Luister (verhaal)", "instruction": "tak-story-instruction.mp3" },
+      { "id": "sounds", "caption": "Geluiden", "instruction": "tak-sounds-instruction.mp3" }
     ],
     "short": true,
     "icon": "branch.icon",

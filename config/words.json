@@ -14,7 +14,7 @@
     "activities": [
       { "id": "story", "index": 0, "caption": "bal verhaal", "instruction": "bal-story-instruction.mp3" },
       { "id": "readlines", "index": 0, "caption": "lezen", "instruction": "bal-readlines-instruction.mp3" },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "bal-pairletters-instruction.mp3", "nrof": 4, "lineLen": 10 },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "bal-pairletters-instruction.mp3", "twoletters": true, "nrof": 4, "lineLen": 10 },
       { "id": "letters", "caption": "Oefen letter b a l", "instruction": "bal-letters-instruction.mp3" },
       { "id": "sounds", "caption": "Geluiden", "instruction": "bal-sounds-instruction.mp3" }
     ],
@@ -29,14 +29,14 @@
     "letters": ["k", "a", "m"],
     "words": ["kam", "ka", "am", "mak"],
     "text": [
-      ["Dit is een kam.", "Ik kam mijn haar.", "De kam gaat van boven naar beneden."],
+      ["Dit is een kam.", "uIk kam mijn haar.", "De kam gaat van boven naar beneden."],
       ["Hier ligt een kam.", "Je gebruikt een kam voor je haar.", "De kam heeft tanden."]
     ],
     "story": ["kam.mp3"],
     "sounds": ["scratch.mp3", "hair.mp3", "tap.mp3"],
     "activities": [
       { "id": "story", "index": 0, "caption": "kam verhaal", "instruction": "kam-story-instruction.mp3" },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "kam-pairletters-instruction.mp3", "nrof": 4, "lineLen": 10 },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "kam-pairletters-instruction.mp3", "twoletters": true, "nrof": 4, "lineLen": 10 },
       { "id": "tts", "caption": "Luister (woord)", "instruction": "kam-tts-instruction.mp3" },
       { "id": "letters", "caption": "Oefen letters", "instruction": "kam-letters-instruction.mp3" },
       { "id": "words", "caption": "Maak woorden", "instruction": "kam-words-instruction.mp3" },
@@ -61,7 +61,7 @@
     "sounds": ["monkey1.mp3", "monkey2.mp3", "jump.mp3"],
     "activities": [
       { "id": "tts", "caption": "Luister (woord)", "instruction": "aap-tts-instruction.mp3" },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "aap-pairletters-instruction.mp3", "nrof": 4, "lineLen": 10 },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "aap-pairletters-instruction.mp3", "twoletters": true, "nrof": 4, "lineLen": 10 },
       { "id": "letters", "caption": "Oefen letters", "instruction": "aap-letters-instruction.mp3" },
       { "id": "words", "caption": "Maak woorden", "instruction": "aap-words-instruction.mp3" },
       { "id": "story", "index": 1, "caption": "Luister (verhaal)", "instruction": "aap-story-instruction.mp3" },
@@ -85,7 +85,7 @@
     "sounds": ["branch.mp3", "snap.mp3", "wind.mp3"],
     "activities": [
       { "id": "tts", "caption": "Luister (woord)", "instruction": "tak-tts-instruction.mp3" },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "tak-pairletters-instruction.mp3", "nrof": 4, "lineLen": 10 },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "tak-pairletters-instruction.mp3", "twoletters": true, "nrof": 4, "lineLen": 10 },
       { "id": "letters", "caption": "Oefen letters", "instruction": "tak-letters-instruction.mp3" },
       { "id": "words", "caption": "Maak woorden", "instruction": "tak-words-instruction.mp3" },
       { "id": "story", "index": 1, "caption": "Luister (verhaal)", "instruction": "tak-story-instruction.mp3" },
