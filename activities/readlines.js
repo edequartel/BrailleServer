@@ -12,14 +12,11 @@
     try { return JSON.stringify(x); } catch { return String(x); }
   }
 
-  // Use the existing helper that words.js exposes to activities.
-  // This keeps braille output consistent with the rest of your runner.
   function setLine(text, meta) {
     if (window.BrailleUI && typeof window.BrailleUI.setLine === "function") {
       window.BrailleUI.setLine(String(text ?? ""), meta || { reason: "readlines" });
       return;
     }
-    // Fallback: log only (should not happen in your setup)
     log("[readlines] BrailleUI.setLine missing", { text });
   }
 
@@ -32,16 +29,88 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Module state (because words.js expects a singleton module with start/stop)
+  // Selection rules (as requested)
+  //
+  // ctx.record.text can be:
+  //  - 2D: [ ["a","b"], ["c","d"] ]
+  //  - 1D: [ "a","b","c" ]  (we treat as ONE array of items)
+  //
+  // If ctx.activity.index === -1:
+  //   pick ONE random inner array from record.text (for 2D),
+  //   then go through items with RT/LT.
+  //
+  // If ctx.activity.index !== -1 (0,1,2,...):
+  //   take record.text[index] (for 2D),
+  //   then go through items with RT/LT.
+  //
+  // If record.text is 1D, index is ignored and the single list is used.
+  // ---------------------------------------------------------------------------
+
+  function isArrayOfArrays(a) {
+    return Array.isArray(a) && a.length > 0 && a.every(Array.isArray);
+  }
+
+  function normalizeRowToItems(row) {
+    if (!Array.isArray(row)) return [];
+    const out = [];
+    for (const item of row) {
+      const s = (item == null) ? "" : String(item);
+      if (s !== "") out.push(s);
+    }
+    return out;
+  }
+
+  function clamp(i, min, max) {
+    if (!Number.isFinite(i)) i = 0;
+    return Math.max(min, Math.min(max, i));
+  }
+
+  function pickRowAndItems(recordText, activityIndex) {
+    // Returns: { rowIndex: number|null, items: string[] }
+
+    if (!Array.isArray(recordText) || recordText.length === 0) {
+      return { rowIndex: null, items: [] };
+    }
+
+    // 1D text: ["a","b","c"] -> treat as single row
+    if (!isArrayOfArrays(recordText)) {
+      return { rowIndex: 0, items: normalizeRowToItems(recordText) };
+    }
+
+    // 2D text: [ [...], [...] ]
+    const rows = recordText;
+
+    const idx = Number.isInteger(activityIndex) ? activityIndex : null;
+
+    let chosenRowIndex;
+    if (idx === -1) {
+      // Pick ONCE per start(), not per keypress
+      chosenRowIndex = Math.floor(Math.random() * rows.length);
+    } else if (idx != null) {
+      chosenRowIndex = clamp(idx, 0, rows.length - 1);
+    } else {
+      // Default: first row
+      chosenRowIndex = 0;
+    }
+
+    return {
+      rowIndex: chosenRowIndex,
+      items: normalizeRowToItems(rows[chosenRowIndex])
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Module state
   // ---------------------------------------------------------------------------
   let running = false;
 
   let donePromise = null;
   let doneResolve = null;
 
-  let ctx = null;     // context passed from words.js startSelectedActivity()
-  let lines = [];     // ctx.record.text[]
-  let index = 0;
+  let ctx = null;
+  let items = [];           // items inside the chosen row
+  let index = 0;            // item index within items
+  let chosenRowIndex = null; // which row from record.text was chosen
 
   function isRunning() {
     return running;
@@ -54,69 +123,96 @@
   }
 
   function clampIndex(i) {
-    if (!lines.length) return 0;
-    return Math.max(0, Math.min(lines.length - 1, i));
+    if (!items.length) return 0;
+    if (!Number.isInteger(i)) i = 0;
+    return Math.max(0, Math.min(items.length - 1, i));
   }
 
   function currentText() {
-    if (!lines.length) return "";
-    return String(lines[index] ?? "");
+    if (!items.length) return "";
+    index = clampIndex(index);
+    return String(items[index] ?? "");
   }
 
   function render(reason) {
     const text = currentText();
-    setLine(text, { reason: reason || "render", index, total: lines.length });
-    log("[readlines] render", { index, total: lines.length, text });
+    setLine(text, {
+      reason: reason || "render",
+      index,
+      total: items.length,
+      rowIndex: chosenRowIndex
+    });
+    log("[readlines] render", {
+      rowIndex: chosenRowIndex,
+      index,
+      total: items.length,
+      text
+    });
   }
 
-  // Right thumb: next line (finish on last)
-  function nextLine() {
+  function nextItem() {
     if (!running) return;
 
-    if (!lines.length) {
+    if (!items.length) {
       stop({ reason: "no-text" });
       return;
     }
 
-    if (index < lines.length - 1) {
+    index = clampIndex(index);
+
+    if (index < items.length - 1) {
       index++;
       render("next");
     } else {
-      // End reached -> finish activity so auto-run can advance
       stop({ reason: "done" });
     }
   }
 
-  // Left thumb: previous line
-  function prevLine() {
+  function prevItem() {
     if (!running) return;
-    if (!lines.length) return;
+    if (!items.length) return;
 
-    if (index > 0) index--;
-    render("prev");
+    index = clampIndex(index);
+
+    if (index > 0) {
+      index--;
+      render("prev");
+    } else {
+      // stay at first item; never allow -1
+      index = 0;
+      render("prev-boundary");
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // REQUIRED by words.js getActivityModule(): start() and stop()
+  // REQUIRED by words.js: start() and stop()
   // ---------------------------------------------------------------------------
   function start(startCtx) {
-    // stop any previous run
     stop({ reason: "restart" });
 
     ctx = startCtx || null;
     const record = ctx?.record || {};
+    const activityIndex = ctx?.activity?.index;
 
-    lines = Array.isArray(record.text) ? record.text.slice() : [];
-    index = clampIndex(0);
+    const picked = pickRowAndItems(record.text, activityIndex);
+    chosenRowIndex = picked.rowIndex;
+    items = picked.items;
+
+    index = 0;
+    index = clampIndex(index);
 
     running = true;
     donePromise = new Promise((resolve) => (doneResolve = resolve));
 
-    log("[readlines] start", { recordId: record?.id, word: record?.word, lines: lines.length });
+    log("[readlines] start", {
+      recordId: record?.id,
+      word: record?.word,
+      activityIndex,
+      chosenRowIndex,
+      items: items.length
+    });
 
-    // Show first line immediately
     render("start");
-
     return donePromise;
   }
 
@@ -125,7 +221,7 @@
 
     running = false;
 
-    // Optional: decide whether you want to clear display on stop
+    // Optional:
     // clear({ reason: "stop" });
 
     log("[readlines] stop", payload || { reason: "stop" });
@@ -133,18 +229,16 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Thumb forwarding API:
-  // words.js will call these when the user presses thumb keys while running.
+  // Thumb forwarding API
   // ---------------------------------------------------------------------------
   function onRightThumb() {
-    nextLine();
+    nextItem();
   }
 
   function onLeftThumb() {
-    prevLine();
+    prevItem();
   }
 
-  // Register module for words.js
   window.Activities = window.Activities || {};
   window.Activities.readlines = {
     start,
