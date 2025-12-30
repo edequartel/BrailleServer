@@ -541,20 +541,44 @@
     render();
   }
 
+  // ------------------------------------------------------------
+  // THUMB KEY ACTIONS (ADJUSTED)
+  //
+  // IMPORTANT CHANGE:
+  // - While running: forward thumb presses to the active activity module if it
+  //   implements onRightThumb/onLeftThumb.
+  //
+  // This enables activities like "readlines" to step through content without
+  // requiring direct access to BrailleBridge key events.
+  // ------------------------------------------------------------
   function rightThumbAction() {
     const cur = getCurrentActivity();
     const key = canonicalActivityId(cur?.activity?.id);
 
+    // 1) Running: give priority to activity handler
+    if (running && activeActivityModule && typeof activeActivityModule.onRightThumb === "function") {
+      activeActivityModule.onRightThumb();
+      return;
+    }
+
+    // 2) Keep existing story toggle behavior
     if (running && key === "story" && activeActivityModule && typeof activeActivityModule.togglePlayPause === "function") {
       activeActivityModule.togglePlayPause("RightThumb");
       return;
     }
 
+    // 3) Idle: start selected activity
     if (!running) startSelectedActivity({ autoStarted: false });
   }
 
   function leftThumbAction() {
-    // intentionally no-op
+    // Running: forward to activity if supported
+    if (running && activeActivityModule && typeof activeActivityModule.onLeftThumb === "function") {
+      activeActivityModule.onLeftThumb();
+      return;
+    }
+
+    // otherwise intentionally no-op
   }
 
   // ------------------------------------------------------------
@@ -655,7 +679,7 @@
   }
 
   // ------------------------------------------------------------
-  // Public helper for activities (pairletters)
+  // Public helper for activities (pairletters + readlines)
   // ------------------------------------------------------------
   window.BrailleUI = window.BrailleUI || {};
   window.BrailleUI.setLine = function (text, meta) {
