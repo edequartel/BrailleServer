@@ -15,20 +15,22 @@
     try { return JSON.stringify(x); } catch { return String(x); }
   }
 
-  log("[words] words.js loaded");
+  log("[runner] runner.js loaded");
 
   // ------------------------------------------------------------
   // Activity lifecycle audio (GitHub Pages + iOS unlock)
   // ------------------------------------------------------------
 
+  // Works both:
+  // - locally (Working Copy / local server): origin = http://localhost:...
+  // - GitHub Pages: origin = https://<user>.github.io and first path segment is repo name
   function getBasePath() {
     try {
       const host = String(location.hostname || "");
       const path = String(location.pathname || "/");
       const seg = path.split("/").filter(Boolean);
       if (host.endsWith("github.io") && seg.length > 0) {
-        // first segment is repo name
-        return "/" + seg[0];
+        return "/" + seg[0]; // repo name
       }
       return "";
     } catch {
@@ -38,6 +40,7 @@
 
   const BASE_PATH = getBasePath();
 
+  // audio files are in /audio on the website root (repo root on GitHub Pages)
   function lifecycleUrl(file) {
     return `${location.origin}${BASE_PATH}/audio/${file}`;
   }
@@ -140,41 +143,54 @@
   async function playStopped() { await playLifecycleFile("stopped.mp3"); }
 
   // ------------------------------------------------------------
-  // Instruction right after "started.mp3"
+  // NEW: Instruction audio right after "started.mp3"
   // ------------------------------------------------------------
+  //
+  // Requirement:
+  // - JSON field is called "instruction"
+  // - That field is a mp3 filename (e.g. "bal-001.mp3") stored in /audio/
+  // - No placeholder / default should be played.
+  //
+  // Behavior:
+  // - If instruction is empty / missing / "–" / "placeholder" / "none" => play nothing.
+  // - If instruction ends with ".mp3" => play it from /audio/<instruction>
+  // - Otherwise (instruction text, not a filename) => play nothing (silent)
+  //
 
-  // Default instruction mp3 placed in /audio/
-  const DEFAULT_AFTER_STARTED_INSTRUCTION = "instruction.mp3";
-
-  function getAfterStartedInstructionFile(cur) {
-    // Priority:
-    // 1) activity.afterStarted
-    // 2) activity.instructionAudio (optional reuse)
-    // 3) record.afterStarted
-    // 4) default
-    const a = cur?.activity || null;
-    const r = cur?.item || null;
-
-    const fromActivity = String(a?.afterStarted ?? "").trim();
-    if (fromActivity) return fromActivity;
-
-    const fromInstructionAudio = String(a?.instructionAudio ?? "").trim();
-    if (fromInstructionAudio) return fromInstructionAudio;
-
-    const fromRecord = String(r?.afterStarted ?? "").trim();
-    if (fromRecord) return fromRecord;
-
-    return DEFAULT_AFTER_STARTED_INSTRUCTION;
+  function looksLikeDisabledInstruction(s) {
+    const t = String(s ?? "").trim().toLowerCase();
+    if (!t) return true;
+    return (
+      t === "–" ||
+      t === "-" ||
+      t === "none" ||
+      t === "off" ||
+      t === "placeholder" ||
+      t === "instruction" ||
+      t === "instruction.mp3"
+    );
   }
 
-  async function playAfterStartedInstruction(cur) {
-    const file = getAfterStartedInstructionFile(cur);
+  function normalizeInstructionFilename(s) {
+    const t = String(s ?? "").trim();
+    if (!t) return "";
+    // Only accept mp3 filenames; otherwise treat as non-audio instruction text.
+    if (!t.toLowerCase().endsWith(".mp3")) return "";
+    // Safety: prevent path traversal; keep it a simple filename.
+    const name = t.split("/").pop().split("\\").pop();
+    return name;
+  }
+
+  function getInstructionMp3ForCurrent(cur) {
+    // The "instruction" field lives on the activity object in words.json
+    const instr = cur?.activity?.instruction;
+    if (looksLikeDisabledInstruction(instr)) return "";
+    return normalizeInstructionFilename(instr);
+  }
+
+  async function playInstructionAfterStarted(cur) {
+    const file = getInstructionMp3ForCurrent(cur);
     if (!file) return;
-
-    // allow disabling via "none"/"off"/"-"
-    const normalized = String(file).trim().toLowerCase();
-    if (normalized === "none" || normalized === "off" || normalized === "-") return;
-
     await playLifecycleFile(file);
   }
 
@@ -230,7 +246,7 @@
   // ------------------------------------------------------------
   function $(id) {
     const el = document.getElementById(id);
-    if (!el) log(`[words] Missing element #${id}`);
+    if (!el) log(`[runner] Missing element #${id}`);
     return el;
   }
 
@@ -343,16 +359,16 @@
     if (window.BrailleBridge) {
       if (!next && typeof BrailleBridge.clearDisplay === "function") {
         BrailleBridge.clearDisplay().catch((err) => {
-          log("[words] BrailleBridge.clearDisplay failed", { message: err?.message });
+          log("[runner] BrailleBridge.clearDisplay failed", { message: err?.message });
         });
       } else if (typeof BrailleBridge.sendText === "function") {
         BrailleBridge.sendText(next).catch((err) => {
-          log("[words] BrailleBridge.sendText failed", { message: err?.message });
+          log("[runner] BrailleBridge.sendText failed", { message: err?.message });
         });
       }
     }
 
-    log("[words] Braille line updated", { len: next.length, reason: meta.reason || "unspecified" });
+    log("[runner] Braille line updated", { len: next.length, reason: meta.reason || "unspecified" });
   }
 
   function getIdleBrailleText() {
@@ -376,7 +392,7 @@
     const letter = info?.letter ?? (index != null ? brailleLine[index] || " " : " ");
     const word = info?.word ?? (index != null ? computeWordAt(brailleLine, index) : "");
 
-    log("[words] Cursor selection", { source, index, letter, word });
+    log("[runner] Cursor selection", { source, index, letter, word });
 
     if (activeActivityModule && typeof activeActivityModule.onCursor === "function") {
       activeActivityModule.onCursor({ source, index, letter, word });
@@ -425,9 +441,8 @@
         .map(a => ({
           id: String(a.id ?? "").trim(),
           caption: String(a.caption ?? "").trim(),
+          // IMPORTANT: instruction is used both for UI text AND (if it ends with .mp3) as audio filename
           instruction: String(a.instruction ?? "").trim(),
-          afterStarted: a.afterStarted,          // NEW (optional config)
-          instructionAudio: a.instructionAudio,  // NEW (optional config)
           index: a.index,
           nrof: a.nrof,
           lineLen: a.lineLen
@@ -435,11 +450,11 @@
         .filter(a => a.id);
     }
 
-    const activities = [{ id: "tts", caption: "Luister (woord)" }];
-    if (Array.isArray(item.letters) && item.letters.length) activities.push({ id: "letters", caption: "Oefen letters" });
-    if (Array.isArray(item.words) && item.words.length) activities.push({ id: "words", caption: "Maak woorden" });
-    if (Array.isArray(item.story) && item.story.length) activities.push({ id: "story", caption: "Luister (verhaal)" });
-    if (Array.isArray(item.sounds) && item.sounds.length) activities.push({ id: "sounds", caption: "Geluiden" });
+    const activities = [{ id: "tts", caption: "Luister (woord)", instruction: "" }];
+    if (Array.isArray(item.letters) && item.letters.length) activities.push({ id: "letters", caption: "Oefen letters", instruction: "" });
+    if (Array.isArray(item.words) && item.words.length) activities.push({ id: "words", caption: "Maak woorden", instruction: "" });
+    if (Array.isArray(item.story) && item.story.length) activities.push({ id: "story", caption: "Luister (verhaal)", instruction: "" });
+    if (Array.isArray(item.sounds) && item.sounds.length) activities.push({ id: "sounds", caption: "Geluiden", instruction: "" });
     return activities;
   }
 
@@ -491,7 +506,7 @@
     const activityInstructionEl = document.getElementById("activity-instruction");
 
     if (!activityIndexEl || !activityIdEl || !activityButtonsEl) {
-      log("[words] Missing activity DOM elements; cannot render activity.");
+      log("[runner] Missing activity DOM elements; cannot render activity.");
       return;
     }
 
@@ -510,8 +525,13 @@
     activityIndexEl.textContent = `${currentActivityIndex + 1} / ${activities.length}`;
     activityIdEl.textContent = `Activity: ${String(active.id ?? "–")}`;
 
-    const instruction = String(active.instruction ?? "").trim();
-    if (activityInstructionEl) activityInstructionEl.textContent = instruction || active.caption || "–";
+    // If instruction is an mp3 filename, do NOT show it as text in the UI.
+    // Instead show caption (or "–").
+    const instr = String(active.instruction ?? "").trim();
+    const uiText =
+      (instr && instr.toLowerCase().endsWith(".mp3")) ? "" : instr;
+
+    if (activityInstructionEl) activityInstructionEl.textContent = uiText || active.caption || "–";
 
     activityButtonsEl.innerHTML = "";
     for (let i = 0; i < activities.length; i++) {
@@ -606,8 +626,9 @@
     // 1) started cue
     await playStarted();
 
-    // 2) instruction immediately after started.mp3
-    await playAfterStartedInstruction(cur);
+    // 2) play instruction mp3 from JSON field "instruction" (only if it ends with .mp3)
+    //    NO default / placeholder audio will be played.
+    await playInstructionAfterStarted(cur);
 
     const activityKey = canonicalActivityId(cur.activity.id);
     const activityModule = getActivityModule(activityKey);
@@ -631,7 +652,7 @@
     } else {
       activeActivityModule = null;
       activeActivityDonePromise = null;
-      log("[words] No activity module found", { activityKey });
+      log("[runner] No activity module found", { activityKey });
     }
 
     running = true;
@@ -744,7 +765,7 @@
       currentActivityIndex = 0;
       render();
     } catch (err) {
-      log("[words] ERROR loading JSON", { message: err?.message || String(err) });
+      log("[runner] ERROR loading JSON", { message: err?.message || String(err) });
 
       if (!overrideUrl && preferred === REMOTE_DATA_URL) {
         const fallbackUrl = new URL(LOCAL_DATA_URL, window.location.href).toString();
@@ -760,7 +781,7 @@
           render();
           return;
         } catch (fallbackErr) {
-          log("[words] ERROR loading local JSON", { message: fallbackErr?.message || String(fallbackErr) });
+          log("[runner] ERROR loading local JSON", { message: fallbackErr?.message || String(fallbackErr) });
         }
       }
 
@@ -825,7 +846,7 @@
   };
 
   document.addEventListener("DOMContentLoaded", () => {
-    log("[words] DOMContentLoaded");
+    log("[runner] DOMContentLoaded");
     log("[lifecycle] basePath", { BASE_PATH, origin: location.origin });
 
     installAudioUnlock();
@@ -842,8 +863,8 @@
         if (typeof evt?.index !== "number") return;
         dispatchCursorSelection({ index: evt.index }, "bridge");
       });
-      BrailleBridge.on("connected", () => log("[words] BrailleBridge connected"));
-      BrailleBridge.on("disconnected", () => log("[words] BrailleBridge disconnected"));
+      BrailleBridge.on("connected", () => log("[runner] BrailleBridge connected"));
+      BrailleBridge.on("disconnected", () => log("[runner] BrailleBridge disconnected"));
     }
 
     if (window.BrailleMonitor && typeof BrailleMonitor.init === "function") {
