@@ -18,7 +18,7 @@
   const FEEDBACK_MS = 300;
   const FLIPBACK_MS = 650;
 
-  // NEW: when twoletters:true you can configure how many targets appear
+  // When twoletters:true you can configure how many targets appear
   const DEFAULT_TARGET_COUNT = 2;
 
   function create() {
@@ -32,10 +32,10 @@
     let totalRounds = DEFAULT_ROUNDS;
     let lineLenCells = DEFAULT_LINE_LEN;
 
-    // Only when true => line contains 2 distinct letters: target + distractor
+    // Only when true => exactly TWO distinct letters on the line (target + one distractor)
     let twoLettersOnly = false;
 
-    // NEW: only used when twoletters:true
+    // Only used when twoletters:true
     let targetCount = DEFAULT_TARGET_COUNT;
 
     // round state
@@ -120,16 +120,15 @@
       const tl = a.twoletters;
       twoLettersOnly = (tl === true) || (String(tl).toLowerCase() === "true");
 
-      // NEW: targetCount applies only in twoletters mode
-      // Ensure: at least 2 (so there is a "pair"), at most lineLen-1 (keep at least 1 distractor)
+      // targetCount applies only in twoletters mode; we still parse it always
       const tc = a.targetCount ?? a.targets ?? a.targetcount;
-      const tcInt = clampInt(tc, 2, 40, DEFAULT_TARGET_COUNT);
-      targetCount = tcInt;
+      targetCount = clampInt(tc, 2, 40, DEFAULT_TARGET_COUNT);
 
       log("[pairletters] config", { totalRounds, lineLenCells, twoLettersOnly, targetCount });
     }
 
     function pickTarget() {
+      // prefer fresh letters, else known, else record letters, else "a"
       if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
       if (known.length) return known[Math.floor(Math.random() * known.length)];
       const rl = uniqLetters(ctxRecord?.letters);
@@ -137,8 +136,8 @@
       return "a";
     }
 
-    // For twoletters:true: prefer distractor from record.letters (word letters)
-    // Fallback to global pool if needed
+    // For twoletters:true: prefer distractor from record.letters (word letters).
+    // Fallback to global pool if needed.
     function pickDistractor(targetLetter) {
       const recordPool = uniqLetters(ctxRecord?.letters).filter(ch => ch !== targetLetter);
       if (recordPool.length) return recordPool[Math.floor(Math.random() * recordPool.length)];
@@ -149,12 +148,12 @@
       return targetLetter;
     }
 
-    // Default/old behaviour: many distinct letters, target occurs exactly twice
+    // Default/old behaviour: many distinct letters, target occurs exactly twice, others (mostly) unique.
     function buildCellsMultiLetter(targetLetter, requestedLenCells) {
       const poolAll = uniqLetters([...(known || []), ...(fresh || [])]);
       const candidates = poolAll.filter(ch => ch && ch !== targetLetter);
 
-      const maxLenPossible = candidates.length + 2;
+      const maxLenPossible = candidates.length + 2; // target twice + others unique
       let len = clampInt(requestedLenCells, 2, 40, DEFAULT_LINE_LEN);
 
       if (len > maxLenPossible) {
@@ -195,13 +194,14 @@
     }
 
     // twoletters:true:
-    // Exactly 2 distinct letters: target + distractor.
-    // Place targetCount occurrences of target; fill the rest with distractor.
-    function buildCellsTwoLetter(targetLetter, requestedLenCells) {
+    // Exactly TWO distinct letters: target + ONE distractor (fixed per round).
+    // Place targetCount occurrences of target; all others are distractor.
+    function buildCellsTwoLetter(targetLetter, distractorLetter, requestedLenCells) {
       let len = clampInt(requestedLenCells, 2, 40, DEFAULT_LINE_LEN);
       len = Math.max(2, len);
 
-      const distractor = pickDistractor(targetLetter);
+      const target = String(targetLetter || "").trim().toLowerCase() || "a";
+      const distractor = String(distractorLetter || "").trim().toLowerCase() || target;
 
       // Ensure at least 1 distractor exists
       const maxTargets = Math.max(2, len - 1);
@@ -209,7 +209,7 @@
 
       const arr = new Array(len).fill(distractor);
 
-      // pick tCount unique positions
+      // pick tCount unique positions for target
       const positions = [];
       for (let i = 0; i < len; i++) positions.push(i);
       for (let i = positions.length - 1; i > 0; i--) {
@@ -219,16 +219,10 @@
         positions[j] = tmp;
       }
       for (let k = 0; k < tCount; k++) {
-        arr[positions[k]] = targetLetter;
+        arr[positions[k]] = target;
       }
 
       return arr;
-    }
-
-    function buildCells(targetLetter, requestedLenCells) {
-      return twoLettersOnly
-        ? buildCellsTwoLetter(targetLetter, requestedLenCells)
-        : buildCellsMultiLetter(targetLetter, requestedLenCells);
     }
 
     // Rendering and mapping
@@ -288,7 +282,6 @@
 
     function sendToBraille(text) {
       const t = String(text || "");
-
       if (window.BrailleUI && typeof window.BrailleUI.setLine === "function") {
         window.BrailleUI.setLine(t, { reason: "pairletters" });
         return Promise.resolve();
@@ -342,6 +335,7 @@
       await sendToBraille(lineText);
     }
 
+    // IMPORTANT: distractor is chosen ONCE per round, and we enforce the invariant.
     async function nextRound(token) {
       if (token !== playToken) return;
 
@@ -350,7 +344,37 @@
       resetSelectionState();
 
       currentTarget = pickTarget();
-      cells = buildCells(currentTarget, lineLenCells);
+
+      if (twoLettersOnly) {
+        const distractor = pickDistractor(currentTarget);
+        cells = buildCellsTwoLetter(currentTarget, distractor, lineLenCells);
+
+        // HARD INVARIANT: only {target, distractor} allowed
+        const setBefore = new Set(cells);
+        if (setBefore.size > 2) {
+          const before = Array.from(setBefore).join("");
+          for (let i = 0; i < cells.length; i++) {
+            if (cells[i] !== currentTarget) cells[i] = distractor;
+          }
+          const after = Array.from(new Set(cells)).join("");
+          log("[pairletters] FIXED invariant (twoletters)", {
+            target: currentTarget,
+            distractor,
+            before,
+            after
+          });
+        }
+
+        log("[pairletters] twoletters round", {
+          target: currentTarget,
+          distractor,
+          unique: Array.from(new Set(cells)),
+          targetCount,
+          len: cells.length
+        });
+      } else {
+        cells = buildCellsMultiLetter(currentTarget, lineLenCells);
+      }
 
       await redraw("new-round");
     }
@@ -377,8 +401,10 @@
       round = 0;
       while (round < totalRounds) {
         if (token !== playToken) return;
+
         await nextRound(token);
         await waitForRoundCompletion(token);
+
         round += 1;
       }
 
@@ -459,28 +485,33 @@
       const letter = normLetter(cells[idx]);
       if (!letter) return;
 
+      // ignore selecting same open card again
       if (idx === firstIdx || idx === secondIdx) return;
 
+      // Stage 0 -> first pick
       if (stage === 0) {
         firstIdx = idx;
         firstLetter = letter;
         stage = 1;
+
         redraw("pick-first").catch(() => {});
         return;
       }
 
+      // Stage 1 -> second pick + compare
       if (stage === 1) {
         secondIdx = idx;
         secondLetter = letter;
         stage = 2;
 
         redraw("pick-second").catch(() => {});
+
         const epochAtPick = selectionEpoch;
 
         const sameLetter = (secondLetter === firstLetter);
 
-        // In twoletters mode the distractor repeats, so only target matches count.
-        // In default mode, same letter is enough (original behaviour).
+        // In twoletters mode, distractor repeats, so only TARGET matches count.
+        // In default mode, any same letter is a match.
         const isMatch = twoLettersOnly
           ? (sameLetter && secondLetter === currentTarget)
           : sameLetter;
@@ -494,6 +525,8 @@
         }
         return;
       }
+
+      // stage 2: waiting; ignore
     }
 
     return { start, stop, isRunning, onCursor };
