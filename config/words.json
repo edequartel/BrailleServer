@@ -7,7 +7,7 @@
     "words": ["bal", "ba", "al", "la"],
     "text": [
       ["bal", "bal bal", "bal bal bal"],
-      ["Kijk, een bal.", "De bal gaat heen en weer.", "De bal komt terug."]
+      ["Kijk, een bal.!", "De bal gaat heen en weer.", "De bal komt terug."]
     ],
     "story": ["bal.mp3"],
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
