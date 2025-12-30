@@ -14,7 +14,7 @@
     "activities": [
       { "id": "story", "index": 0, "caption": "bal verhaal", "instruction": "bal-story-instruction.mp3" },
       { "id": "readlines", "index": 0, "caption": "lezen", "instruction": "bal-readlines-instruction.mp3" },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "bal-pairletters-instruction.mp3", "twoletters": true, "nrof": 4, "lineLen": 10 },
+      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "bal-pairletters-instruction.mp3", "twoletters": false, "nrof": 4, "lineLen": 10 },
       { "id": "letters", "caption": "Oefen letter b a l", "instruction": "bal-letters-instruction.mp3" },
       { "id": "sounds", "caption": "Geluiden", "instruction": "bal-sounds-instruction.mp3" }
     ],

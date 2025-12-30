@@ -29,17 +29,11 @@
     let totalRounds = DEFAULT_ROUNDS;
     let lineLenCells = DEFAULT_LINE_LEN;
 
-    // NEW: if true => the line contains only TWO distinct letters (target + one distractor)
-    let twoLettersOnly = false;
-
     // round state
     let cells = [];      // letters per cell index 0..cells.length-1
     let lineText = "";   // rendered as "a b c ..."
     let known = [];
     let fresh = [];
-
-    // NEW: current target letter for the round
-    let currentTarget = "a";
 
     // memory selection state
     // stage 0: none selected
@@ -112,11 +106,7 @@
       const a = ctx?.activity || {};
       totalRounds = clampInt(a.nrof ?? a.nrOf ?? a.nRounds, 1, 200, DEFAULT_ROUNDS);
       lineLenCells = clampInt(a.lineLen ?? a.lineLength ?? a.len, 2, 40, DEFAULT_LINE_LEN);
-
-      const tl = a.twoletters;
-      twoLettersOnly = (tl === true) || (String(tl).toLowerCase() === "true");
-
-      log("[pairletters] config", { totalRounds, lineLen: lineLenCells, twoLettersOnly });
+      log("[pairletters] config", { totalRounds, lineLen: lineLenCells });
     }
 
     function pickTarget() {
@@ -125,16 +115,8 @@
       return "a";
     }
 
-    function pickDistractor(targetLetter) {
-      // pick ONE other letter from pool; if none exists, fallback to target (degenerate case)
-      const poolAll = uniqLetters([...(known || []), ...(fresh || [])]);
-      const candidates = poolAll.filter(ch => ch && ch !== targetLetter);
-      if (!candidates.length) return targetLetter;
-      return candidates[Math.floor(Math.random() * candidates.length)];
-    }
-
-    // ORIGINAL behavior: many distinct letters, but target occurs exactly twice
-    function buildCellsMultiLetter(targetLetter, requestedLenCells) {
+    function buildCells(targetLetter, requestedLenCells) {
+      // IMPORTANT: only from knownLetters + new letters (fresh)
       const poolAll = uniqLetters([...(known || []), ...(fresh || [])]);
       const candidates = poolAll.filter(ch => ch && ch !== targetLetter);
 
@@ -176,32 +158,6 @@
       }
 
       return arr;
-    }
-
-    // NEW behavior when twoletters:true:
-    // The line contains ONLY two distinct letters: target + one distractor.
-    // Target still occurs exactly twice; distractor fills the rest.
-    function buildCellsTwoLetter(targetLetter, requestedLenCells) {
-      let len = clampInt(requestedLenCells, 2, 40, DEFAULT_LINE_LEN);
-      len = Math.max(2, len);
-
-      const distractor = pickDistractor(targetLetter);
-
-      const pos1 = Math.floor(Math.random() * len);
-      let pos2 = Math.floor(Math.random() * len);
-      while (pos2 === pos1) pos2 = Math.floor(Math.random() * len);
-
-      const arr = new Array(len).fill(distractor);
-      arr[pos1] = targetLetter;
-      arr[pos2] = targetLetter;
-
-      return arr;
-    }
-
-    function buildCells(targetLetter, requestedLenCells) {
-      return twoLettersOnly
-        ? buildCellsTwoLetter(targetLetter, requestedLenCells)
-        : buildCellsMultiLetter(targetLetter, requestedLenCells);
     }
 
     function renderLineAndMapping() {
@@ -331,8 +287,8 @@
 
       resetSelectionState();
 
-      currentTarget = pickTarget();
-      cells = buildCells(currentTarget, lineLenCells);
+      const target = pickTarget();
+      cells = buildCells(target, lineLenCells);
 
       await redraw("new-round");
 
@@ -341,9 +297,7 @@
         totalRounds,
         lineLenRequested: lineLenCells,
         lineLenEffective: cells.length,
-        epoch: selectionEpoch,
-        target: currentTarget,
-        twoLettersOnly
+        epoch: selectionEpoch
       });
     }
 
@@ -361,8 +315,7 @@
         knownLetters: known,
         freshLetters: fresh,
         rounds: totalRounds,
-        lineLen: lineLenCells,
-        twoLettersOnly
+        lineLen: lineLenCells
       });
 
       round = 0;
@@ -444,12 +397,17 @@
     }
 
     async function handleMismatch(epochAtPick) {
+      // show feedback briefly
       await flashMessage("fout");
+
+      // keep the two selected visible for a moment (cards "open")
       await sleep(FLIPBACK_MS);
 
+      // If a new round started or activity stopped, do nothing
       if (!running) return;
       if (epochAtPick !== selectionEpoch) return;
 
+      // flip back
       resetSelectionState();
       await redraw("flipback");
       inputLocked = false;
@@ -460,6 +418,7 @@
       if (!running) return;
       if (epochAtPick !== selectionEpoch) return;
 
+      // proceed to next line
       resolveRound();
     }
 
@@ -536,23 +495,17 @@
         redraw("pick-second").catch(() => {});
 
         const epochAtPick = selectionEpoch;
-
-        // Match rule:
-        // - always requires same letter
-        // - RECOMMENDED: when twoLettersOnly is true, only the TARGET pair is considered correct
-        //   (otherwise the distractor appears many times and the game becomes trivial).
-        const sameLetter = (secondLetter === firstLetter);
-        const matchIsTarget = (secondLetter === currentTarget);
-
-        const isMatch = twoLettersOnly ? (sameLetter && matchIsTarget) : sameLetter;
+        const isMatch = (secondLetter === firstLetter);
 
         inputLocked = true;
 
         if (isMatch) {
+          // do not flip back; just advance
           handleMatch(epochAtPick).catch(() => {});
           return;
         }
 
+        // mismatch: show feedback, wait, flip back, unlock
         handleMismatch(epochAtPick).catch(() => {});
         return;
       }
