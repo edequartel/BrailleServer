@@ -52,6 +52,43 @@
       outline: 3px solid rgba(122,162,255,.55);
       outline-offset: 3px;
     }
+
+    /* ------------------------------------------------------------
+       NEW: Make the markdown instruction panel render nicely
+       (runner.js will set innerHTML with marked.parse())
+    ------------------------------------------------------------ */
+    #activity-instruction {
+      /* keep your existing class styles from activity-runner.css */
+      white-space: normal;
+    }
+    #activity-instruction h1,
+    #activity-instruction h2,
+    #activity-instruction h3 {
+      margin: 0 0 .5rem 0;
+      line-height: 1.2;
+    }
+    #activity-instruction p {
+      margin: 0 0 .6rem 0;
+    }
+    #activity-instruction p:last-child {
+      margin-bottom: 0;
+    }
+    #activity-instruction ul,
+    #activity-instruction ol {
+      margin: 0 0 .6rem 1.2rem;
+      padding: 0;
+    }
+    #activity-instruction code {
+      padding: .1rem .25rem;
+      border-radius: 6px;
+      background: rgba(127,127,127,.12);
+    }
+    html[data-theme="dark"] #activity-instruction code {
+      background: rgba(255,255,255,.10);
+    }
+    #activity-instruction a {
+      text-decoration: underline;
+    }
   </style>
 </head>
 
@@ -66,19 +103,17 @@
           <span id="field-word-braille" class="word-braille">–</span>
         </div>
       </div>
-      
+
       <!-- MOVED HERE: prev/next buttons inside braille-panel -->
       <div class="braille-nav">
         <button id="prev-btn" class="secondary" type="button">prev</button>
-        
-         <span class="runner-controls">
-        <label class="auto-next">
-          <input id="auto-run" type="checkbox" checked />
-          
-        </label>
-      </span>
-        
-        
+
+        <span class="runner-controls">
+          <label class="auto-next">
+            <input id="auto-run" type="checkbox" checked />
+          </label>
+        </span>
+
         <button id="next-btn" type="button">next</button>
       </div>
     </div>
@@ -86,6 +121,10 @@
     <!-- IMPORTANT: only one element with this id -->
     <div id="brailleMonitorComponent"></div>
 
+    <!-- NOTE:
+         runner.js will render Markdown here with marked.parse()
+         so this element must allow innerHTML.
+    -->
     <p class="field-value" id="activity-instruction">–</p>
 
     <div class="meta-bar">
@@ -250,28 +289,25 @@
   <script src="../js/braillebridge.js"></script>
   <script src="../components/braille-monitor/braillemonitor.js"></script>
 
+  <!-- audio -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
   <script src="../js/sounds.js"></script>
 
+  <!-- NEW: Marked (Markdown renderer) - required by runner.js markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- activities -->
   <script src="../activities/tts.js"></script>
   <script src="../activities/letters.js"></script>
-  
   <script src="../activities/readlines.js"></script>
-  
+
   <!--
-  
   <script src="../activities/words.js"></script>
-  
   -->
-  
-  
+
   <script src="../activities/story.js"></script>
   <script src="../activities/sounds.js"></script>
-  
   <script src="../activities/pairletters.js"></script>
-
-  <!-- If you use an external runner, it must load before words.js 
-  <script src="../js/activity-runner.js"></script>
 
   <!-- Main page logic -->
   <script src="../js/runner.js"></script>
