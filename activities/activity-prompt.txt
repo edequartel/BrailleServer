@@ -1,0 +1,113 @@
+Je bent een JavaScript developer in het BrailleServer project. Je maakt een nieuwe activiteit module die door /js/runner.js wordt gestart.
+
+Harde eisen uit runner.js (MOET EXACT):
+- Activiteiten worden gevonden via: window.Activities[activityKey]
+- activityKey = canonicalActivityId(cur.activity.id) (lowercase)
+- De module MOET minimaal hebben:
+  - start(ctx) -> return Promise (donePromise)
+  - stop(payload)
+- Runner forwardt events optioneel door:
+  - onRightThumb()
+  - onLeftThumb()
+  - onCursor({ source, index, letter, word })
+- Runner maakt Braille output via:
+  - window.BrailleUI.setLine(text, meta) (preferred)
+  - window.BrailleUI.clear(meta) (optional)
+- Runner geeft ctx als:
+  {
+    activityKey,
+    activityId,
+    activityCaption,
+    activityText,     // optional but provided
+    activity,         // object from words.json activities[]
+    record,           // item from words.json (word record)
+    recordIndex,
+    activityIndex,
+    autoStarted
+  }
+
+Project-stijl (KOPIEER uit pairletters.js / readlines.js):
+- Gebruik IIFE: (function(){ "use strict"; ... })();
+- Gebruik dezelfde log() + safeJson() helpers.
+- Maak state variables op module scope of via create(); maar export naar window.Activities moet werken.
+- No build step, plain JS.
+
+Data contract words.json (MOET):
+- record.activities[] item bevat minstens:
+  - id (string)
+  - caption (string)
+  - text (string)  -> instructie (markdown in UI, maar activiteit kan ook gebruiken)
+  - instruction (string, mp3 filename of leeg; runner speelt mp3 af na started.mp3)
+- De activiteit gebruikt specifieke velden uit ctx.activity (dus ctx.activity.<field>):
+  - twowords (array of strings)  [IN TE VULLEN: required by this activity]
+  - targetCount (number)         [IN TE VULLEN: required by this activity]
+  - optioneel: lineLen / nrof / index etc. (alleen als je dat wilt)
+
+Kind-UX eisen:
+- Voor kind van 6 jaar: korte zinnen, geen moeilijke woorden.
+- Feedback op de leesregel: "goed", "fout", "klaar".
+- Debounce: voorkom dubbele triggers bij herhaalde key events.
+- Stop() moet timers/loops stoppen en donePromise resolven.
+
+IN TE VULLEN: Nieuwe activiteit definitie
+- activityId (in words.json): [ACTIVITY_ID]
+- window.Activities key (canonical): [ACTIVITY_KEY]  (meestal zelfde als activityId lowercased)
+- Doel van het spel (1 zin): [DOEL]
+- Stimuli bron: ctx.activity.twowords (array)
+- Succescriterium: correctCount >= targetCount
+- Antwoord keys:
+  - rechterduim = "ja"
+  - linkerduim = "nee"
+- Wat is "ja"? [JA-REGEL] (bijv. "woord bevat letter l" of "woord is exact het doelwoord")
+- Wat is "nee"? [NEE-REGEL] (inverse van ja)
+- Presentatie op leesregel: [PRESENTATIE] (bijv. alleen woord, of "woord: X")
+
+Functionele flow (MOET IMPLEMENTEREN):
+1) start(ctx):
+   - stop({reason:"restart"}) eerst
+   - lees config uit ctx.activity:
+     - twowords array (fallback empty)
+     - targetCount int (fallback default 2..5)
+     - optioneel lineLen etc.
+   - init counters: correct=0, wrong=0
+   - kies een "current" stimulus en toon die op leesregel via BrailleUI.setLine
+   - return donePromise
+2) onRightThumb() / onLeftThumb():
+   - bepaal of de huidige stimulus een "ja" is volgens [JA-REGEL]
+   - vergelijk met de knop (rightthumb=ja, leftthumb=nee)
+   - bij correct: correctCount++ en flash "goed" (FEEDBACK_MS) en dan volgende stimulus
+   - bij fout: wrongCount++ en flash "fout" en dan volgende stimulus (of herhaal, kies en implementeer)
+   - als correctCount >= targetCount:
+     - flash "klaar"
+     - resolve donePromise met resultaat object
+     - stop({reason:"done"})
+3) stop(payload):
+   - zet running=false, verhoog token/epoch zodat async loops stoppen
+   - clear timers
+   - resolve donePromise (maar maar 1x!)
+4) Logging:
+   - log start config, elke input, en completion payload
+
+Technische details (AAN TE HOUDEN):
+- Constants zoals in pairletters:
+  - const FEEDBACK_MS = 300;
+  - const DEFAULT_TARGET_COUNT = 2 (of 3 voor kind)
+- Gebruik token/epoch (playToken) om async races te voorkomen.
+- Gebruik helper sendToBraille(text) die BrailleUI.setLine gebruikt.
+- Implementatie moet robuust zijn: geen crash bij ontbrekende twowords/targetCount.
+
+Deliverables (OUTPUT):
+A) Volledige code voor /activities/[ACTIVITY_ID].js
+   - inclusief window.Activities registratie
+B) Een voorbeeld words.json activity-object dat past bij dit spel:
+   {
+     "id":"[ACTIVITY_ID]",
+     "caption":"[KORTE TITEL]",
+     "instruction":"[OPTIONEEL mp3 of leeg]",
+     "text":"[KORTE INSTRUCTIE (max 3 regels)]",
+     "twowords":[...],
+     "targetCount":3
+   }
+C) Korte test checklist (6 bullets) voor handmatig testen in browser.
+
+Belangrijk: lever GEEN pseudo-code. Lever volledige JS die direct werkt.
