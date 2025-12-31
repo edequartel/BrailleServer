@@ -16,8 +16,8 @@
         "id": "story",
         "index": 0,
         "caption": "bal verhaal",
-        "instruction": "## bal-story-instruction.mp3",
-        "text": "De computer leest een verhaal voor. Luister goed."
+        "instruction": "bal-story-instruction.mp3",
+        "text": "# De computer leest een verhaal voor. Luister goed."
       },
       {
         "id": "readlines",
