@@ -12,23 +12,72 @@
     "story": ["bal.mp3"],
     "sounds": ["bounce.mp3", "shot.mp3", "goal.mp3"],
     "activities": [
-      { "id": "story", "index": 0, "caption": "bal verhaal", "instruction": "bal-story-instruction.mp3" },
-      { "id": "readlines", "index": 0, "caption": "lezen", "instruction": "bal-readlines-instruction.mp3" },
-      
-      
-      { "id": "pairletters", "caption": "Zoek het true", "instruction": "bal-pairletters-instruction.mp3", "twoletters": true, "targetCount": 2, "nrof": 4, "lineLen": 10 },
-      
-      { "id": "pairletters", "caption": "Zoek het false", "instruction": "bal-pairletters-instruction.mp3", "twoletters": false, "targetCount": 2, "nrof": 4, "lineLen": 10 },
-
-      { "id": "pairletters", "caption": "Zoek het 3", "instruction": "bal-pairletters-instruction.mp3", "twoletters": true, "targetCount": 3, "nrof": 4, "lineLen": 10 },
-
-
-      { "id": "pairletters", "caption": "Zoek het 3", "instruction": "bal-pairletters-instruction.mp3", "twoletters": false, "targetCount": 4, "nrof": 4, "lineLen": 10 },
-
-
-      
-      { "id": "letters", "caption": "Oefen letter b a l", "instruction": "bal-letters-instruction.mp3" },
-      { "id": "sounds", "caption": "Geluiden", "instruction": "bal-sounds-instruction.mp3" }
+      {
+        "id": "story",
+        "index": 0,
+        "caption": "bal verhaal",
+        "instruction": "bal-story-instruction.mp3",
+        "text": "De computer leest een verhaal voor. Luister goed."
+      },
+      {
+        "id": "readlines",
+        "index": 0,
+        "caption": "lezen",
+        "instruction": "bal-readlines-instruction.mp3",
+        "text": "Lees de regels op de leesregel. Druk op volgende om door te gaan."
+      },
+      {
+        "id": "pairletters",
+        "caption": "Zoek het true",
+        "instruction": "bal-pairletters-instruction.mp3",
+        "text": "Zoek het juiste letterpaar. Rechts is goed, links is fout.",
+        "twoletters": true,
+        "targetCount": 2,
+        "nrof": 4,
+        "lineLen": 10
+      },
+      {
+        "id": "pairletters",
+        "caption": "Zoek het false",
+        "instruction": "bal-pairletters-instruction.mp3",
+        "text": "Zoek het verkeerde letterpaar. Druk rechts als het fout is.",
+        "twoletters": false,
+        "targetCount": 2,
+        "nrof": 4,
+        "lineLen": 10
+      },
+      {
+        "id": "pairletters",
+        "caption": "Zoek het 3",
+        "instruction": "bal-pairletters-instruction.mp3",
+        "text": "Zoek het juiste letterpaar. Vind er drie. Rechts is goed, links is fout.",
+        "twoletters": true,
+        "targetCount": 3,
+        "nrof": 4,
+        "lineLen": 10
+      },
+      {
+        "id": "pairletters",
+        "caption": "Zoek het 3",
+        "instruction": "bal-pairletters-instruction.mp3",
+        "text": "Zoek het verkeerde letterpaar. Vind er vier. Druk rechts als het fout is.",
+        "twoletters": false,
+        "targetCount": 4,
+        "nrof": 4,
+        "lineLen": 10
+      },
+      {
+        "id": "letters",
+        "caption": "Oefen letter b a l",
+        "instruction": "bal-letters-instruction.mp3",
+        "text": "Oefen de letters b, a en l. Type de letter die je voelt en ga door."
+      },
+      {
+        "id": "sounds",
+        "caption": "Geluiden",
+        "instruction": "bal-sounds-instruction.mp3",
+        "text": "Luister naar de geluiden. Koppel ze aan het woord bal."
+      }
     ],
     "short": true,
     "icon": "ball.icon",
@@ -47,13 +96,54 @@
     "story": ["kam.mp3"],
     "sounds": ["scratch.mp3", "hair.mp3", "tap.mp3"],
     "activities": [
-      { "id": "story", "index": 0, "caption": "kam verhaal", "instruction": "kam-story-instruction.mp3" },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "kam-pairletters-instruction.mp3", "twoletters": true, "targetCount": 4, "nrof": 4, "lineLen": 10 },
-      { "id": "tts", "caption": "Luister (woord)", "instruction": "kam-tts-instruction.mp3" },
-      { "id": "letters", "caption": "Oefen letters", "instruction": "kam-letters-instruction.mp3" },
-      { "id": "words", "caption": "Maak woorden", "instruction": "kam-words-instruction.mp3" },
-      { "id": "story", "index": 0, "caption": "Luister (verhaal)", "instruction": "kam-story2-instruction.mp3" },
-      { "id": "sounds", "caption": "Geluiden", "instruction": "kam-sounds-instruction.mp3" }
+      {
+        "id": "story",
+        "index": 0,
+        "caption": "kam verhaal",
+        "instruction": "kam-story-instruction.mp3",
+        "text": "De computer leest een verhaal voor. Luister goed."
+      },
+      {
+        "id": "pairletters",
+        "caption": "Zoek het letterpaar",
+        "instruction": "kam-pairletters-instruction.mp3",
+        "text": "Zoek het letterpaar op de leesregel. Druk rechts als je het vindt.",
+        "twoletters": true,
+        "targetCount": 4,
+        "nrof": 4,
+        "lineLen": 10
+      },
+      {
+        "id": "tts",
+        "caption": "Luister (woord)",
+        "instruction": "kam-tts-instruction.mp3",
+        "text": "Luister naar het woord. Herken het en lees het daarna op de leesregel."
+      },
+      {
+        "id": "letters",
+        "caption": "Oefen letters",
+        "instruction": "kam-letters-instruction.mp3",
+        "text": "Oefen de letters k, a en m. Type wat je voelt en ga door."
+      },
+      {
+        "id": "words",
+        "caption": "Maak woorden",
+        "instruction": "kam-words-instruction.mp3",
+        "text": "Maak woorden met de letters van kam. Kies steeds het volgende woord."
+      },
+      {
+        "id": "story",
+        "index": 0,
+        "caption": "Luister (verhaal)",
+        "instruction": "kam-story2-instruction.mp3",
+        "text": "Luister nog een keer naar het verhaal. Let op de klanken en woorden."
+      },
+      {
+        "id": "sounds",
+        "caption": "Geluiden",
+        "instruction": "kam-sounds-instruction.mp3",
+        "text": "Luister naar de geluiden. Welke past bij een kam?"
+      }
     ],
     "short": true,
     "icon": "comb.icon",
@@ -72,12 +162,47 @@
     "story": ["aap1.mp3", "aap2.mp3"],
     "sounds": ["monkey1.mp3", "monkey2.mp3", "jump.mp3"],
     "activities": [
-      { "id": "tts", "caption": "Luister (woord)", "instruction": "aap-tts-instruction.mp3" },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "aap-pairletters-instruction.mp3", "twoletters": true, "targetCount": 2, "nrof": 4, "lineLen": 10 },
-      { "id": "letters", "caption": "Oefen letters", "instruction": "aap-letters-instruction.mp3" },
-      { "id": "words", "caption": "Maak woorden", "instruction": "aap-words-instruction.mp3" },
-      { "id": "story", "index": 1, "caption": "Luister (verhaal)", "instruction": "aap-story-instruction.mp3" },
-      { "id": "sounds", "caption": "Geluiden", "instruction": "aap-sounds-instruction.mp3" }
+      {
+        "id": "tts",
+        "caption": "Luister (woord)",
+        "instruction": "aap-tts-instruction.mp3",
+        "text": "Luister naar het woord. Zeg het hardop en lees het daarna."
+      },
+      {
+        "id": "pairletters",
+        "caption": "Zoek het letterpaar",
+        "instruction": "aap-pairletters-instruction.mp3",
+        "text": "Zoek het letterpaar op de leesregel. Druk rechts als het klopt.",
+        "twoletters": true,
+        "targetCount": 2,
+        "nrof": 4,
+        "lineLen": 10
+      },
+      {
+        "id": "letters",
+        "caption": "Oefen letters",
+        "instruction": "aap-letters-instruction.mp3",
+        "text": "Oefen de letters a en p. Let op: a komt twee keer."
+      },
+      {
+        "id": "words",
+        "caption": "Maak woorden",
+        "instruction": "aap-words-instruction.mp3",
+        "text": "Maak woorden met a, a en p. Kies steeds het volgende woord."
+      },
+      {
+        "id": "story",
+        "index": 1,
+        "caption": "Luister (verhaal)",
+        "instruction": "aap-story-instruction.mp3",
+        "text": "Luister naar het verhaal. Let op wanneer je het woord aap hoort."
+      },
+      {
+        "id": "sounds",
+        "caption": "Geluiden",
+        "instruction": "aap-sounds-instruction.mp3",
+        "text": "Luister naar de geluiden. Welke hoort bij de aap?"
+      }
     ],
     "short": true,
     "icon": "monkey.icon",
@@ -96,12 +221,47 @@
     "story": ["tak1.mp3", "tak2.mp3"],
     "sounds": ["branch.mp3", "snap.mp3", "wind.mp3"],
     "activities": [
-      { "id": "tts", "caption": "Luister (woord)", "instruction": "tak-tts-instruction.mp3" },
-      { "id": "pairletters", "caption": "Zoek het letterpaar", "instruction": "tak-pairletters-instruction.mp3", "twoletters": true, "targetCount": 2, "nrof": 4, "lineLen": 10 },
-      { "id": "letters", "caption": "Oefen letters", "instruction": "tak-letters-instruction.mp3" },
-      { "id": "words", "caption": "Maak woorden", "instruction": "tak-words-instruction.mp3" },
-      { "id": "story", "index": 1, "caption": "Luister (verhaal)", "instruction": "tak-story-instruction.mp3" },
-      { "id": "sounds", "caption": "Geluiden", "instruction": "tak-sounds-instruction.mp3" }
+      {
+        "id": "tts",
+        "caption": "Luister (woord)",
+        "instruction": "tak-tts-instruction.mp3",
+        "text": "Luister naar het woord. Lees het daarna op de leesregel."
+      },
+      {
+        "id": "pairletters",
+        "caption": "Zoek het letterpaar",
+        "instruction": "tak-pairletters-instruction.mp3",
+        "text": "Zoek het letterpaar op de leesregel. Druk rechts als het klopt.",
+        "twoletters": true,
+        "targetCount": 2,
+        "nrof": 4,
+        "lineLen": 10
+      },
+      {
+        "id": "letters",
+        "caption": "Oefen letters",
+        "instruction": "tak-letters-instruction.mp3",
+        "text": "Oefen de letters t, a en k. Type de letter die je voelt."
+      },
+      {
+        "id": "words",
+        "caption": "Maak woorden",
+        "instruction": "tak-words-instruction.mp3",
+        "text": "Maak woorden met t, a en k. Probeer ook het woord kat."
+      },
+      {
+        "id": "story",
+        "index": 1,
+        "caption": "Luister (verhaal)",
+        "instruction": "tak-story-instruction.mp3",
+        "text": "Luister naar het verhaal. Let op woorden met t en k."
+      },
+      {
+        "id": "sounds",
+        "caption": "Geluiden",
+        "instruction": "tak-sounds-instruction.mp3",
+        "text": "Luister naar de geluiden. Welke past bij een tak?"
+      }
     ],
     "short": true,
     "icon": "branch.icon",
