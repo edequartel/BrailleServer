@@ -22,6 +22,10 @@
 
       { "id": "pairletters", "caption": "Zoek het 3", "instruction": "bal-pairletters-instruction.mp3", "twoletters": true, "targetCount": 3, "nrof": 4, "lineLen": 10 },
 
+
+      { "id": "pairletters", "caption": "Zoek het 3", "instruction": "bal-pairletters-instruction.mp3", "twoletters": false, "targetCount": 4, "nrof": 4, "lineLen": 10 },
+
+
       
       { "id": "letters", "caption": "Oefen letter b a l", "instruction": "bal-letters-instruction.mp3" },
       { "id": "sounds", "caption": "Geluiden", "instruction": "bal-sounds-instruction.mp3" }
