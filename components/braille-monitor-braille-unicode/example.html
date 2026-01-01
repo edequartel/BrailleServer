@@ -2,10 +2,10 @@
 <!--
   BrailleMonitor component – example.html
   --------------------------------------
-  SELF-CONTAINED DEMO for BrailleMonitor + Bartimeus6Dots webfont.
+  This file is a SELF-CONTAINED DEMO for the BrailleMonitor component.
 
   PURPOSE
-  - Demonstrates how BrailleMonitor renders itself
+  - Demonstrates how the BrailleMonitor renders itself
   - Shows clickable braille cells (cursor routing simulation)
   - Shows thumbkey simulator buttons
   - Works WITHOUT BrailleBridge or EventLog
@@ -14,23 +14,20 @@
   Place this file in:
     /components/braille-monitor/example.html
 
-  REQUIRED FILES
-  1) Same folder:
-     - braillemonitor.js
-     - braillemonitor.css
-  2) Webfont in repo:
-     - /resources/webfonts/bartimeus6dots-webfont.woff2
-     - /resources/webfonts/bartimeus6dots-webfont.woff
-
-  IMPORTANT
-  - braillemonitor.js must output Braille ASCII for the braille line (not Unicode U+2800…).
-  - braillemonitor.css must apply "Bartimeus6Dots" to .monitor-cell__braille.
+  REQUIRED FILES (same folder)
+    braillemonitor.js
+    braillemonitor.css
 
   HOW IT WORKS
   1. The page provides an empty <div> container.
   2. braillemonitor.js injects all required HTML into that container.
-  3. braillemonitor.css styles the component and loads the webfont.
-  4. monitor.setText(...) updates the visible braille cells.
+  3. braillemonitor.css styles the component (light + dark mode).
+  4. Calling monitor.setText(...) updates the visible braille cells.
+
+  NEXT STEPS
+  - Wire this component to EventLog
+  - Wire to BrailleBridge WebSocket events
+  - Reuse in /pages by changing relative paths
 -->
 <html lang="en">
 <head>
@@ -39,13 +36,6 @@
   <title>BrailleMonitor component – example</title>
 
   <meta name="color-scheme" content="light dark" />
-
-  <!-- Optional: Preload the braille webfont (adjust path if you move this file) -->
-  <link rel="preload"
-        href="../../resources/webfonts/bartimeus6dots-webfont.woff2"
-        as="font"
-        type="font/woff2"
-        crossorigin />
 
   <!-- Component CSS (same folder) -->
   <link rel="stylesheet" href="braillemonitor.css" />
@@ -63,28 +53,11 @@
       font-size: 1.1rem;
       margin: 0 0 0.75rem 0;
     }
-
-    /* Optional: a small hint area */
-    .hint {
-      margin: 0 0 1rem 0;
-      font-size: 0.9rem;
-      color: #b7c0d6;
-      line-height: 1.35;
-    }
-
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Cascadia Code", monospace;
-      font-size: 0.95em;
-    }
   </style>
 </head>
 <body>
 
   <h1>BrailleMonitor – component example</h1>
-  <p class="hint">
-    This demo expects <code>Bartimeus6Dots</code> to be loaded via CSS and the braille line to be Braille ASCII.
-    If you see normal letters (A, B, C…) on the braille line, the font is not applied or not loaded.
-  </p>
 
   <!-- Host container (component injects markup here) -->
   <div id="brailleMonitorComponent"></div>
@@ -102,8 +75,7 @@
       showInfo: true
     });
 
-    // Try a mixed string (letters, digits, punctuation, spaces)
-    monitor.setText("dit is een braille monitor component voorbeeld 123, test!");
+    monitor.setText("dit is een braille monitor component voorbeeld");
   </script>
 
 </body>
