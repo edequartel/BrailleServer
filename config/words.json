@@ -6,7 +6,7 @@
     "letters": ["b", "a", "l"],
     "words": ["bal", "ba", "al", "la"],
     "text": [
-      ["bal", "bal bal", "bal bal bal"],
+      ["bal", "bal BAL bal", "bal bal bal"],
       ["Kijk, een bal!", "De bal gaat heen en weer.", "De bal komt terug."]
     ],
     "story": ["bal.mp3"],
