@@ -26,7 +26,7 @@
         "instruction": "bal-readlines-instruction.mp3",
         "text": "[lees] Lees de regels op de leesregel. [klik] Druk op volgende."
       },
-      {i
+      {
         "id": "pairletters",
         "caption": "Zoek 2 paren",
         "instruction": "bal-pairletters-instruction.mp3",
