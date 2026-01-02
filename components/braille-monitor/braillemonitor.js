@@ -7,7 +7,7 @@
  * - Keep 1 UI cell per PRINT character (cursor routing stable).
  * - Braille shown in the top line can be 1 or 2 unicode braille chars:
  *     b  -> ⠃
- *     B  -> ⠠⠃ (capital sign + ⠃)
+ *     B  -> ⠨⠃ (NL: capital sign dots 4-6) / ⠠⠃ (EN: dot 6)
  *     1  -> ⠼⠁ (number sign + ⠁)  [only at start of digit run]
  * - Space:
  *     print line shows ␣
@@ -22,6 +22,7 @@
  *
  * ADDED IN THIS VERSION:
  * - setLang(lang): switch language after init and re-render (safe for Settings page)
+ * - NL capital sign fixed (dots 4-6) when lang === "nl"
  */
 
 (function (global) {
@@ -43,8 +44,19 @@
   const BRAILLE_UNKNOWN = "⣿";     // visible fallback
 
   // Signs
-  const SIGN_CAPITAL = "⠠";        // dot 6
-  const SIGN_NUMBER  = "⠼";        // 3456
+  const SIGN_NUMBER = "⠼";         // 3456
+  const SIGN_CAPITAL_EN = "⠠";     // dot 6 (common/English computer braille)
+  const SIGN_CAPITAL_NL = "⠨";     // dots 4-6 (requested NL behavior)
+
+  function normalizeLang(tag) {
+    const t = String(tag || "").trim().toLowerCase();
+    const base = t.split("-")[0];
+    return (base === "nl" || base === "en") ? base : "nl";
+  }
+
+  function getCapitalSignForLang(lang) {
+    return normalizeLang(lang) === "nl" ? SIGN_CAPITAL_NL : SIGN_CAPITAL_EN;
+  }
 
   // Letters a-z (basic)
   const BRAILLE_LETTERS = {
@@ -88,14 +100,24 @@
 
   function isAsciiLetter(ch) {
     const lower = ch.toLowerCase();
-    return lower !== ch || (lower >= "a" && lower <= "z");
+    return (lower >= "a" && lower <= "z") || (ch !== lower && lower >= "a" && lower <= "z");
+  }
+
+  function stripLeadingCapitalSigns(cell) {
+    let s = String(cell || "");
+    // Strip both possible capital signs (EN + NL) repeatedly
+    while (s.startsWith(SIGN_CAPITAL_EN) || s.startsWith(SIGN_CAPITAL_NL)) {
+      s = s.substring(1);
+    }
+    return s;
   }
 
   /**
    * Default per-character braille cell generator (returns 1..2 braille unicode chars)
    * NOTE: For digits, this returns number sign per digit. We'll normalize digit-runs later.
+   * NOTE: capital sign is lang-dependent (NL vs EN).
    */
-  function defaultCellForChar(ch) {
+  function defaultCellForChar(ch, lang) {
     const c = String(ch ?? "");
     if (!c) return BRAILLE_BLANK;
 
@@ -109,8 +131,8 @@
     const lower = c.toLowerCase();
     if (Object.prototype.hasOwnProperty.call(BRAILLE_LETTERS, lower)) {
       const letterCell = BRAILLE_LETTERS[lower];
-      // uppercase -> capital sign + letter
-      if (c !== lower) return SIGN_CAPITAL + letterCell;
+      const isUpper = c !== lower;
+      if (isUpper) return getCapitalSignForLang(lang) + letterCell;
       return letterCell;
     }
 
@@ -121,15 +143,16 @@
    * Normalize translator output:
    * - Ensure array length matches text length
    * - Ensure space => BRAILLE_BLANK
-   * - Ensure uppercase => has SIGN_CAPITAL prefix
+   * - Ensure uppercase => has correct capital sign prefix (lang-aware)
    * - Ensure digit runs => SIGN_NUMBER only at start of run
    *
    * This fixes "capital sign not applied" even if translator returns plain letters.
    */
-  function coerceCells(text, cells) {
+  function coerceCells(text, cells, lang) {
     const raw = String(text ?? "");
     const out = new Array(raw.length);
 
+    const CAP = getCapitalSignForLang(lang);
     let inNumberRun = false;
 
     for (let i = 0; i < raw.length; i++) {
@@ -152,16 +175,11 @@
 
         if (!inNumberRun) {
           // start of digit run: must have ⠼ prefix
-          if (!cell.startsWith(SIGN_NUMBER)) {
-            cell = SIGN_NUMBER + digitCell;
-          } else {
-            cell = SIGN_NUMBER + digitCell;
-          }
+          cell = SIGN_NUMBER + digitCell;
           inNumberRun = true;
         } else {
           // inside digit run: NO ⠼ prefix
-          if (cell.startsWith(SIGN_NUMBER)) cell = digitCell;
-          else cell = digitCell;
+          cell = digitCell;
         }
 
         out[i] = cell;
@@ -176,20 +194,25 @@
         continue;
       }
 
-      // LETTERS: enforce capital sign when needed
+      // LETTERS: enforce correct capital sign when needed (lang-aware)
       const lower = String(ch).toLowerCase();
       if (Object.prototype.hasOwnProperty.call(BRAILLE_LETTERS, lower)) {
         const baseLetter = BRAILLE_LETTERS[lower];
         const isUpper = ch !== lower;
 
         if (isUpper) {
-          if (!cell.startsWith(SIGN_CAPITAL)) cell = SIGN_CAPITAL + baseLetter;
-        } else {
-          if (cell.startsWith(SIGN_CAPITAL)) cell = baseLetter;
-          else cell = baseLetter;
-        }
+          // remove any existing (possibly wrong) capital signs and apply correct one
+          const stripped = stripLeadingCapitalSigns(cell);
+          cell = CAP + baseLetter;
 
-        out[i] = cell;
+          // If translator had already produced a compound cell, we still force to CAP + base letter,
+          // because we must keep routing stable and match our a-z base mapping.
+          // (If you later add contractions/diacritics, revisit here.)
+          out[i] = cell;
+        } else {
+          // lowercase: ensure no capital sign leaks
+          out[i] = baseLetter;
+        }
         continue;
       }
 
@@ -206,12 +229,14 @@
    */
   function textToBrailleCells(text, { lang } = {}) {
     const raw = String(text ?? "");
+    const langNorm = normalizeLang(lang);
+
     let cells = null;
 
     // Optional external translator hook
     if (global.Braille && typeof global.Braille.textToBrailleCells === "function") {
       try {
-        const out = global.Braille.textToBrailleCells(raw, { lang });
+        const out = global.Braille.textToBrailleCells(raw, { lang: langNorm });
         if (Array.isArray(out) && out.length === raw.length) {
           cells = out.map(x => (x == null ? "" : String(x)));
         }
@@ -223,11 +248,11 @@
     // If no translator output, use default mapping
     if (!cells) {
       cells = new Array(raw.length);
-      for (let i = 0; i < raw.length; i++) cells[i] = defaultCellForChar(raw[i]);
+      for (let i = 0; i < raw.length; i++) cells[i] = defaultCellForChar(raw[i], langNorm);
     }
 
-    // Always coerce (fix missing capital/number signs, normalize spaces)
-    return coerceCells(raw, cells);
+    // Always coerce (fix missing capital/number signs, normalize spaces, lang-aware caps)
+    return coerceCells(raw, cells, langNorm);
   }
 
   const BrailleMonitor = {
@@ -282,8 +307,8 @@
 
       let currentText = "";
 
-      // ADDED: keep current language so we can switch later
-      let currentLang = opts.lang ? String(opts.lang) : null;
+      // Keep current language so we can switch later
+      let currentLang = normalizeLang(opts.lang || "nl");
 
       const wrapper = document.createElement("div");
       wrapper.className = "braille-monitor-component";
@@ -347,7 +372,6 @@
           return;
         }
 
-        // CHANGED: use currentLang (supports setLang)
         const brailleCells = textToBrailleCells(currentText, { lang: currentLang });
 
         for (let i = 0; i < currentText.length; i++) {
@@ -445,15 +469,14 @@
 
       function clear() { setText(""); }
 
-      // ADDED: allow switching language after init
+      // Allow switching language after init (e.g. Settings page change)
       function setLang(lang) {
-        currentLang = lang ? String(lang) : null;
+        currentLang = normalizeLang(lang || "nl");
         rebuildCells();
       }
 
       setText("");
 
-      // ADDED: expose setLang
       return { monitorId, thumbRowId, containerId: baseId, setText, clear, setLang };
     }
   };

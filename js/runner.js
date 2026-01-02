@@ -392,17 +392,48 @@
     return map[icon] || "";
   }
 
+  // ------------------------------------------------------------
+  // Braille Unicode rendering (NL capital sign dots 4-6)
+  // ------------------------------------------------------------
+  function getCapitalSignForLang(lang) {
+    // Dutch computer braille: capital sign dots 4-6
+    return (String(lang || "").toLowerCase() === "nl") ? "⠨" : "⠠";
+  }
+
   function toBrailleUnicode(text) {
     const raw = String(text ?? "");
     if (!raw) return "–";
+
+    const CAP = getCapitalSignForLang(currentLang);
     let out = "";
+
     for (let i = 0; i < raw.length; i++) {
       const ch = raw[i];
-      if (BRAILLE_UNICODE_MAP[ch]) { out += BRAILLE_UNICODE_MAP[ch]; continue; }
+
+      // direct mapping for known chars
+      if (BRAILLE_UNICODE_MAP[ch]) {
+        out += BRAILLE_UNICODE_MAP[ch];
+        continue;
+      }
+
       const lower = ch.toLowerCase();
-      if (BRAILLE_UNICODE_MAP[lower]) { out += BRAILLE_UNICODE_MAP[lower]; continue; }
+
+      // uppercase A-Z => capital sign + lowercase cell
+      const isUpper = (ch !== lower) && (lower >= "a" && lower <= "z");
+      if (isUpper && BRAILLE_UNICODE_MAP[lower]) {
+        out += CAP + BRAILLE_UNICODE_MAP[lower];
+        continue;
+      }
+
+      // lowercase mapping
+      if (BRAILLE_UNICODE_MAP[lower]) {
+        out += BRAILLE_UNICODE_MAP[lower];
+        continue;
+      }
+
       out += "⣿";
     }
+
     return out;
   }
 
