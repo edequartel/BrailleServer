@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="nl" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Settings (Mock)</title>
+  <title>Settings</title>
 
   <style>
     :root {
@@ -21,6 +21,11 @@
       --border: #273049;
       --accent: #7aa2ff;
       --radius: 12px;
+
+      /* storage keys (documentation)
+         bs_lang, bs_ws_url, bs_api_base, bs_cells,
+         bs_autoplay, bs_sfx, bs_show_cursor, bs_store_progress
+      */
     }
 
     * { box-sizing: border-box; }
@@ -30,8 +35,6 @@
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       color: var(--fg);
-
-      /* Vertical center shade */
       background: linear-gradient(
         90deg,
         var(--bg-left) 0%,
@@ -48,9 +51,7 @@
       padding: 24px 16px 48px;
     }
 
-    header {
-      margin-bottom: 18px;
-    }
+    header { margin-bottom: 18px; }
 
     h1 {
       margin: 0;
@@ -77,9 +78,7 @@
       font-size: 14px;
     }
 
-    .field {
-      margin-bottom: 12px;
-    }
+    .field { margin-bottom: 12px; }
 
     label {
       font-size: 12px;
@@ -95,6 +94,12 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       color: var(--fg);
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: rgba(122,162,255,0.6);
+      box-shadow: 0 0 0 3px rgba(122,162,255,0.18);
     }
 
     .toggle {
@@ -116,26 +121,57 @@
       margin-top: 2px;
     }
 
-    /* Mock switch (non-interactive visual) */
+    /* Switch */
     .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+    }
+
+    .track {
       width: 42px;
       height: 24px;
       background: #1a2236;
       border-radius: 999px;
       position: relative;
       border: 1px solid var(--border);
-      flex-shrink: 0;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
 
-    .switch::after {
+    .track::after {
       content: "";
       position: absolute;
       top: 2px;
-      left: 22px;
+      left: 2px;
       width: 18px;
       height: 18px;
       background: #cbd5e1;
       border-radius: 50%;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .switch input:checked + .track {
+      background: rgba(122,162,255,0.22);
+      border-color: rgba(122,162,255,0.6);
+    }
+
+    .switch input:checked + .track::after {
+      transform: translateX(18px);
+      background: #e7eaf1;
+    }
+
+    .switch input:focus-visible + .track {
+      box-shadow: 0 0 0 3px rgba(122,162,255,0.22);
     }
 
     .actions {
@@ -160,6 +196,21 @@
       background: rgba(122,162,255,0.15);
     }
 
+    button:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(122,162,255,0.22);
+    }
+
+    .saved {
+      display: inline-block;
+      margin-left: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+    .saved.show { opacity: 1; }
+
     footer {
       margin-top: 24px;
       font-size: 12px;
@@ -173,93 +224,231 @@
   <div class="wrap">
     <header>
       <h1>Settings</h1>
-      <p class="sub">Simple dark mock with center shade</p>
+      <p class="sub">Local settings (saved in this browser)</p>
     </header>
 
-    <section class="card">
-      <h2>Connection</h2>
+    <section class="card" aria-labelledby="connTitle">
+      <h2 id="connTitle">Connection</h2>
 
       <div class="field">
-        <label>WebSocket URL</label>
-        <input type="text" value="ws://localhost:7123/ws" />
+        <label for="wsUrl">WebSocket URL</label>
+        <input id="wsUrl" type="text" inputmode="url" value="ws://localhost:7123/ws" />
       </div>
 
       <div class="field">
-        <label>API Base URL</label>
-        <input type="text" value="http://localhost:7123" />
+        <label for="apiBase">API Base URL</label>
+        <input id="apiBase" type="text" inputmode="url" value="http://localhost:7123" />
       </div>
     </section>
 
-    <section class="card">
-      <h2>Audio</h2>
+    <section class="card" aria-labelledby="audioTitle">
+      <h2 id="audioTitle">Audio</h2>
 
       <div class="field">
-        <label>Language</label>
-        <select>
-          <option>nl</option>
-          <option>en</option>
+        <label for="lang">Language</label>
+        <select id="lang">
+          <option value="nl">nl</option>
+          <option value="en">en</option>
         </select>
       </div>
 
       <div class="toggle">
         <div>
           <strong>Autoplay instructions</strong>
-          <small>Play audio when activity starts</small>
+          <small id="autoplayHelp">Play audio when activity starts</small>
         </div>
-        <div class="switch"></div>
+        <label class="switch">
+          <input id="autoplay" type="checkbox" aria-describedby="autoplayHelp" />
+          <span class="track" aria-hidden="true"></span>
+        </label>
       </div>
 
       <div class="toggle">
         <div>
           <strong>Sound effects</strong>
-          <small>UI feedback sounds</small>
+          <small id="sfxHelp">UI feedback sounds</small>
         </div>
-        <div class="switch"></div>
+        <label class="switch">
+          <input id="sfx" type="checkbox" aria-describedby="sfxHelp" />
+          <span class="track" aria-hidden="true"></span>
+        </label>
       </div>
     </section>
 
-    <section class="card">
-      <h2>Braille display</h2>
+    <section class="card" aria-labelledby="bdTitle">
+      <h2 id="bdTitle">Braille display</h2>
 
       <div class="field">
-        <label>Cells</label>
-        <select>
-          <option>20</option>
-          <option>32</option>
-          <option selected>40</option>
-          <option>80</option>
+        <label for="cells">Cells</label>
+        <select id="cells">
+          <option value="20">20</option>
+          <option value="32">32</option>
+          <option value="40">40</option>
+          <option value="80">80</option>
         </select>
       </div>
 
       <div class="toggle">
         <div>
           <strong>Show cursor</strong>
-          <small>Mirror cursor position</small>
+          <small id="cursorHelp">Mirror cursor position</small>
         </div>
-        <div class="switch"></div>
+        <label class="switch">
+          <input id="showCursor" type="checkbox" aria-describedby="cursorHelp" />
+          <span class="track" aria-hidden="true"></span>
+        </label>
       </div>
     </section>
 
-    <section class="card">
-      <h2>Privacy</h2>
+    <section class="card" aria-labelledby="privacyTitle">
+      <h2 id="privacyTitle">Privacy</h2>
 
       <div class="toggle">
         <div>
           <strong>Store progress locally</strong>
-          <small>Saved only in this browser</small>
+          <small id="progressHelp">Saved only in this browser</small>
         </div>
-        <div class="switch"></div>
+        <label class="switch">
+          <input id="storeProgress" type="checkbox" aria-describedby="progressHelp" />
+          <span class="track" aria-hidden="true"></span>
+        </label>
       </div>
 
       <div class="actions">
-        <button>Cancel</button>
-        <button class="primary">Save</button>
+        <button id="cancelBtn" type="button">Cancel</button>
+        <button id="saveBtn" class="primary" type="button">Save</button>
+        <span id="saved" class="saved" aria-live="polite">Saved.</span>
       </div>
     </section>
 
     <footer>
-      Version 0.1 · Mock UI
+      Version 0.1 · Settings (localStorage)
     </footer>
   </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const KEYS = {
+        lang: "bs_lang",
+        wsUrl: "bs_ws_url",
+        apiBase: "bs_api_base",
+        cells: "bs_cells",
+        autoplay: "bs_autoplay",
+        sfx: "bs_sfx",
+        showCursor: "bs_show_cursor",
+        storeProgress: "bs_store_progress"
+      };
+
+      const DEFAULTS = {
+        lang: "nl",
+        wsUrl: "ws://localhost:7123/ws",
+        apiBase: "http://localhost:7123",
+        cells: "40",
+        autoplay: true,
+        sfx: true,
+        showCursor: true,
+        storeProgress: true
+      };
+
+      const el = {
+        lang: document.getElementById("lang"),
+        wsUrl: document.getElementById("wsUrl"),
+        apiBase: document.getElementById("apiBase"),
+        cells: document.getElementById("cells"),
+        autoplay: document.getElementById("autoplay"),
+        sfx: document.getElementById("sfx"),
+        showCursor: document.getElementById("showCursor"),
+        storeProgress: document.getElementById("storeProgress"),
+        saveBtn: document.getElementById("saveBtn"),
+        cancelBtn: document.getElementById("cancelBtn"),
+        saved: document.getElementById("saved")
+      };
+
+      function getStr(key, fallback) {
+        const v = localStorage.getItem(key);
+        return (v == null || v === "") ? fallback : String(v);
+      }
+
+      function getBool(key, fallback) {
+        const v = localStorage.getItem(key);
+        if (v == null) return Boolean(fallback);
+        return v === "1" || v === "true";
+      }
+
+      function setBool(key, val) {
+        localStorage.setItem(key, val ? "1" : "0");
+      }
+
+      function applyLangToHtml(lang) {
+        document.documentElement.setAttribute("lang", lang);
+      }
+
+      function loadIntoForm() {
+        el.lang.value = getStr(KEYS.lang, DEFAULTS.lang);
+        el.wsUrl.value = getStr(KEYS.wsUrl, DEFAULTS.wsUrl);
+        el.apiBase.value = getStr(KEYS.apiBase, DEFAULTS.apiBase);
+        el.cells.value = getStr(KEYS.cells, DEFAULTS.cells);
+
+        el.autoplay.checked = getBool(KEYS.autoplay, DEFAULTS.autoplay);
+        el.sfx.checked = getBool(KEYS.sfx, DEFAULTS.sfx);
+        el.showCursor.checked = getBool(KEYS.showCursor, DEFAULTS.showCursor);
+        el.storeProgress.checked = getBool(KEYS.storeProgress, DEFAULTS.storeProgress);
+
+        applyLangToHtml(el.lang.value);
+      }
+
+      function saveFromForm() {
+        const lang = (el.lang.value === "en") ? "en" : "nl";
+        localStorage.setItem(KEYS.lang, lang);
+
+        localStorage.setItem(KEYS.wsUrl, String(el.wsUrl.value || DEFAULTS.wsUrl).trim());
+        localStorage.setItem(KEYS.apiBase, String(el.apiBase.value || DEFAULTS.apiBase).trim());
+
+        const cells = String(el.cells.value || DEFAULTS.cells).trim();
+        localStorage.setItem(
+          KEYS.cells,
+          (cells === "20" || cells === "32" || cells === "40" || cells === "80") ? cells : DEFAULTS.cells
+        );
+
+        setBool(KEYS.autoplay, el.autoplay.checked);
+        setBool(KEYS.sfx, el.sfx.checked);
+        setBool(KEYS.showCursor, el.showCursor.checked);
+        setBool(KEYS.storeProgress, el.storeProgress.checked);
+
+        applyLangToHtml(lang);
+      }
+
+      function flashSaved() {
+        el.saved.classList.add("show");
+        window.setTimeout(() => el.saved.classList.remove("show"), 900);
+      }
+
+      function goBack() {
+        if (history.length > 1) history.back();
+        else location.href = "../pages/words.html";
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadIntoForm();
+
+        el.lang.addEventListener("change", () => {
+          applyLangToHtml(el.lang.value === "en" ? "en" : "nl");
+        });
+
+        el.saveBtn.addEventListener("click", () => {
+          saveFromForm();
+          flashSaved();
+          window.setTimeout(goBack, 800);
+        });
+
+        el.cancelBtn.addEventListener("click", () => {
+          loadIntoForm();
+          goBack();
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

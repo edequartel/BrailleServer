@@ -305,37 +305,35 @@
   }
 
   // ------------------------------------------------------------
-  // Language resolver for Braille translator selection
+  // Language (aligned with Settings page localStorage key: bs_lang)
   // ------------------------------------------------------------
-  function resolveLang() {
-    // 1) Explicit app globals (if you have it)
-    const appLang = String(window.AppLang || window.APP_LANG || "").trim();
-    if (appLang) return appLang;
-
-    // 2) i18n module state (common patterns)
-    const i18nLang =
-      (window.i18n && (window.i18n.lang || window.i18n.locale)) ||
-      (window.I18N && (window.I18N.lang || window.I18N.locale));
-    if (i18nLang) return String(i18nLang).trim();
-
-    // 3) localStorage preference (adjust keys if you already use another)
-    const stored = String(localStorage.getItem("bs_lang") || localStorage.getItem("lang") || "").trim();
-    if (stored) return stored;
-
-    // 4) HTML lang attribute
-    const htmlLang = String(document.documentElement.getAttribute("lang") || "").trim();
-    if (htmlLang) return htmlLang;
-
-    // 5) Browser language
-    const nav = (navigator.languages && navigator.languages[0]) ? navigator.languages[0] : navigator.language;
-    return String(nav || "nl").trim();
-  }
+  const LANG_KEY = "bs_lang";
 
   function normalizeLang(tag) {
-    const t = String(tag || "").toLowerCase();
+    const t = String(tag || "").trim().toLowerCase();
     const base = t.split("-")[0];
     return (base === "nl" || base === "en") ? base : "nl";
   }
+
+  function resolveLang() {
+    // 1) Settings page (source of truth)
+    const stored = localStorage.getItem(LANG_KEY);
+    if (stored) return normalizeLang(stored);
+
+    // 2) HTML lang
+    const htmlLang = document.documentElement.getAttribute("lang");
+    if (htmlLang) return normalizeLang(htmlLang);
+
+    // 3) Browser language
+    const nav = (navigator.languages && navigator.languages[0]) ? navigator.languages[0] : navigator.language;
+    return normalizeLang(nav || "nl");
+  }
+
+  function applyLangToHtml(lang) {
+    document.documentElement.setAttribute("lang", lang);
+  }
+
+  let currentLang = "nl";
 
   // ------------------------------------------------------------
   // Activity button state styling hooks
@@ -959,10 +957,16 @@
 
     const nextBtn = $opt("next-btn");
     const prevBtn = $opt("prev-btn");
-    const runBtn = $opt("run-activity-btn"); // OPTIONAL; if not in HTML, no start/stop button
+    const runBtn = $opt("run-activity-btn"); // OPTIONAL
     const toggleFieldsBtn = $opt("toggle-fields-btn");
     const fieldsPanel = $opt("fields-panel");
 
+    // Sync language from Settings -> runner
+    currentLang = resolveLang();
+    applyLangToHtml(currentLang);
+    log("[runner] resolved lang", { lang: currentLang });
+
+    // Bridge events
     if (window.BrailleBridge && typeof BrailleBridge.connect === "function") {
       BrailleBridge.connect();
       BrailleBridge.on("cursor", (evt) => {
@@ -973,14 +977,11 @@
       BrailleBridge.on("disconnected", () => log("[runner] BrailleBridge disconnected"));
     }
 
-    // IMPORTANT: pass lang into BrailleMonitor so it can choose nl.js/en.js translator rules
+    // BrailleMonitor init (lang-aware)
     if (window.BrailleMonitor && typeof BrailleMonitor.init === "function") {
-      const lang = normalizeLang(resolveLang());
-      log("[runner] BrailleMonitor lang", { lang });
-
       brailleMonitor = BrailleMonitor.init({
         containerId: "brailleMonitorComponent",
-        lang,
+        lang: currentLang,
         onCursorClick(info) { dispatchCursorSelection(info, "monitor"); },
         mapping: {
           leftthumb: () => leftThumbAction(),
@@ -989,7 +990,31 @@
           middlerightthumb: () => {}
         }
       });
+      log("[runner] BrailleMonitor init", { ok: Boolean(brailleMonitor), lang: currentLang });
+    } else {
+      log("[runner] BrailleMonitor not available");
     }
+
+    // Apply language changes when returning from Settings (iOS BFCache safe)
+    function applyLanguageIfChanged(reason) {
+      const next = resolveLang();
+      if (next === currentLang) return;
+
+      currentLang = next;
+      applyLangToHtml(currentLang);
+      log("[runner] lang changed", { lang: currentLang, reason });
+
+      if (brailleMonitor && typeof brailleMonitor.setLang === "function") {
+        brailleMonitor.setLang(currentLang);
+      }
+
+      if (!running) updateBrailleLine(getIdleBrailleText(), { reason: "lang-change-idle" });
+    }
+
+    window.addEventListener("pageshow", () => applyLanguageIfChanged("pageshow"));
+    window.addEventListener("storage", (e) => {
+      if (e && e.key === LANG_KEY) applyLanguageIfChanged("storage");
+    });
 
     if (nextBtn) nextBtn.addEventListener("click", next);
     if (prevBtn) prevBtn.addEventListener("click", prev);

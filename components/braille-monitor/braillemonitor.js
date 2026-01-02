@@ -19,6 +19,9 @@
  *
  * HARDENING:
  * - Even if translator forgets capital/number signs, we add them here so UI is correct.
+ *
+ * ADDED IN THIS VERSION:
+ * - setLang(lang): switch language after init and re-render (safe for Settings page)
  */
 
 (function (global) {
@@ -150,24 +153,15 @@
         if (!inNumberRun) {
           // start of digit run: must have ⠼ prefix
           if (!cell.startsWith(SIGN_NUMBER)) {
-            // if translator gave the digit cell without sign, fix it
-            // if translator gave something else, still force a safe representation
-            cell = SIGN_NUMBER + (cell === digitCell ? digitCell : digitCell);
+            cell = SIGN_NUMBER + digitCell;
           } else {
-            // if it starts with ⠼ but doesn't contain the digit pattern, enforce known digit
-            // keep whatever comes after if you prefer; here we standardize
             cell = SIGN_NUMBER + digitCell;
           }
           inNumberRun = true;
         } else {
           // inside digit run: NO ⠼ prefix
-          if (cell.startsWith(SIGN_NUMBER)) {
-            // strip sign if translator repeats it
-            cell = digitCell;
-          } else {
-            // if translator gave something else, standardize to digit cell
-            cell = digitCell;
-          }
+          if (cell.startsWith(SIGN_NUMBER)) cell = digitCell;
+          else cell = digitCell;
         }
 
         out[i] = cell;
@@ -189,14 +183,8 @@
         const isUpper = ch !== lower;
 
         if (isUpper) {
-          // If translator didn't include ⠠, prefix it.
-          if (!cell.startsWith(SIGN_CAPITAL)) {
-            // If translator returned just the base letter, perfect.
-            // If translator returned something else, still enforce base letter.
-            cell = SIGN_CAPITAL + baseLetter;
-          }
+          if (!cell.startsWith(SIGN_CAPITAL)) cell = SIGN_CAPITAL + baseLetter;
         } else {
-          // lowercase: if translator accidentally prefixes capital sign, drop it
           if (cell.startsWith(SIGN_CAPITAL)) cell = baseLetter;
           else cell = baseLetter;
         }
@@ -294,6 +282,9 @@
 
       let currentText = "";
 
+      // ADDED: keep current language so we can switch later
+      let currentLang = opts.lang ? String(opts.lang) : null;
+
       const wrapper = document.createElement("div");
       wrapper.className = "braille-monitor-component";
 
@@ -356,7 +347,8 @@
           return;
         }
 
-        const brailleCells = textToBrailleCells(currentText, { lang: opts.lang });
+        // CHANGED: use currentLang (supports setLang)
+        const brailleCells = textToBrailleCells(currentText, { lang: currentLang });
 
         for (let i = 0; i < currentText.length; i++) {
           const ch = currentText[i] || " ";
@@ -453,9 +445,16 @@
 
       function clear() { setText(""); }
 
+      // ADDED: allow switching language after init
+      function setLang(lang) {
+        currentLang = lang ? String(lang) : null;
+        rebuildCells();
+      }
+
       setText("");
 
-      return { monitorId, thumbRowId, containerId: baseId, setText, clear };
+      // ADDED: expose setLang
+      return { monitorId, thumbRowId, containerId: baseId, setText, clear, setLang };
     }
   };
 
