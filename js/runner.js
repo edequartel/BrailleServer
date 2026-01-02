@@ -261,29 +261,6 @@
   let brailleLine = "";
   const BRAILLE_CELLS = 40;
 
-  const BRAILLE_UNICODE_MAP = {
-    a: "⠁", b: "⠃", c: "⠉", d: "⠙", e: "⠑",
-    f: "⠋", g: "⠛", h: "⠓", i: "⠊", j: "⠚",
-    k: "⠅", l: "⠇", m: "⠍", n: "⠝", o: "⠕",
-    p: "⠏", q: "⠟", r: "⠗", s: "⠎", t: "⠞",
-    u: "⠥", v: "⠧", w: "⠺", x: "⠭", y: "⠽", z: "⠵",
-    "1": "⠼⠁", "2": "⠼⠃", "3": "⠼⠉", "4": "⠼⠙", "5": "⠼⠑",
-    "6": "⠼⠋", "7": "⠼⠛", "8": "⠼⠓", "9": "⠼⠊", "0": "⠼⠚",
-    " ": "⠀",
-    ".": "⠲",
-    ",": "⠂",
-    ";": "⠆",
-    ":": "⠒",
-    "?": "⠦",
-    "!": "⠖",
-    "-": "⠤",
-    "'": "⠄",
-    "\"": "⠶",
-    "(": "⠐⠣",
-    ")": "⠐⠜",
-    "/": "⠌"
-  };
-
   // ------------------------------------------------------------
   // DOM helper
   // ------------------------------------------------------------
@@ -376,67 +353,8 @@
   }
 
   // ------------------------------------------------------------
-  // Emoji/icon helpers
+  // Braille line helpers (IMPORTANT CHANGE)
   // ------------------------------------------------------------
-  function getEmojiForItem(item) {
-    const direct = String(item?.emoji ?? "").trim();
-    if (direct) return direct;
-
-    const icon = String(item?.icon ?? "").trim().toLowerCase();
-    const map = {
-      "ball.icon": "⚽",
-      "comb.icon": "💇",
-      "monkey.icon": "🐒",
-      "branch.icon": "🌿"
-    };
-    return map[icon] || "";
-  }
-
-  // ------------------------------------------------------------
-  // Braille Unicode rendering (NL capital sign dots 4-6)
-  // ------------------------------------------------------------
-  function getCapitalSignForLang(lang) {
-    // Dutch computer braille: capital sign dots 4-6
-    return (String(lang || "").toLowerCase() === "nl") ? "⠨" : "⠠";
-  }
-
-  function toBrailleUnicode(text) {
-    const raw = String(text ?? "");
-    if (!raw) return "–";
-
-    const CAP = getCapitalSignForLang(currentLang);
-    let out = "";
-
-    for (let i = 0; i < raw.length; i++) {
-      const ch = raw[i];
-
-      // direct mapping for known chars
-      if (BRAILLE_UNICODE_MAP[ch]) {
-        out += BRAILLE_UNICODE_MAP[ch];
-        continue;
-      }
-
-      const lower = ch.toLowerCase();
-
-      // uppercase A-Z => capital sign + lowercase cell
-      const isUpper = (ch !== lower) && (lower >= "a" && lower <= "z");
-      if (isUpper && BRAILLE_UNICODE_MAP[lower]) {
-        out += CAP + BRAILLE_UNICODE_MAP[lower];
-        continue;
-      }
-
-      // lowercase mapping
-      if (BRAILLE_UNICODE_MAP[lower]) {
-        out += BRAILLE_UNICODE_MAP[lower];
-        continue;
-      }
-
-      out += "⣿";
-    }
-
-    return out;
-  }
-
   function compactSingleLine(text) {
     return String(text ?? "").replace(/\s+/g, " ").trim();
   }
@@ -452,12 +370,16 @@
     if (next === brailleLine) return;
     brailleLine = next;
 
+    // IMPORTANT: BrailleMonitor must always get the PRINT line (1 char = 1 cell),
+    // and BrailleMonitor itself will add capital/number signs for display (lang-aware).
     if (brailleMonitor && typeof brailleMonitor.setText === "function") {
       if (next) brailleMonitor.setText(next);
       else if (typeof brailleMonitor.clear === "function") brailleMonitor.clear();
       else brailleMonitor.setText("");
     }
 
+    // BrailleBridge sends PRINT text to the physical display; the bridge/server
+    // is the source of truth for translation (liblouis) and cursor routing.
     if (window.BrailleBridge) {
       if (!next && typeof BrailleBridge.clearDisplay === "function") {
         BrailleBridge.clearDisplay().catch((err) => {
@@ -876,11 +798,23 @@
     }
   }
 
-  async function loadData() {
+  // ------------------------------------------------------------
+  // URL selection (FIX for localhost "pattern" error)
+  // ------------------------------------------------------------
+  function resolveDataUrl() {
     const params = new URLSearchParams(window.location.search || "");
     const overrideUrl = params.get("data");
-    const preferred = overrideUrl ? overrideUrl : REMOTE_DATA_URL;
-    const resolvedUrl = new URL(preferred, window.location.href).toString();
+    if (overrideUrl) return new URL(overrideUrl, window.location.href).toString();
+
+    // If we are NOT on GitHub Pages, prefer LOCAL to avoid URL parsing issues and CORS
+    const isGithubPages = location.hostname.endsWith("github.io");
+    const preferred = isGithubPages ? REMOTE_DATA_URL : LOCAL_DATA_URL;
+
+    return new URL(preferred, window.location.href).toString();
+  }
+
+  async function loadData() {
+    const resolvedUrl = resolveDataUrl();
     setStatus("laden...");
 
     try {
@@ -894,29 +828,46 @@
       currentActivityIndex = 0;
       render();
     } catch (err) {
-      log("[runner] ERROR loading JSON", { message: err?.message || String(err) });
+      log("[runner] ERROR loading JSON", { message: err?.message || String(err), url: resolvedUrl });
 
-      if (!overrideUrl && preferred === REMOTE_DATA_URL) {
-        const fallbackUrl = new URL(LOCAL_DATA_URL, window.location.href).toString();
-        setStatus("online mislukt, probeer lokaal...");
-        try {
-          const res = await fetch(fallbackUrl, { cache: "no-store" });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const json = await res.json();
-          if (!Array.isArray(json)) throw new Error("words.json is not an array");
-          records = json;
-          currentIndex = 0;
-          currentActivityIndex = 0;
-          render();
-          return;
-        } catch (fallbackErr) {
-          log("[runner] ERROR loading local JSON", { message: fallbackErr?.message || String(fallbackErr) });
-        }
+      // Fallback: if first try was remote, try local; if first try was local, try remote
+      const isGithubPages = location.hostname.endsWith("github.io");
+      const fallback = isGithubPages ? LOCAL_DATA_URL : REMOTE_DATA_URL;
+
+      try {
+        const fallbackUrl = new URL(fallback, window.location.href).toString();
+        const res = await fetch(fallbackUrl, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!Array.isArray(json)) throw new Error("words.json is not an array");
+
+        records = json;
+        currentIndex = 0;
+        currentActivityIndex = 0;
+        render();
+        setStatus("geladen (fallback)");
+        return;
+      } catch (fallbackErr) {
+        log("[runner] ERROR loading fallback JSON", { message: fallbackErr?.message || String(fallbackErr) });
       }
 
       if (location.protocol === "file:") setStatus("laden mislukt: open via http:// (file:// blokkeert fetch)");
       else setStatus("laden mislukt (zie log/console)");
     }
+  }
+
+  function getEmojiForItem(item) {
+    const direct = String(item?.emoji ?? "").trim();
+    if (direct) return direct;
+
+    const icon = String(item?.icon ?? "").trim().toLowerCase();
+    const map = {
+      "ball.icon": "⚽",
+      "comb.icon": "💇",
+      "monkey.icon": "🐒",
+      "branch.icon": "🌿"
+    };
+    return map[icon] || "";
   }
 
   function render() {
@@ -952,9 +903,6 @@
       emojiEl.textContent = em || " ";
       emojiEl.style.display = em ? "" : "none";
     }
-
-    const wordBrailleEl = $opt("field-word-braille");
-    if (wordBrailleEl) wordBrailleEl.textContent = toBrailleUnicode(item.word || "");
 
     const allEl = $opt("field-all");
     if (allEl) allEl.textContent = formatAllFields(item);
