@@ -5,87 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Settings</title>
 
-  <style>
-    :root{
-      --bg:#0b0c10;
-      --panel:#12141b;
-      --text:#e8eaf0;
-      --muted:#aab0c0;
-      --border:#2a2f3a;
-      --focus:#8aa4ff;
-      --radius:12px;
-    }
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-    .wrap{ max-width:880px; margin:0 auto; padding:16px; }
-    header{ border-bottom:1px solid var(--border); }
-    h1{ font-size:18px; margin:0; }
-    .card{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:16px;
-      margin-top:16px;
-    }
-    .row{
-      display:grid;
-      grid-template-columns:220px 1fr;
-      gap:14px;
-      padding:12px 0;
-      border-top:1px solid var(--border);
-    }
-    .row:first-child{ border-top:none; }
-    .label{ font-weight:700; }
-    .hint{ color:var(--muted); font-size:13px; margin-top:6px; }
-    select{ width:100%; padding:10px; }
-    .toggle{ display:flex; align-items:center; gap:10px; }
-    .debug{
-      margin-top:16px;
-      padding:12px;
-      border:1px solid var(--border);
-      border-radius:10px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size:12px;
-      white-space:pre-wrap;
-      color:#aab0c0;
-    }
-  </style>
+  <!-- Styles -->
+  <link rel="stylesheet" href="../css/settings.css" />
 
-  <!-- Fail-safe debug (always runs) -->
-  <script>
-  (function(){
-    function set(msg){
-      try{
-        var el = document.getElementById("debugBox");
-        if (el) el.textContent = msg;
-      }catch{}
-    }
-    window.__debug = function(label, obj){
-      set(label + "\n" + (obj ? JSON.stringify(obj, null, 2) : ""));
-      console.log(label, obj || "");
-    };
-    document.addEventListener("DOMContentLoaded", function(){
-      set(
-        "Debug: DOMContentLoaded\n" +
-        "URL: " + location.href + "\n" +
-        "Protocol: " + location.protocol
-      );
-    });
-    window.addEventListener("error", function(e){
-      set("Debug: WINDOW ERROR\n" + e.message + "\n" + (e.filename||"") + ":" + (e.lineno||""));
-    });
-    window.addEventListener("unhandledrejection", function(e){
-      set("Debug: UNHANDLED REJECTION\n" + String(e.reason));
-    });
-  })();
-  </script>
-
-  <!-- IMPORTANT: page is /pages/settings.html so we must go up one level -->
+  <!-- Core JS -->
   <script src="../js/settings-store.js"></script>
   <script src="../js/i18n.js"></script>
 </head>
@@ -101,6 +24,7 @@
   <div class="wrap">
     <div class="card">
 
+      <!-- Language -->
       <div class="row">
         <div>
           <div class="label" data-i18n="settings.language.label">Language</div>
@@ -114,17 +38,19 @@
         </div>
       </div>
 
+      <!-- SSOC Simulator -->
       <div class="row">
         <div>
           <div class="label" data-i18n="settings.sim.label">SSOC Simulator</div>
           <div class="hint" data-i18n="settings.sim.hint">Local fallback mode</div>
         </div>
         <div class="toggle">
-          <input type="checkbox" id="simToggle">
+          <input type="checkbox" id="simToggle" />
           <label for="simToggle" data-i18n="settings.sim.toggle">Use simulator</label>
         </div>
       </div>
 
+      <!-- Method -->
       <div class="row">
         <div>
           <div class="label" data-i18n="settings.method.label">Method</div>
@@ -138,6 +64,7 @@
         </div>
       </div>
 
+      <!-- Braille mode -->
       <div class="row">
         <div>
           <div class="label" data-i18n="settings.braillemode.label">Braille mode</div>
@@ -145,91 +72,93 @@
         </div>
         <div>
           <select id="brailleModeSelect">
-            <option value="literacy" data-i18n="settings.braillemode.option.literacy">Literacy (6 dots)</option>
-            <option value="computer" data-i18n="settings.braillemode.option.computer">Computer (8 dots)</option>
+            <option value="literacy" data-i18n="settings.braillemode.option.literacy">
+              Literacy (6 dots)
+            </option>
+            <option value="computer" data-i18n="settings.braillemode.option.computer">
+              Computer (8 dots)
+            </option>
           </select>
         </div>
       </div>
 
+      <!-- Debug -->
       <div id="debugBox" class="debug">Debug: (loading…)</div>
+
     </div>
   </div>
 </main>
 
 <script>
-(async function(){
+(async function () {
   "use strict";
 
-  const debug = window.__debug || function(){};
-
-  debug("[settings] script start", {
-    hasSettingsStore: !!window.SettingsStore,
-    hasI18n: !!window.I18n
-  });
-
-  if (!window.SettingsStore) {
-    debug("ERROR: SettingsStore missing (check ../js/settings-store.js path)");
-    return;
-  }
-  if (!window.I18n) {
-    debug("ERROR: I18n missing (check ../js/i18n.js path)");
-    return;
-  }
-
-  // IMPORTANT: from /pages/settings.html, basePath to root is "../"
-  const BASE_PATH = "../";
+  const BASE_PATH = "../"; // because /pages/settings.html
 
   const elLang        = document.getElementById("langSelect");
   const elSim         = document.getElementById("simToggle");
   const elMethod      = document.getElementById("methodSelect");
   const elBrailleMode = document.getElementById("brailleModeSelect");
+  const elDebug       = document.getElementById("debugBox");
 
-  function forceSelectRepaint(sel){
-    const idx = sel.selectedIndex;
+  function debug(msg, obj) {
+    elDebug.textContent =
+      msg + (obj ? "\n" + JSON.stringify(obj, null, 2) : "");
+    console.log(msg, obj || "");
+  }
+
+  if (!window.SettingsStore || !window.I18n) {
+    debug("ERROR: Required JS not loaded", {
+      SettingsStore: !!window.SettingsStore,
+      I18n: !!window.I18n
+    });
+    return;
+  }
+
+  function forceSelectRepaint(sel) {
+    const i = sel.selectedIndex;
     sel.selectedIndex = -1;
-    sel.selectedIndex = idx;
+    sel.selectedIndex = i;
   }
 
   async function applyLang(lang) {
     const res = await I18n.loadAndApply({ lang, basePath: BASE_PATH });
-
-    // repaint selected option labels if browser caches them visually
     forceSelectRepaint(elLang);
     forceSelectRepaint(elMethod);
     forceSelectRepaint(elBrailleMode);
-
-    debug("[settings] i18n applied", {
-      lang: res.lang,
-      applied: res.applied,
-      i18nUrlExample: `${BASE_PATH}i18n/${res.lang}.json`
-    });
+    debug("i18n applied", res.applied);
   }
 
   async function syncUI() {
     const state = SettingsStore.load();
 
-    elLang.value = state.lang;
-    elSim.checked = !!state.ssocSimulator;
-    elMethod.value = state.method;
-    elBrailleMode.value = state.brailleMode || "literacy";
+    elLang.value        = state.lang;
+    elSim.checked       = !!state.ssocSimulator;
+    elMethod.value      = state.method;
+    elBrailleMode.value = state.brailleMode;
 
     await applyLang(state.lang);
-
-    debug("[settings] synced", state);
+    debug("UI synced", state);
   }
 
-  async function update(patch) {
+  function update(patch) {
     const state = SettingsStore.patch(patch);
-    if (Object.prototype.hasOwnProperty.call(patch, "lang")) {
-      await applyLang(state.lang);
-    }
-    debug("[settings] updated", { patch, state });
+    if (patch.lang) applyLang(state.lang);
+    debug("Updated", patch);
   }
 
-  elLang.addEventListener("change", () => update({ lang: I18n.normalizeLang(elLang.value) }));
-  elSim.addEventListener("change", () => update({ ssocSimulator: elSim.checked }));
-  elMethod.addEventListener("change", () => update({ method: elMethod.value }));
-  elBrailleMode.addEventListener("change", () => update({ brailleMode: elBrailleMode.value }));
+  elLang.addEventListener("change", () =>
+    update({ lang: I18n.normalizeLang(elLang.value) })
+  );
+  elSim.addEventListener("change", () =>
+    update({ ssocSimulator: elSim.checked })
+  );
+  elMethod.addEventListener("change", () =>
+    update({ method: elMethod.value })
+  );
+  elBrailleMode.addEventListener("change", () =>
+    update({ brailleMode: elBrailleMode.value })
+  );
 
   window.addEventListener("pageshow", syncUI);
   syncUI();

@@ -1,0 +1,153 @@
+:root{
+  --bg:#0b0c10;
+  --panel:#12141b;
+  --text:#e8eaf0;
+  --muted:#aab0c0;
+  --border:#2a2f3a;
+  --focus:#8aa4ff;
+  --radius:12px;
+}
+
+/* Base */
+*{ box-sizing:border-box; }
+
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.wrap{
+  max-width:880px;
+  margin:0 auto;
+  padding:16px;
+}
+
+header{
+  border-bottom:1px solid var(--border);
+}
+
+h1{
+  font-size:18px;
+  margin:0;
+}
+
+/* Card */
+.card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+  margin-top:16px;
+}
+
+/* Rows */
+.row{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  gap:14px;
+  padding:12px 0;
+  border-top:1px solid var(--border);
+}
+.row:first-child{ border-top:none; }
+
+.label{ font-weight:700; }
+.hint{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:6px;
+}
+
+/* --------------------------------
+   Dark themed choice controls
+-------------------------------- */
+select{
+  width:100%;
+  appearance:none;
+  padding:12px 40px 12px 14px;
+  border-radius:10px;
+  border:1px solid color-mix(in srgb, var(--border) 70%, #000);
+  background-color: color-mix(in srgb, var(--panel) 85%, #000);
+  color:var(--text);
+  font-weight:600;
+
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(1em + 2px),
+    calc(100% - 15px) calc(1em + 2px);
+  background-size:5px 5px;
+  background-repeat:no-repeat;
+}
+
+select:focus-visible,
+input:focus-visible{
+  outline:3px solid color-mix(in srgb, var(--focus) 60%, transparent);
+  outline-offset:2px;
+}
+
+select option{
+  background:#0e1016;
+  color:#f0f2f8;
+}
+
+select option:checked{
+  background:#1f2937;
+  color:#ffffff;
+}
+
+/* Toggle */
+.toggle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background: color-mix(in srgb, var(--panel) 80%, #000);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 12px;
+}
+
+input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  accent-color:var(--focus);
+}
+
+/* Debug */
+.debug{
+  margin-top:16px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size:12px;
+  color:var(--muted);
+  white-space:pre-wrap;
+}
+
+/* Light mode (still dark-leaning) */
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f6f7fb;
+    --panel:#ffffff;
+    --text:#111827;
+    --muted:#6b7280;
+    --border:#e5e7eb;
+  }
+
+  select{
+    background:#eef2ff;
+    color:#111827;
+  }
+
+  select option{
+    background:#ffffff;
+    color:#111827;
+  }
+
+  .toggle{
+    background:#eef2ff;
+  }
+}
