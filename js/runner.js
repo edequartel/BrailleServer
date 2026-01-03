@@ -245,7 +245,7 @@
   //   -> config lives at http://localhost:PORT/config/words.json (same origin)
   // - GitHub Pages: https://.../BrailleServer/pages/activity-runner.html
   //   -> config lives at https://.../BrailleServer/config/words.json
-  const DATA_URL = "../config/words.json"; // single source; works both locally and on GitHub Pages
+  const DATA_URL = "../config/nl/mpop.json"; // single source; works both locally and on GitHub Pages
 
   // ------------------------------------------------------------
   // State

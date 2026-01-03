@@ -1,7 +1,7 @@
 [
   {
     "id": "bal-001",
-    "word": "bal",
+    "word": "bal BAL",
     "knownLetters": [],
     "letters": ["b", "a", "l"],
     "words": ["bal", "ba", "al", "la"],
