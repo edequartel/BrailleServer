@@ -134,7 +134,7 @@
       color: var(--md-text);
       border-radius: 12px;
       padding: 16px 16px;
-      height: calc(100vh - 24px - 24px - 22px - 22px);
+      height: calc(100vh - 24px - 24px - 22px - 22px); /* body padding + main padding */
       max-height: 640px;
       overflow: auto;
       box-shadow: inset 0 2px 10px rgba(0,0,0,0.14);
@@ -193,9 +193,6 @@
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-  <!-- Load language from SettingsStore (localstorage.json) -->
-  <script src="./js/settings-store.js"></script>
 </head>
 
 <body>
@@ -213,7 +210,6 @@
           <li><a href="./pages/stories.html">Verhalen lezen</a></li>
           <li><a href="./components/instructions/instructions-audio.html">Instructies – audio overzicht</a></li>
           <li><a href="./components/profile/profile.html">Profiel student</a></li>
-          <li><a href="./pages/settings.html">Settings</a></li>
         </ul>
       </nav>
 
@@ -224,50 +220,15 @@
   </main>
 
   <script>
-  (async function () {
-    "use strict";
-
-    const box = document.getElementById("readme-box");
-
-    function normalizeLang(x){
-      const t = String(x || "").trim().toLowerCase();
-      const base = t.split("-")[0];
-      return (base === "en" || base === "nl") ? base : "nl";
-    }
-
-    function getLangFromSettings(){
-      try{
-        if (window.SettingsStore && typeof SettingsStore.load === "function") {
-          const s = SettingsStore.load();
-          return normalizeLang(s.lang);
-        }
-      }catch{}
-      return "nl";
-    }
-
-    const lang = getLangFromSettings();
-    document.documentElement.setAttribute("lang", lang);
-
-    // Choose file:
-    // - Dutch: ./README.md
-    // - English: ./README.en.md  (you said you already have this file)
-    const readmeUrl = (lang === "en") ? "./README.en.md" : "./README.md";
-
-    console.log("[index] README load", { lang, readmeUrl });
-
-    try{
-      const res = await fetch(readmeUrl, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const md = await res.text();
-      box.innerHTML = marked.parse(md);
-    } catch (e) {
-      console.error("[index] README load failed", e);
-      box.innerText =
-        (lang === "en")
-          ? "README could not be loaded."
-          : "README.md kon niet worden geladen.";
-    }
-  })();
+    fetch('./README.md')
+      .then(r => r.text())
+      .then(md => {
+        document.getElementById('readme-box').innerHTML = marked.parse(md);
+      })
+      .catch(() => {
+        document.getElementById('readme-box').innerText =
+          'README.md kon niet worden geladen.';
+      });
   </script>
 </body>
 </html>
