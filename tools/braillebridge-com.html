@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BrailleBridge Test Tool</title>
+
+  <style>
+    :root{
+      --bg:#0f1117;
+      --panel:#161a23;
+      --text:#f5f6f7;
+      --muted:#a3adbd;
+      --border:#2a2f3a;
+      --btn:#1e2431;
+      --btn2:#293043;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      padding:18px;
+      font-family:system-ui;
+      background:var(--bg);
+      color:var(--text);
+    }
+    main{
+      max-width:1100px;
+      margin:0 auto;
+      background:var(--panel);
+      border-radius:14px;
+      padding:16px;
+    }
+    h1{ margin:0 0 8px 0; }
+    p{ margin:0 0 14px 0; color:var(--muted); }
+    label{ color:var(--muted); font-weight:700; display:block; margin-bottom:6px; }
+    input, textarea, button{
+      width:100%;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:#0b0c10;
+      color:var(--text);
+    }
+    textarea{
+      min-height:110px;
+      font-family:var(--mono);
+    }
+    button{
+      background:var(--btn);
+      font-weight:800;
+      cursor:pointer;
+    }
+    button:hover{ background:var(--btn2); }
+    .row{ margin-bottom:12px; }
+    .actions{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:10px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-top:10px;
+    }
+    pre{
+      background:#0b0c10;
+      border:1px solid var(--border);
+      padding:10px;
+      border-radius:10px;
+      font-family:var(--mono);
+      font-size:0.9rem;
+      max-height:360px;
+      overflow:auto;
+      margin:0;
+    }
+    .status{
+      font-family:var(--mono);
+      color:var(--muted);
+      padding:8px 10px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#0b0c10;
+    }
+    .small{ font-size:0.9rem; color:var(--muted); }
+  </style>
+</head>
+
+<body>
+<main>
+  <h1>BrailleBridge API Test Tool</h1>
+  <p>
+    Send SSOC text to BrailleBridge. Listen for WebSocket events. When cursor routing is pressed,
+    automatically fetch <code>/braille/last</code> to display the latest JSON mapping.
+  </p>
+
+  <div class="row">
+    <label>BrailleBridge base URL (HTTP)</label>
+    <input id="baseUrl" value="http://localhost:5000" />
+  </div>
+
+  <div class="row">
+    <label>WebSocket URL</label>
+    <input id="wsUrl" value="ws://localhost:5000/ws" />
+    <div class="small">If your server uses another path/port, change it here.</div>
+  </div>
+
+  <div class="row">
+    <label>Text (single string → SSOC)</label>
+    <textarea id="text">Hello BrailleBridge 123</textarea>
+  </div>
+
+  <div class="row actions">
+    <button id="sendBtn">Send to BrailleBridge</button>
+    <button id="pollBtn">Get last braille line</button>
+    <button id="wsBtn">Reconnect WebSocket</button>
+  </div>
+
+  <div class="row">
+    <label>WebSocket status</label>
+    <div class="status" id="wsStatus">disconnected</div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <h3>Last API response</h3>
+      <pre id="apiOut">{}</pre>
+    </div>
+    <div>
+      <h3>Cursor / mapping (auto on cursor)</h3>
+      <pre id="cursorOut">{}</pre>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:12px;">
+    <h3>WebSocket event log</h3>
+    <pre id="wsLog">[]</pre>
+  </div>
+</main>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const apiOut = $("apiOut");
+  const cursorOut = $("cursorOut");
+  const wsLog = $("wsLog");
+  const wsStatus = $("wsStatus");
+
+  let ws = null;
+  let logLines = [];
+
+  function setStatus(s){
+    wsStatus.textContent = s;
+  }
+
+  function appendWsLog(line){
+    logLines.push(line);
+    if (logLines.length > 200) logLines = logLines.slice(-200);
+    wsLog.textContent = logLines.join("\n");
+  }
+
+  function safeJsonParse(s){
+    try { return JSON.parse(s); } catch { return null; }
+  }
+
+  function looksLikeCursorEvent(obj){
+    if (!obj || typeof obj !== "object") return false;
+
+    // Common patterns (support multiple shapes):
+    // { type:"cursor", index: 5, ... }
+    // { event:"cursor", index: 5, ... }
+    // { kind:"cursorrouting", cursor:{index:5,...} }
+    const t = String(obj.type || obj.event || obj.kind || "").toLowerCase();
+    if (t.includes("cursor") || t.includes("routing")) return true;
+
+    // Some bridges send: { key:"CursorRouting", index:... } or similar
+    const k = String(obj.key || obj.name || obj.action || "").toLowerCase();
+    if (k.includes("cursor") || k.includes("routing")) return true;
+
+    // Or nested cursor object
+    if (obj.cursor && typeof obj.cursor === "object" && Number.isFinite(obj.cursor.index)) return true;
+
+    return false;
+  }
+
+  async function postLine(){
+    const url = $("baseUrl").value + "/braille";
+    const payload = { text: $("text").value };
+
+    apiOut.textContent = "POST /braille …";
+
+    try{
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      apiOut.textContent = JSON.stringify(data, null, 2);
+    }catch(e){
+      apiOut.textContent = "ERROR: " + e.message;
+    }
+  }
+
+  async function getLast(intoElement){
+    const url = $("baseUrl").value + "/braille/last";
+    const target = intoElement || apiOut;
+
+    target.textContent = "GET /braille/last …";
+
+    try{
+      const res = await fetch(url);
+      const data = await res.json();
+      target.textContent = JSON.stringify(data, null, 2);
+      return data;
+    }catch(e){
+      target.textContent = "ERROR: " + e.message;
+      return null;
+    }
+  }
+
+  function connectWs(){
+    try{
+      if (ws) {
+        ws.onopen = ws.onclose = ws.onerror = ws.onmessage = null;
+        try { ws.close(); } catch {}
+      }
+
+      const url = $("wsUrl").value.trim();
+      setStatus("connecting " + url);
+
+      ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        setStatus("connected");
+        appendWsLog("[ws] open");
+      };
+
+      ws.onclose = (ev) => {
+        setStatus("disconnected (code " + ev.code + ")");
+        appendWsLog("[ws] close code=" + ev.code);
+      };
+
+      ws.onerror = () => {
+        setStatus("error");
+        appendWsLog("[ws] error");
+      };
+
+      ws.onmessage = async (msg) => {
+        const raw = (typeof msg.data === "string") ? msg.data : "";
+        appendWsLog(raw);
+
+        const obj = safeJsonParse(raw);
+        if (!obj) return;
+
+        if (looksLikeCursorEvent(obj)) {
+          // Show the cursor event itself (useful for debugging index/source)
+          cursorOut.textContent =
+            "Cursor event received:\n" +
+            JSON.stringify(obj, null, 2) +
+            "\n\nFetching /braille/last for mapping…";
+
+          // Then fetch mapping (source of truth)
+          const last = await getLast(cursorOut);
+
+          // Optional: if you want to keep BOTH event and last mapping visible:
+          if (last) {
+            cursorOut.textContent =
+              "Cursor event:\n" + JSON.stringify(obj, null, 2) +
+              "\n\n/braille/last:\n" + JSON.stringify(last, null, 2);
+          }
+        }
+      };
+    }catch(e){
+      setStatus("ERROR: " + e.message);
+    }
+  }
+
+  // Wire UI
+  $("sendBtn").onclick = postLine;
+  $("pollBtn").onclick = () => getLast(apiOut);
+  $("wsBtn").onclick = connectWs;
+
+  // Auto-connect on load
+  connectWs();
+})();
+</script>
+</body>
+</html>
