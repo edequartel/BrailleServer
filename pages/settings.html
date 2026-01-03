@@ -13,8 +13,6 @@
       --text:#e8eaf0;
       --muted:#aab0c0;
       --border:#2a2f3a;
-      --btn:#1b2030;
-      --btn2:#232a3d;
       --focus:#8aa4ff;
       --radius:12px;
     }
@@ -25,8 +23,6 @@
         --text:#111827;
         --muted:#6b7280;
         --border:#e5e7eb;
-        --btn:#eef2ff;
-        --btn2:#e5e7ff;
         --focus:#3056ff;
       }
     }
@@ -105,14 +101,29 @@
       display:none;
     }
     .toast.show{ display:block; }
+
+    /* Debug box */
+    .debug{
+      margin-top:16px;
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      color:var(--muted);
+      font-size:12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space:pre-wrap;
+    }
   </style>
+
+  <script src="./js/settings-store.js"></script>
+  <script src="./js/i18n.js"></script>
 </head>
 
 <body>
 <header>
   <div class="wrap">
     <div class="bar">
-      <h1>Settings</h1>
+      <h1 data-i18n="settings.title">Settings</h1>
     </div>
   </div>
 </header>
@@ -124,13 +135,13 @@
       <!-- Language -->
       <div class="row">
         <div>
-          <div class="label">Language</div>
-          <div class="hint">Used by runner and BrailleMonitor.</div>
+          <div class="label" data-i18n="settings.language.label">Language</div>
+          <div class="hint" data-i18n="settings.language.hint">Used by runner and BrailleMonitor.</div>
         </div>
         <div>
-          <select id="langSelect">
-            <option value="nl">Nederlands (nl)</option>
-            <option value="en">English (en)</option>
+          <select id="langSelect" aria-label="Language">
+            <option value="nl" data-i18n="settings.language.option.nl">Nederlands (nl)</option>
+            <option value="en" data-i18n="settings.language.option.en">English (en)</option>
           </select>
         </div>
       </div>
@@ -138,30 +149,47 @@
       <!-- SSOC Simulator -->
       <div class="row">
         <div>
-          <div class="label">SSOC Simulator</div>
-          <div class="hint">Enable BrailleMonitor simulator when BrailleBridge is unavailable.</div>
+          <div class="label" data-i18n="settings.sim.label">SSOC Simulator</div>
+          <div class="hint" data-i18n="settings.sim.hint">Enable BrailleMonitor simulator when BrailleBridge is unavailable.</div>
         </div>
         <div class="toggle">
           <input type="checkbox" id="simToggle" />
-          <label for="simToggle">Use simulator</label>
+          <label for="simToggle" data-i18n="settings.sim.toggle">Use simulator</label>
         </div>
       </div>
 
       <!-- Method -->
       <div class="row">
         <div>
-          <div class="label">Method</div>
-          <div class="hint">Select the active teaching method.</div>
+          <div class="label" data-i18n="settings.method.label">Method</div>
+          <div class="hint" data-i18n="settings.method.hint">Select the active teaching method.</div>
         </div>
         <div>
-          <select id="methodSelect">
-            <option value="mpop.json">MPOP</option>
-            <option value="marechal.json">Maréchal</option>
+          <select id="methodSelect" aria-label="Method">
+            <option value="mpop.json" data-i18n="settings.method.option.mpop">MPOP</option>
+            <option value="marechal.json" data-i18n="settings.method.option.marechal">Maréchal</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Braille mode -->
+      <div class="row">
+        <div>
+          <div class="label" data-i18n="settings.braillemode.label">Braille mode</div>
+          <div class="hint" data-i18n="settings.braillemode.hint">Choose between 6-dot literacy braille and 8-dot computer braille.</div>
+        </div>
+        <div>
+          <select id="brailleModeSelect" aria-label="Braille mode">
+            <option value="literacy" data-i18n="settings.braillemode.option.literacy">Literacy (6 dots)</option>
+            <option value="computer" data-i18n="settings.braillemode.option.computer">Computer (8 dots)</option>
           </select>
         </div>
       </div>
 
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+      <!-- Debug output (visible) -->
+      <div id="debugBox" class="debug">Debug: (loading...)</div>
     </div>
   </div>
 </main>
@@ -170,26 +198,16 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "localstorage.json";
+  const BASE_PATH = ""; // settings.html is at root; pages/* would use "../"
 
-  const defaults = {
-    lang: "nl",
-    ssocSimulator: true,
-    method: "mpop.json"
-  };
+  const elLang        = document.getElementById("langSelect");
+  const elSim         = document.getElementById("simToggle");
+  const elMethod      = document.getElementById("methodSelect");
+  const elBrailleMode = document.getElementById("brailleModeSelect");
+  const elToast       = document.getElementById("toast");
+  const elDebug       = document.getElementById("debugBox");
 
-  function load() {
-    try {
-      return { ...defaults, ...(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}) };
-    } catch {
-      return { ...defaults };
-    }
-  }
-
-  function save(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    toast("Saved");
-  }
+  let dict = null;
 
   function toast(msg) {
     elToast.textContent = msg;
@@ -197,39 +215,87 @@
     setTimeout(() => elToast.classList.remove("show"), 1200);
   }
 
-  const elLang   = document.getElementById("langSelect");
-  const elSim    = document.getElementById("simToggle");
-  const elMethod = document.getElementById("methodSelect");
-  const elToast  = document.getElementById("toast");
+  function debug(obj) {
+    elDebug.textContent = safeJson(obj);
+  }
 
-  let state = load();
+  function safeJson(x) {
+    try { return JSON.stringify(x, null, 2); } catch { return String(x); }
+  }
 
-  function syncUI() {
-    elLang.value   = state.lang;
-    elSim.checked  = !!state.ssocSimulator;
+  function forceSelectRepaint(selectEl) {
+    // Some browsers keep showing the "old" selected option text after we change option labels.
+    // Re-setting selectedIndex forces repaint.
+    const idx = selectEl.selectedIndex;
+    selectEl.selectedIndex = -1;
+    selectEl.selectedIndex = idx;
+  }
+
+  async function applyLang(lang) {
+    const res = await window.I18n.loadAndApply({ lang, basePath: BASE_PATH });
+    dict = res.dict;
+
+    document.title = window.I18n.t(dict, "settings.title", "Settings");
+
+    // Force repaint for selects whose option texts are i18n'd
+    forceSelectRepaint(elLang);
+    forceSelectRepaint(elMethod);
+    forceSelectRepaint(elBrailleMode);
+
+    debug({
+      when: new Date().toISOString(),
+      basePath: BASE_PATH,
+      langApplied: res.lang,
+      applied: res.applied,
+      title: document.title
+    });
+
+    window.I18n.log("[settings] applyLang done", { lang: res.lang, applied: res.applied });
+  }
+
+  async function syncUI() {
+    const state = window.SettingsStore.load();
+
+    elLang.value = state.lang;
+    elSim.checked = !!state.ssocSimulator;
     elMethod.value = state.method;
-    document.documentElement.setAttribute("lang", state.lang);
+    elBrailleMode.value = state.brailleMode || "literacy";
+
+    await applyLang(state.lang);
+
+    window.I18n.log("[settings] syncUI", state);
   }
 
-  function update(partial) {
-    state = { ...state, ...partial };
-    save(state);
+  async function update(patch) {
+    const state = window.SettingsStore.patch(patch);
+
+    // Apply i18n immediately when language changes
+    if (patch && Object.prototype.hasOwnProperty.call(patch, "lang")) {
+      await applyLang(state.lang);
+    }
+
+    toast(window.I18n.t(dict, "ui.saved", "Saved"));
+    window.I18n.log("[settings] updated", { patch, state });
   }
 
-  elLang.addEventListener("change", () =>
-    update({ lang: elLang.value })
-  );
+  elLang.addEventListener("change", async () => {
+    await update({ lang: window.I18n.normalizeLang(elLang.value) });
+  });
 
-  elSim.addEventListener("change", () =>
-    update({ ssocSimulator: elSim.checked })
-  );
+  elSim.addEventListener("change", async () => {
+    await update({ ssocSimulator: elSim.checked });
+  });
 
-  elMethod.addEventListener("change", () =>
-    update({ method: elMethod.value })
-  );
+  elMethod.addEventListener("change", async () => {
+    await update({ method: elMethod.value });
+  });
+
+  elBrailleMode.addEventListener("change", async () => {
+    await update({ brailleMode: elBrailleMode.value });
+  });
 
   window.addEventListener("pageshow", () => {
-    state = load();
+    // iOS BFCache safe
     syncUI();
   });
 

@@ -1,0 +1,24 @@
+{
+  "settings.title": "Settings",
+
+  "settings.language.label": "Language",
+  "settings.language.hint": "Used by runner and BrailleMonitor.",
+  "settings.language.option.nl": "Dutch (nl)",
+  "settings.language.option.en": "English (en)",
+
+  "settings.sim.label": "SSOC Simulator",
+  "settings.sim.hint": "Enable BrailleMonitor simulator when BrailleBridge is unavailable.",
+  "settings.sim.toggle": "Use simulator",
+
+  "settings.method.label": "Method",
+  "settings.method.hint": "Select the active teaching method.",
+  "settings.method.option.mpop": "MPOP",
+  "settings.method.option.marechal": "Maréchal",
+
+  "settings.braillemode.label": "Braille mode",
+  "settings.braillemode.hint": "Choose between 6-dot literacy braille and 8-dot computer braille.",
+  "settings.braillemode.option.literacy": "Literacy (6 dots)",
+  "settings.braillemode.option.computer": "Computer (8 dots)",
+
+  "ui.saved": "Saved"
+}

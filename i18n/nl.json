@@ -1,0 +1,24 @@
+{
+  "settings.title": "Instellingen",
+
+  "settings.language.label": "Taal",
+  "settings.language.hint": "Gebruikt door runner en BrailleMonitor.",
+  "settings.language.option.nl": "Nederlands (nl)",
+  "settings.language.option.en": "Engels (en)",
+
+  "settings.sim.label": "SSOC-simulator",
+  "settings.sim.hint": "Schakel BrailleMonitor-simulator in als BrailleBridge niet beschikbaar is.",
+  "settings.sim.toggle": "Simulator gebruiken",
+
+  "settings.method.label": "Methode",
+  "settings.method.hint": "Kies de actieve lesmethode.",
+  "settings.method.option.mpop": "MPOP",
+  "settings.method.option.marechal": "Maréchal",
+
+  "settings.braillemode.label": "Braillemodus",
+  "settings.braillemode.hint": "Kies tussen 6-punts leesbraille en 8-punts computerbraille.",
+  "settings.braillemode.option.literacy": "Leesbraille (6 punten)",
+  "settings.braillemode.option.computer": "Computerbraille (8 punten)",
+
+  "ui.saved": "Opgeslagen"
+}
