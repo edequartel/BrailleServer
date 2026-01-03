@@ -202,23 +202,23 @@
   <main>
     <header>
       <div>
-        <h1 data-i18n="title">BrailleStudio</h1>
+        <h1>BrailleStudio</h1>
       </div>
     </header>
 
     <div class="layout">
-      <nav aria-label="" data-i18n-aria="mainNav">
+      <nav aria-label="Hoofdmenu">
         <ul>
-          <li><a href="./pages/activity-runner.html" data-i18n="nav.practice"></a></li>
-          <li><a href="./pages/stories.html" data-i18n="nav.stories"></a></li>
-          <li><a href="./components/instructions/instructions-audio.html" data-i18n="nav.instructions"></a></li>
-          <li><a href="./components/profile/profile.html" data-i18n="nav.profile"></a></li>
-          <li><a href="./pages/settings.html" data-i18n="nav.settings"></a></li>
+          <li><a href="./pages/activity-runner.html">Letter en woorden oefenen</a></li>
+          <li><a href="./pages/stories.html">Verhalen lezen</a></li>
+          <li><a href="./components/instructions/instructions-audio.html">Instructies – audio overzicht</a></li>
+          <li><a href="./components/profile/profile.html">Profiel student</a></li>
+          <li><a href="./pages/settings.html">Settings</a></li>
         </ul>
       </nav>
 
       <section>
-        <div id="readme-box" data-i18n="loading">Laden…</div>
+        <div id="readme-box">Laden...</div>
       </section>
     </div>
   </main>
@@ -227,41 +227,8 @@
   (async function () {
     "use strict";
 
-    // ------------------------------------------------------------
-    // i18n dictionary (explicit, readable, maintainable)
-    // ------------------------------------------------------------
-    const I18N = {
-      nl: {
-        title: "BrailleStudio",
-        loading: "Laden…",
-        readmeError: "README kon niet worden geladen.",
-        mainNav: "Hoofdmenu",
-        nav: {
-          practice: "Letters en woorden oefenen",
-          stories: "Verhalen lezen",
-          instructions: "Instructies – audio overzicht",
-          profile: "Profiel student",
-          settings: "Instellingen"
-        }
-      },
-      en: {
-        title: "BrailleStudio",
-        loading: "Loading…",
-        readmeError: "README could not be loaded.",
-        mainNav: "Main navigation",
-        nav: {
-          practice: "Practice letters and words",
-          stories: "Read stories",
-          instructions: "Instructions – audio overview",
-          profile: "Student profile",
-          settings: "Settings"
-        }
-      }
-    };
+    const box = document.getElementById("readme-box");
 
-    // ------------------------------------------------------------
-    // Language resolution (single source of truth: SettingsStore)
-    // ------------------------------------------------------------
     function normalizeLang(x){
       const t = String(x || "").trim().toLowerCase();
       const base = t.split("-")[0];
@@ -278,42 +245,19 @@
       return "nl";
     }
 
+    // 1) Language from Settings (single source of truth)
     const lang = getLangFromSettings();
-    const T = I18N[lang] || I18N.nl;
-
-    // Set <html lang="..">
     document.documentElement.setAttribute("lang", lang);
 
-    // ------------------------------------------------------------
-    // Apply translations to DOM
-    // ------------------------------------------------------------
-    function applyI18n(){
-      document.querySelectorAll("[data-i18n]").forEach(el => {
-        const key = el.dataset.i18n;
-        const value = key.split(".").reduce((o,k)=>o && o[k], T);
-        if (value != null) el.textContent = String(value);
-      });
-
-      document.querySelectorAll("[data-i18n-aria]").forEach(el => {
-        const key = el.dataset.i18nAria;
-        const value = T[key];
-        if (value != null) el.setAttribute("aria-label", String(value));
-      });
-    }
-
-    applyI18n();
-
-    // ------------------------------------------------------------
-    // README loading from /content
-    // Expected:
+    // 2) README location in /content
+    // Expected files:
     //   /content/README.nl.md
     //   /content/README.en.md
-    // ------------------------------------------------------------
-    const box = document.getElementById("readme-box");
     const readmeUrl = `./content/README.${lang}.md`;
 
     console.log("[index] loading README", { lang, readmeUrl });
 
+    // 3) Fetch + render
     try{
       const res = await fetch(readmeUrl, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -321,9 +265,11 @@
       box.innerHTML = marked.parse(md);
     } catch (e) {
       console.error("[index] README load failed", e);
-      box.textContent = T.readmeError;
+      box.innerText =
+        (lang === "en")
+          ? "README could not be loaded."
+          : "README kon niet worden geladen.";
     }
-
   })();
   </script>
 </body>
