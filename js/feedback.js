@@ -113,6 +113,7 @@
     const url = Sounds._buildUrl(lang, "feedback", key);
 
     log("audio-play", "info", { type, file, url });
+    log("audio-file", "info", { file, url });
 
     if (window.AudioPlayer?.play) {
       window.AudioPlayer.play(url, opts);
