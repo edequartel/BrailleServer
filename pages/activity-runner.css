@@ -346,7 +346,7 @@ html[data-theme="dark"] #activity-buttons .chip:hover {
     "Cascadia Code", "Fira Code", "Liberation Mono", "Courier New", monospace;
   font-size: 0.85rem;
   white-space: pre-wrap;
-  height: 180px;
+  height: 360px;
   overflow: auto;
 }
 
