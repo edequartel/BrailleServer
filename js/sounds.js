@@ -162,3 +162,7 @@ const Sounds = {
     }
   }
 };
+
+if (typeof window !== "undefined") {
+  window.Sounds = Sounds;
+}

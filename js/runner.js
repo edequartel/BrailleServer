@@ -115,12 +115,24 @@
     "../config/sounds.json";
   let soundsInitPromise = null;
 
+  function getSoundsModule() {
+    if (typeof Sounds !== "undefined") return Sounds;
+    if (window.Sounds) return window.Sounds;
+    throw new Error("Sounds module not available");
+  }
+
   function ensureSoundsInit() {
-    if (typeof Sounds === "undefined" || typeof Sounds.init !== "function") {
+    let sounds;
+    try {
+      sounds = getSoundsModule();
+    } catch (e) {
+      return Promise.reject(e);
+    }
+    if (typeof sounds.init !== "function") {
       return Promise.reject(new Error("Sounds module not available"));
     }
     if (!soundsInitPromise) {
-      soundsInitPromise = Sounds.init(SOUNDS_CONFIG_URL, (msg) => log(msg));
+      soundsInitPromise = sounds.init(SOUNDS_CONFIG_URL, (msg) => log(msg));
     }
     return soundsInitPromise;
   }
@@ -133,7 +145,8 @@
   async function resolveUiSoundUrl(file) {
     await ensureSoundsInit();
     const key = uiSoundKeyFromFile(file);
-    return Sounds._buildUrl(currentLang, "ui", key);
+    const sounds = getSoundsModule();
+    return sounds._buildUrl(currentLang, "ui", key);
   }
 
   function resolveActivityAudioUrl(file) {
@@ -210,31 +223,21 @@
 
         watchdog = setTimeout(() => finish("watchdog"), 8000);
 
-        if (window.Howl) {
-          const h = new Howl({
-            src: [url],
-            preload: true,
-            volume: 1.0,
-            onloaderror: (id, err) => { log("[lifecycle] howl load error", { file, url, err }); finish("loaderror"); },
-            onplayerror: (id, err) => { log("[lifecycle] howl play error", { file, url, err }); finish("playerror"); },
-            onend: () => finish("ended")
-          });
-          h.play();
-        } else {
-          const a = new Audio(url);
-          a.preload = "auto";
-
-          a.addEventListener("ended", () => finish("ended"), { once: true });
-          a.addEventListener("error", () => finish("error"), { once: true });
-
-          const p = a.play();
-          if (p && typeof p.catch === "function") {
-            p.catch((e) => {
-              log("[lifecycle] html5 play blocked", { file, url, error: String(e) });
-              finish("blocked");
-            });
-          }
+        if (!window.Howl) {
+          log("[lifecycle] howl missing", { file, url });
+          finish("no-howler");
+          return;
         }
+
+        const h = new Howl({
+          src: [url],
+          preload: true,
+          volume: 1.0,
+          onloaderror: (id, err) => { log("[lifecycle] howl load error", { file, url, err }); finish("loaderror"); },
+          onplayerror: (id, err) => { log("[lifecycle] howl play error", { file, url, err }); finish("playerror"); },
+          onend: () => finish("ended")
+        });
+        h.play();
       } catch (e) {
         log("[lifecycle] exception", { file, url, error: String(e) });
         finish("exception");
