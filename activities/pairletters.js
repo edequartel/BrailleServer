@@ -462,7 +462,11 @@
     }
 
     async function handleMismatch(epochAtPick) {
-      await window.Feedback?.playRandomSound?.("incorrect");
+      try {
+        await window.Feedback?.playRandomSound?.("incorrect");
+      } catch (err) {
+        log("[pairletters] feedback error", { type: "incorrect", error: err?.message || String(err) });
+      }
       await flashMessage("fout");
       await sleep(FLIPBACK_MS);
 
@@ -475,7 +479,11 @@
     }
 
     async function handleMatch(epochAtPick) {
-      await window.Feedback?.playRandomSound?.("correct");
+      try {
+        await window.Feedback?.playRandomSound?.("correct");
+      } catch (err) {
+        log("[pairletters] feedback error", { type: "correct", error: err?.message || String(err) });
+      }
       await flashMessage("goed");
       if (!running) return;
       if (epochAtPick !== selectionEpoch) return;

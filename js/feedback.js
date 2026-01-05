@@ -116,8 +116,13 @@
     log("audio-file", "info", { file, url });
 
     if (window.AudioPlayer?.play) {
-      window.AudioPlayer.play(url, opts);
+      try {
+        window.AudioPlayer.play(url, opts);
+      } catch (err) {
+        log("audio-error", "error", { type, url, err: err?.message || String(err) });
+      }
     } else {
+      log("audio-player-missing", "warn", { type, url });
       const audio = new Audio(url);
       audio.play().catch((err) => log("audio-error", "error", { type, url, err: err?.message || String(err) }));
     }
