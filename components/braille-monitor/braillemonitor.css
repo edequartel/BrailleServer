@@ -3,7 +3,7 @@
 .braille-monitor-component {
   display: grid;
   gap: 0.6rem;
-  background: #ffffff;
+  background: #e5e7eb;
   color: #000000;
 }
 
