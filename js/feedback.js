@@ -49,7 +49,8 @@
 
   function getFeedbackConfigUrl() {
     const lang = resolveLang();
-    return `/json/${lang}/feedback.json`;
+    const base = (window.BOOTSTRAP && window.BOOTSTRAP.BASE) ? window.BOOTSTRAP.BASE : "";
+    return `${base}/json/${lang}/feedback.json`;
   }
 
   async function loadConfig() {
