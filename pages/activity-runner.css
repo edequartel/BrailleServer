@@ -89,6 +89,11 @@ body {
 
 .braille-panel { margin-bottom: 16px; }
 
+#brailleMonitorComponent {
+  display: flex;
+  justify-content: center;
+}
+
 .meta-bar {
   display: flex;
   justify-content: space-between;
