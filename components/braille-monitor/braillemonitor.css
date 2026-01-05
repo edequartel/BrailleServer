@@ -65,7 +65,11 @@
 .button-row.thumb-row {
   display: flex;
   gap: 0.5rem;
-  width: 100%;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  flex-wrap: wrap;
 }
 
 /* Base thumb keys (already present) */
