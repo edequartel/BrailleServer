@@ -109,7 +109,7 @@
 
       <div class="braille-nav" aria-label="Navigatie">
         <button id="prev-btn" class="secondary" type="button" aria-label="Vorige">
-          prev
+          ◀
         </button>
 
         <span class="runner-controls">
@@ -120,7 +120,7 @@
         </span>
 
         <button id="next-btn" type="button" aria-label="Volgende">
-          next
+          ▶
         </button>
       </div>
     </div>
@@ -142,7 +142,7 @@
             type="button"
             aria-controls="fields-panel"
             aria-expanded="false">
-            Velden
+            Info
           </button>
 
           <button id="toggle-log-btn" class="secondary" type="button">Log</button>
@@ -153,15 +153,15 @@
             type="button"
             aria-label="Toggle theme">
             <span class="theme-dot" aria-hidden="true"></span>
-            <span id="themeLabel">Theme: light</span>
+            <span id="themeLabel"></span>
           </button>
         </div>
       </div>
     </div>
 
-    <section id="fields-panel" class="log-panel hidden" aria-label="Alle velden">
+    <section id="fields-panel" class="log-panel hidden" aria-label="Info">
       <div class="log-header">
-        <span>Alle velden</span>
+        <span>Info</span>
       </div>
       <div id="field-all" class="log-body">–</div>
     </section>
@@ -176,7 +176,7 @@
       <div id="log" class="log-body">Log start…</div>
     </section>
 
-    <p class="version-stamp">Version: 2026.01.05.1011 — generated 2026-01-05 10:11</p>
+    <p class="version-stamp">Version: 2026.01.05.1015 — generated 2026-01-05 10:15</p>
   </main>
 
   <a class="settings-fab" href="../pages/settings.html" aria-label="Settings">
@@ -204,7 +204,7 @@
       function applyTheme(theme) {
         html.setAttribute("data-theme", theme);
         const label = document.getElementById("themeLabel");
-        if (label) label.textContent = "Theme: " + theme;
+        if (label) label.textContent = "";
       }
 
       function getInitialTheme() {
