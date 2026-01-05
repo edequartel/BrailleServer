@@ -193,6 +193,7 @@ button.secondary {
   border-radius: 999px;
   background: var(--fg);
   opacity: 0.9;
+  display: block;
 }
 
 /* ----------------------------
