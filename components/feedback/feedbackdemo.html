@@ -133,19 +133,19 @@
 
   <!-- 5) Wire buttons -->
   <script>
-    function safeShow(type) {
-      if (!window.Feedback?.show) {
-        window.eventLog.log("Feedback.show not found (check /js/feedback.js)", "error");
+    function playFeedback(type) {
+      if (!window.Feedback?.playRandomSound) {
+        window.eventLog.log("Feedback.playRandomSound not found (check /js/feedback.js)", "error");
         return;
       }
-      window.eventLog.log(`ui click -> Feedback.show("${type}")`, "system");
-      window.Feedback.show(type);
+      window.eventLog.log(`ui click -> Feedback.playRandomSound("${type}")`, "system");
+      window.Feedback.playRandomSound(type);
     }
 
-    document.getElementById("btnCorrect").addEventListener("click", () => safeShow("correct"));
-    document.getElementById("btnIncorrect").addEventListener("click", () => safeShow("incorrect"));
-    document.getElementById("btnDone").addEventListener("click", () => safeShow("done"));
-    document.getElementById("btnHint").addEventListener("click", () => safeShow("hint"));
+    document.getElementById("btnCorrect").addEventListener("click", () => playFeedback("correct"));
+    document.getElementById("btnIncorrect").addEventListener("click", () => playFeedback("incorrect"));
+    document.getElementById("btnDone").addEventListener("click", () => playFeedback("done"));
+    document.getElementById("btnHint").addEventListener("click", () => playFeedback("hint"));
   </script>
 
 </body>
