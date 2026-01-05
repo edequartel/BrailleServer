@@ -300,10 +300,17 @@
     return normalizeInstructionFilename(instr);
   }
 
+  let instructionPlaying = false;
+
   async function playInstructionAfterStarted(cur) {
     const file = getInstructionMp3ForCurrent(cur);
     if (!file) return;
-    await playLifecycleFile(file, resolveInstructionSoundUrl);
+    instructionPlaying = true;
+    try {
+      await playLifecycleFile(file, resolveInstructionSoundUrl);
+    } finally {
+      instructionPlaying = false;
+    }
   }
 
   // ------------------------------------------------------------
@@ -835,6 +842,10 @@
   }
 
   async function startSelectedActivity({ autoStarted = false } = {}) {
+    if (instructionPlaying) {
+      log("[runner] start blocked (instruction playing)");
+      return;
+    }
     const cur = getCurrentActivity();
     if (!cur) return;
 
@@ -902,6 +913,10 @@
   }
 
   function toggleRun() {
+    if (instructionPlaying) {
+      log("[runner] toggle ignored (instruction playing)");
+      return;
+    }
     if (running) cancelRun("stop");
     else startSelectedActivity({ autoStarted: false });
   }
