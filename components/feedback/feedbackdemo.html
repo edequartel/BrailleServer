@@ -2,7 +2,7 @@
      Uses CURRENT EventLog class (no helpers).
      Creates window.eventLog instance and everything logs through it.
      Loads: /components/event-log/event-log.js  (your existing file)
-            /components/feedback/feedback.js   (above)
+            /js/feedback.js   (above)
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -129,13 +129,13 @@
   </script>
 
   <!-- 4) Feedback component -->
-  <script src="/components/feedback/feedback.js"></script>
+  <script src="/js/feedback.js"></script>
 
   <!-- 5) Wire buttons -->
   <script>
     function safeShow(type) {
       if (!window.Feedback?.show) {
-        window.eventLog.log("Feedback.show not found (check /components/feedback/feedback.js)", "error");
+        window.eventLog.log("Feedback.show not found (check /js/feedback.js)", "error");
         return;
       }
       window.eventLog.log(`ui click -> Feedback.show("${type}")`, "system");

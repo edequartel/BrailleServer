@@ -462,6 +462,7 @@
     }
 
     async function handleMismatch(epochAtPick) {
+      window.Feedback?.playRandomSound?.("incorrect");
       await flashMessage("fout");
       await sleep(FLIPBACK_MS);
 
@@ -474,6 +475,7 @@
     }
 
     async function handleMatch(epochAtPick) {
+      window.Feedback?.playRandomSound?.("correct");
       await flashMessage("goed");
       if (!running) return;
       if (epochAtPick !== selectionEpoch) return;

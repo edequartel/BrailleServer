@@ -1,22 +1,49 @@
 {
-  "correct": {
-    "braille": "goed",
-    "sound": "/audio/ui/correct.mp3",
-    "duration": 300
-  },
-  "incorrect": {
-    "braille": "fout",
-    "sound": "/audio/ui/incorrect.mp3",
-    "duration": 300
-  },
-  "done": {
-    "braille": "klaar",
-    "sound": "/audio/ui/done.mp3",
-    "duration": 600
-  },
-  "hint": {
-    "braille": "luister",
-    "sound": "/audio/ui/hint.mp3",
-    "duration": 400
+  "_comment": "UI feedback sounds with short spoken TTS-style texts",
+  "feedback": {
+    "correct": [
+      {
+        "file": "correct-01.mp3",
+        "tts": "Goed gedaan!"
+      },
+      {
+        "file": "correct-02.mp3",
+        "tts": "Dat is goed."
+      },
+      {
+        "file": "correct-03.mp3",
+        "tts": "Prima!"
+      },
+      {
+        "file": "correct-04.mp3",
+        "tts": "Ja, dat klopt."
+      },
+      {
+        "file": "correct-05.mp3",
+        "tts": "Heel goed."
+      }
+    ],
+    "incorrect": [
+      {
+        "file": "incorrect-01.mp3",
+        "tts": "Jammer."
+      },
+      {
+        "file": "incorrect-02.mp3",
+        "tts": "Dat is niet goed."
+      },
+      {
+        "file": "incorrect-03.mp3",
+        "tts": "Probeer het nog eens."
+      },
+      {
+        "file": "incorrect-04.mp3",
+        "tts": "Bijna. Nog een keer."
+      },
+      {
+        "file": "incorrect-05.mp3",
+        "tts": "Volgende keer beter."
+      }
+    ]
   }
 }

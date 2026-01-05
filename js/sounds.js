@@ -59,6 +59,7 @@ const Sounds = {
       case "ui":            folderPath = langCfg.uiPath;           break;
       case "stories":       folderPath = langCfg.stories;          break;
       case "instructions":  folderPath = langCfg.instructions;     break;
+      case "feedback":      folderPath = langCfg.feedbackPath;     break;
       default:
         throw new Error(`Unknown category '${category}'`);
     }

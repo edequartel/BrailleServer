@@ -1,4 +1,4 @@
-/* /components/feedback/feedback.js
+/* /js/feedback.js
    Uses the CURRENT EventLog class exactly as you posted:
    - window.EventLog is a class
    - we create ONE instance at window.eventLog (if not already present)
@@ -16,6 +16,10 @@
 
   const DEFAULT_FEEDBACK_MS = 300;
   let config = null;
+  const SOUNDS_CONFIG_URL =
+    (window.BOOTSTRAP && window.BOOTSTRAP.JSON && window.BOOTSTRAP.JSON.SOUNDS) ||
+    "/config/sounds.json";
+  const LANG_KEY = "bs_lang";
 
   function safeJson(x) {
     try { return JSON.stringify(x); } catch { return String(x); }
@@ -60,11 +64,71 @@
     return config;
   }
 
+  function getFeedbackList(cfg, type) {
+    const list = cfg?.feedback?.[type] || cfg?.[type];
+    if (Array.isArray(list)) return list;
+    if (list && typeof list === "object") return [list];
+    return [];
+  }
+
+  function normalizeKey(file) {
+    const base = String(file || "").split(/[\\/]/).pop() || "";
+    return base.replace(/\.[^/.]+$/, "").trim().toLowerCase();
+  }
+
+  function resolveLang() {
+    const stored = localStorage.getItem(LANG_KEY);
+    if (stored) return String(stored).trim().toLowerCase().split("-")[0];
+    const htmlLang = document.documentElement.getAttribute("lang");
+    if (htmlLang) return String(htmlLang).trim().toLowerCase().split("-")[0];
+    return "nl";
+  }
+
+  async function ensureSoundsReady() {
+    if (!window.Sounds || typeof Sounds.init !== "function") {
+      throw new Error("Sounds module not available");
+    }
+    await Sounds.init(SOUNDS_CONFIG_URL, (line) => log("[Sounds]", "info", { line }));
+  }
+
+  async function playRandomSound(type, opts = {}) {
+    const cfg = await loadConfig();
+    const list = getFeedbackList(cfg, type);
+
+    if (!list.length) {
+      log("audio-skip", "warn", { type, reason: "no-feedback-files" });
+      return null;
+    }
+
+    const pick = list[Math.floor(Math.random() * list.length)];
+    const file = pick?.file;
+    if (!file) {
+      log("audio-skip", "warn", { type, reason: "missing-file" });
+      return null;
+    }
+
+    await ensureSoundsReady();
+    const key = normalizeKey(file);
+    const lang = resolveLang();
+    const url = Sounds._buildUrl(lang, "feedback", key);
+
+    log("audio-play", "info", { type, file, url });
+
+    if (window.AudioPlayer?.play) {
+      window.AudioPlayer.play(url, opts);
+    } else {
+      const audio = new Audio(url);
+      audio.play().catch((err) => log("audio-error", "error", { type, url, err: err?.message || String(err) }));
+    }
+
+    return url;
+  }
+
   async function show(type, opts = {}) {
     log("show", "system", { type, opts });
 
     const cfg = await loadConfig();
-    const entry = cfg[type];
+    const entry = (cfg?.feedback?.[type] && cfg.feedback[type]) || cfg[type];
 
     if (!entry) {
       log("unknown-type", "warn", { type });
@@ -74,10 +138,9 @@
     const duration = opts.duration ?? entry.duration ?? DEFAULT_FEEDBACK_MS;
 
     // Audio
-    if (entry.sound) {
-      log("audio-play", "info", { src: entry.sound });
-      window.AudioPlayer?.play(entry.sound);
-    }
+    await playRandomSound(type, opts).catch((err) => {
+      log("audio-error", "error", { type, err: err?.message || String(err) });
+    });
 
     // Braille
     if (entry.braille !== undefined) {
@@ -94,5 +157,5 @@
     }
   }
 
-  window.Feedback = { show };
+  window.Feedback = { show, playRandomSound };
 })();

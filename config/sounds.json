@@ -9,14 +9,16 @@
       "wordsPath":    "/sounds/nl/words",
       "uiPath":       "/sounds/nl/ui",
 	    "stories":      "/sounds/nl/stories",
-      "instructions": "/sounds/nl/instructions" 
+      "instructions": "/sounds/nl/instructions",
+      "feedbackPath": "/sounds/nl/feedback"
     },
     "en": {
       "lettersPath":  "/sounds/en/letters",
       "wordsPath":    "/sounds/en/words",
       "uiPath":       "/sounds/en/ui",
 	    "stories":      "/sounds/nl/stories",
-      "instructions": "/sounds/en/instructions"
+      "instructions": "/sounds/en/instructions",
+      "feedbackPath": "/sounds/en/feedback"
     }
   },
 
