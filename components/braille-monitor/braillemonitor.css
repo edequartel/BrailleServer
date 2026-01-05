@@ -117,6 +117,12 @@ html[data-theme="dark"] .braille-monitor-component {
   color: #ffffff;
 }
 
+html[data-theme="dark"] .mono-box.braille-monitor-cells {
+  border-color: #2a3550;
+  background: #0f172a;
+  color: #cfd6e4;
+}
+
 /* Optional: even taller on touch devices */
 @media (pointer: coarse) {
   .thumb-key {
