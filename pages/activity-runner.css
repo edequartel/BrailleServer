@@ -357,12 +357,6 @@ html[data-theme="dark"] #activity-buttons .chip:hover {
   padding: 6px 10px;
 }
 
-.version-stamp {
-  margin: 18px 0 0 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-align: center;
-}
 
 html[data-theme="dark"] .log-controls button {
   background: #1f2937;
