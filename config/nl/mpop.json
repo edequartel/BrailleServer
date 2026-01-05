@@ -45,38 +45,6 @@
         "targetCount": 2,
         "nrof": 4,
         "lineLen": 10
-      },
-      {
-        "id": "pairletters",
-        "caption": "Zoek 3 paren",
-        "instruction": "bal-pairletters-instruction.mp3",
-        "text": "[spel] Zoek drie keer dezelfde letters. [voel] Voel de letters. [druk] Zijn ze hetzelfde? Druk de cursor in. [door] Zoek ze allemaal.",
-        "twoletters": true,
-        "targetCount": 3,
-        "nrof": 4,
-        "lineLen": 10
-      },
-      {
-        "id": "pairletters",
-        "caption": "Zoek 4 paren",
-        "instruction": "bal-pairletters-instruction.mp3",
-        "text": "[spel] Zoek vier keer dezelfde letters. [voel] Voel de letters. [druk] Zijn ze hetzelfde? Druk de cursor in. [door] Zoek ze allemaal.",
-        "twoletters": false,
-        "targetCount": 4,
-        "nrof": 4,
-        "lineLen": 10
-      },
-      {
-        "id": "letters",
-        "caption": "Hoor letters b a l",
-        "instruction": "bal-letters-instruction.mp3",
-        "text": "[voel] Voel een letter. [typ] Type die letter. [ga door] Ga verder."
-      },
-      {
-        "id": "sounds",
-        "caption": "Geluid",
-        "instruction": "bal-sounds-instruction.mp3",
-        "text": "[luister] Hoor je een geluid? [denk] Past dit bij bal?"
       }
     ],
     "short": true,
