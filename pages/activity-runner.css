@@ -169,7 +169,7 @@ button.secondary {
   gap: 8px;
   align-items: center;
   font-size: 0.85rem;
-  color: var(--muted);
+  color: #6b7280;
 }
 
 /* Theme toggle */
@@ -359,7 +359,7 @@ html[data-theme="dark"] #activity-buttons .chip:hover {
 }
 
 .version-stamp {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
 }
 
 
