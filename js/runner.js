@@ -231,13 +231,17 @@
 
         const h = new Howl({
           src: [url],
+          html5: true,
           preload: true,
           volume: 1.0,
+          onload: () => { log("[lifecycle] howl loaded", { file, url, duration: h.duration() }); },
+          onplay: () => { log("[lifecycle] howl playing", { file, url }); },
+          onend: () => finish("ended"),
           onloaderror: (id, err) => { log("[lifecycle] howl load error", { file, url, err }); finish("loaderror"); },
           onplayerror: (id, err) => { log("[lifecycle] howl play error", { file, url, err }); finish("playerror"); },
-          onend: () => finish("ended")
         });
-        h.play();
+        const playId = h.play();
+        log("[lifecycle] howl play called", { file, url, id: playId });
       } catch (e) {
         log("[lifecycle] exception", { file, url, error: String(e) });
         finish("exception");
