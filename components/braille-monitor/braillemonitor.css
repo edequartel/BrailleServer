@@ -83,20 +83,11 @@
   border-radius: 14px; /* round corners */
 }
 
-/* Middle thumb keys (both middle-left and middle-right) */
-.thumb-key[data-thumb="middleleftthumb"],
-.thumb-key[data-thumb="middlerightthumb"] {
-  background: #e6f0ff; /* light blue */
-  border-color: #7aa2ff;
-  color: #0b1f4d;
-}
-
-/* Left + right thumb keys match middle in light mode */
-.thumb-key[data-thumb="leftthumb"],
-.thumb-key[data-thumb="rightthumb"] {
-  background: #e6f0ff;
-  border-color: #7aa2ff;
-  color: #0b1f4d;
+/* All thumb keys match the secondary (prev) button in light mode */
+.thumb-key {
+  background: var(--btn2-bg, #e5e7eb);
+  border-color: var(--btn2-bg, #e5e7eb);
+  color: var(--btn2-fg, #111827);
 }
 
 /* Active state for middle buttons */
@@ -112,15 +103,7 @@
     color: #ffffff;
   }
 
-  .thumb-key[data-thumb="middleleftthumb"],
-  .thumb-key[data-thumb="middlerightthumb"] {
-    background: #1b2b52; /* darker blue */
-    border-color: #7aa2ff;
-    color: #e6eaf2;
-  }
-
-  .thumb-key[data-thumb="leftthumb"],
-  .thumb-key[data-thumb="rightthumb"] {
+  .thumb-key {
     background: #1b2b52;
     border-color: #7aa2ff;
     color: #e6eaf2;

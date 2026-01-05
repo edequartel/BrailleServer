@@ -176,12 +176,13 @@ button.secondary {
 .theme-toggle {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   border-radius: 999px;
   padding: 8px 16px;
-  background: transparent;
-  border: 1px solid var(--chip-border);
-  color: var(--fg);
+  background: var(--btn2-bg);
+  border: none;
+  color: var(--btn2-fg);
   cursor: pointer;
   font-weight: 700;
   font-size: 0.95rem;
