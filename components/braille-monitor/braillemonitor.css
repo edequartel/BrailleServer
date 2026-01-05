@@ -91,6 +91,14 @@
   color: #0b1f4d;
 }
 
+/* Left + right thumb keys match middle in light mode */
+.thumb-key[data-thumb="leftthumb"],
+.thumb-key[data-thumb="rightthumb"] {
+  background: #e6f0ff;
+  border-color: #7aa2ff;
+  color: #0b1f4d;
+}
+
 /* Active state for middle buttons */
 .thumb-key[data-thumb="middleleftthumb"].active,
 .thumb-key[data-thumb="middlerightthumb"].active {
@@ -110,6 +118,13 @@
     border-color: #7aa2ff;
     color: #e6eaf2;
   }
+
+  .thumb-key[data-thumb="leftthumb"],
+  .thumb-key[data-thumb="rightthumb"] {
+    background: #1b2b52;
+    border-color: #7aa2ff;
+    color: #e6eaf2;
+  }
 }
 
 html[data-theme="dark"] .braille-monitor-component {
@@ -126,6 +141,12 @@ html[data-theme="dark"] .mono-box.braille-monitor-cells {
   border-color: #2a3550;
   background: #0f172a;
   color: #cfd6e4;
+}
+
+html[data-theme="dark"] .thumb-key {
+  background: var(--btn2-bg);
+  color: var(--btn2-fg);
+  border-color: var(--btn2-bg);
 }
 
 /* Optional: even taller on touch devices */
