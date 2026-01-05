@@ -112,6 +112,11 @@
   }
 }
 
+html[data-theme="dark"] .braille-monitor-component {
+  background: #0b1220;
+  color: #ffffff;
+}
+
 /* Optional: even taller on touch devices */
 @media (pointer: coarse) {
   .thumb-key {
