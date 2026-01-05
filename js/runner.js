@@ -616,6 +616,10 @@
     }
   }
 
+  function stripBracketTags(text) {
+    return String(text ?? "").replace(/\[[^\]]*]/g, "").replace(/\s+/g, " ").trim();
+  }
+
   function formatAllFields(item) {
     if (!item || typeof item !== "object") return "–";
 
@@ -750,7 +754,7 @@
     if (activityIdEl) activityIdEl.textContent = `Activity: ${String(active.id ?? "–")}`;
 
     const caption = String(active.caption ?? "").trim();
-    const text = String(active.text ?? "").trim();
+    const text = stripBracketTags(active.text);
 
     const instr = String(active.instruction ?? "").trim();
     const instrUi = (instr && !instr.toLowerCase().endsWith(".mp3")) ? instr : "";
