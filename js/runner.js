@@ -271,7 +271,7 @@
   async function playInstructionAfterStarted(cur) {
     const file = getInstructionMp3ForCurrent(cur);
     if (!file) return;
-    await playLifecycleFile(file, resolveActivityAudioUrl);
+    await playLifecycleFile(file, resolveUiSoundUrl);
   }
 
   // ------------------------------------------------------------
