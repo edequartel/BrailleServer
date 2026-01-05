@@ -3,6 +3,8 @@
 .braille-monitor-component {
   display: grid;
   gap: 0.6rem;
+  background: #ffffff;
+  color: #000000;
 }
 
 /* CHANGED: allow stacked (2-line) cells while keeping horizontal scroll */
@@ -97,6 +99,11 @@
 
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
+  .braille-monitor-component {
+    background: #0b1220;
+    color: #ffffff;
+  }
+
   .thumb-key[data-thumb="middleleftthumb"],
   .thumb-key[data-thumb="middlerightthumb"] {
     background: #1b2b52; /* darker blue */
