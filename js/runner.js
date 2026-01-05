@@ -229,6 +229,14 @@
           return;
         }
 
+        log("[lifecycle] howl create", {
+          file,
+          url,
+          html5: true,
+          ctx: window.Howler && window.Howler.ctx ? window.Howler.ctx.state : "none",
+          webAudio: window.Howler ? window.Howler.usingWebAudio : "unknown"
+        });
+
         const h = new Howl({
           src: [url],
           html5: true,
@@ -242,6 +250,16 @@
         });
         const playId = h.play();
         log("[lifecycle] howl play called", { file, url, id: playId });
+
+        setTimeout(() => {
+          log("[lifecycle] howl status", {
+            file,
+            url,
+            state: h.state(),
+            duration: h.duration(),
+            playing: h.playing(playId)
+          });
+        }, 2500);
       } catch (e) {
         log("[lifecycle] exception", { file, url, error: String(e) });
         finish("exception");
