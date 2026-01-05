@@ -1164,7 +1164,7 @@
     function setFieldsPanelVisible(visible) {
       if (!toggleFieldsBtn || !fieldsPanel) return;
       fieldsPanel.classList.toggle("hidden", !visible);
-      toggleFieldsBtn.textContent = visible ? "Verberg info" : "Info";
+      toggleFieldsBtn.textContent = "Info";
       toggleFieldsBtn.setAttribute("aria-expanded", visible ? "true" : "false");
     }
 

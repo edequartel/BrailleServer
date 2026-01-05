@@ -184,9 +184,9 @@ button.secondary {
   gap: 10px;
   border-radius: 999px;
   padding: 8px 16px;
-  background: var(--btn2-bg);
+  background: var(--btn-bg);
   border: none;
-  color: var(--btn2-fg);
+  color: var(--btn-fg);
   cursor: pointer;
   font-weight: 700;
   font-size: 0.95rem;
