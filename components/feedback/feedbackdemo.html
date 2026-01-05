@@ -2,7 +2,7 @@
      Uses CURRENT EventLog class (no helpers).
      Creates window.eventLog instance and everything logs through it.
      Loads: /components/event-log/event-log.js  (your existing file)
-            /js/sounds.js, /js/feedback.js   (above)
+            /BrailleServer/js/sounds.js, /BrailleServer/js/feedback.js   (above)
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -129,14 +129,14 @@
   </script>
 
   <!-- 4) Sounds + Feedback component -->
-  <script src="../js/sounds.js"></script>
-  <script src="../js/feedback.js"></script>
+  <script src="/BrailleServer/js/sounds.js"></script>
+  <script src="/BrailleServer/js/feedback.js"></script>
 
   <!-- 5) Wire buttons -->
   <script>
     function playFeedback(type) {
       if (!window.Feedback?.playRandomSound) {
-        window.eventLog.log("Feedback.playRandomSound not found (check ../js/feedback.js)", "error");
+        window.eventLog.log("Feedback.playRandomSound not found (check /BrailleServer/js/feedback.js)", "error");
         return;
       }
       window.eventLog.log(`ui click -> Feedback.playRandomSound("${type}")`, "system");
