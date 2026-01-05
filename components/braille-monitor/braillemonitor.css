@@ -81,19 +81,9 @@
   font-size: 0.9rem;
   line-height: 1.2;
   border-radius: 14px; /* round corners */
-}
-
-/* All thumb keys match the secondary (prev) button in light mode */
-.thumb-key {
   background: var(--btn2-bg, #e5e7eb);
   border-color: var(--btn2-bg, #e5e7eb);
   color: var(--btn2-fg, #111827);
-}
-
-/* Active state for middle buttons */
-.thumb-key[data-thumb="middleleftthumb"].active,
-.thumb-key[data-thumb="middlerightthumb"].active {
-  box-shadow: inset 0 0 0 2px rgba(26, 76, 255, 0.35);
 }
 
 /* Dark mode */
@@ -103,11 +93,6 @@
     color: #ffffff;
   }
 
-  .thumb-key {
-    background: #1b2b52;
-    border-color: #7aa2ff;
-    color: #e6eaf2;
-  }
 }
 
 html[data-theme="dark"] .braille-monitor-component {
@@ -127,9 +112,9 @@ html[data-theme="dark"] .mono-box.braille-monitor-cells {
 }
 
 html[data-theme="dark"] .thumb-key {
-  background: var(--btn2-bg);
-  color: var(--btn2-fg);
-  border-color: var(--btn2-bg);
+  background: var(--btn2-bg, #1f2937);
+  color: var(--btn2-fg, #e5e7eb);
+  border-color: var(--btn2-bg, #1f2937);
 }
 
 /* Optional: even taller on touch devices */
@@ -165,12 +150,6 @@ html[data-theme="dark"] .thumb-key {
   .braille-monitor-cells .monitor-cell:hover {
     background: #121f3a;
     border-color: #2a3550;
-  }
-
-  .thumb-key {
-    border-color: #2a3550;
-    background: #162447;
-    color: #e6eaf2;
   }
 
   .thumb-key.active {
