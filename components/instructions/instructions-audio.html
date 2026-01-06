@@ -12,8 +12,14 @@
 <body>
   <h1>Instructions</h1>
   <p>Click an item to play. Click it again to stop.</p>
+  <p id="play-log" style="font-size: 0.85rem; opacity: 0.7;">Ready.</p>
 
   <ul id="list" class="list" aria-label="Instruction list"></ul>
+
+  <div class="bottom-nav">
+    <a id="home-link" class="nav-pill" href="../../index.html" aria-label="Home">🏠</a>
+    <span id="lang-pill" class="nav-pill" aria-label="Language">NL</span>
+  </div>
 
   <!-- Howler -->
   <script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>

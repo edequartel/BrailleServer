@@ -3,7 +3,7 @@
 .braille-monitor-component {
   display: grid;
   gap: 0.6rem;
-  background: #ca7070;
+  background: #ffffff;
   color: #6b7280;
 }
 
@@ -77,6 +77,7 @@
 /* Base thumb keys (already present) */
 .thumb-key {
   min-height: 3rem;
+  min-width: 120px;
   padding: 0.6rem 0.75rem;
   font-size: 0.9rem;
   line-height: 1.2;
@@ -84,6 +85,12 @@
   background: var(--btn2-bg, #e5e7eb);
   border-color: var(--btn2-bg, #e5e7eb);
   color: var(--btn2-fg, #111827);
+}
+
+.thumb-key[data-thumb="rightthumb"] {
+  background: #bfdbfe;
+  border-color: #bfdbfe;
+  color: #0b1220;
 }
 
 /* Dark mode */

@@ -301,16 +301,66 @@
   }
 
   let instructionPlaying = false;
+  let instructionHowl = null;
+  let instructionPlayId = null;
+  let instructionPaused = false;
+
+  function toggleInstructionPlayback() {
+    if (!instructionHowl) return false;
+    if (instructionHowl.playing(instructionPlayId)) {
+      try { instructionHowl.pause(instructionPlayId); } catch {}
+      instructionPaused = true;
+    } else {
+      try { instructionHowl.play(instructionPlayId); } catch {}
+      instructionPaused = false;
+    }
+    return true;
+  }
 
   async function playInstructionAfterStarted(cur) {
     const file = getInstructionMp3ForCurrent(cur);
     if (!file) return;
     instructionPlaying = true;
+    instructionPaused = false;
+
     try {
-      await playLifecycleFile(file, resolveInstructionSoundUrl);
-    } finally {
+      await ensureSoundsInit();
+    } catch (e) {
       instructionPlaying = false;
+      log("[instruction] sounds init failed", { error: String(e) });
+      return;
     }
+
+    await new Promise((resolve) => {
+      const finish = (reason) => {
+        if (instructionHowl) {
+          try { instructionHowl.off(); } catch {}
+        }
+        instructionHowl = null;
+        instructionPlayId = null;
+        instructionPaused = false;
+        instructionPlaying = false;
+        log("[instruction] done", { file, url: String(reason?.url || ""), reason: String(reason?.cause || reason) });
+        resolve();
+      };
+
+      try {
+        const key = uiSoundKeyFromFile(file);
+        const sounds = getSoundsModule();
+        const url = sounds._buildUrl(currentLang, "instructions", key);
+        instructionHowl = new Howl({
+          src: [url],
+          html5: true,
+          onend: () => finish({ cause: "ended", url }),
+          onloaderror: (id, err) => finish({ cause: "loaderror:" + String(err || ""), url }),
+          onplayerror: (id, err) => finish({ cause: "playerror:" + String(err || ""), url })
+        });
+        instructionPlayId = instructionHowl.play();
+        log("[instruction] play", { file, url, id: instructionPlayId });
+      } catch (e) {
+        finish({ cause: "exception:" + String(e), url: "" });
+      }
+    });
   }
 
   // ------------------------------------------------------------
@@ -449,6 +499,7 @@
   // Language (aligned with Settings page localStorage key: bs_lang)
   // ------------------------------------------------------------
   const LANG_KEY = "bs_lang";
+  const SETTINGS_KEY = "localstorage.json";
 
   function normalizeLang(tag) {
     const t = String(tag || "").trim().toLowerCase();
@@ -469,6 +520,36 @@
 
   function applyLangToHtml(lang) {
     document.documentElement.setAttribute("lang", lang);
+  }
+
+  function loadAutoRunSetting() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return (typeof parsed?.autoRun === "boolean") ? parsed.autoRun : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveAutoRunSetting(value) {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      parsed.autoRun = Boolean(value);
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(parsed));
+    } catch {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ autoRun: Boolean(value) }));
+    }
+  }
+
+  function updateLangPill(lang) {
+    const el = $opt("lang-pill");
+    if (!el) return;
+    const map = { nl: "🇳🇱", en: "🇬🇧" };
+    const key = String(lang || "").toLowerCase();
+    el.textContent = map[key] || String(lang || "").toUpperCase();
   }
 
   let currentLang = "nl";
@@ -501,8 +582,10 @@
   function setRunnerUi({ isRunning }) {
     const runBtn = $opt("run-activity-btn");   // OPTIONAL
     const autoRun = $opt("auto-run");
+    const autoRunBtn = $opt("auto-run-btn");
 
     if (autoRun) autoRun.disabled = Boolean(isRunning);
+    if (autoRunBtn) autoRunBtn.disabled = Boolean(isRunning);
 
     if (runBtn) {
       runBtn.textContent = isRunning ? "Stop" : "Start";
@@ -610,14 +693,19 @@
     }
 
     if (window.marked && typeof window.marked.parse === "function") {
-      el.innerHTML = window.marked.parse(text);
+      el.innerHTML = window.marked.parse(text, { breaks: true });
     } else {
       el.textContent = text;
     }
   }
 
   function stripBracketTags(text) {
-    return String(text ?? "").replace(/\[[^\]]*]/g, "").replace(/\s+/g, " ").trim();
+    const raw = String(text ?? "").replace(/\[[^\]]*]/g, "").replace(/\r\n/g, "\n");
+    return raw
+      .split("\n")
+      .map(line => line.replace(/\s+/g, " ").trim())
+      .join("\n")
+      .trim();
   }
 
   function formatAllFields(item) {
@@ -912,6 +1000,8 @@
       const autoRun = $opt("auto-run");
       if (autoRun && autoRun.checked) {
         advanceToNextActivityOrWord({ autoStart: true });
+      } else if (autoRun) {
+        advanceToNextActivityOrWord({ autoStart: false });
       }
     }
   }
@@ -963,6 +1053,8 @@
     const cur = getCurrentActivity();
     const key = canonicalActivityId(cur?.activity?.id);
 
+    if (instructionPlaying && toggleInstructionPlayback()) return;
+
     if (running && activeActivityModule && typeof activeActivityModule.onRightThumb === "function") {
       activeActivityModule.onRightThumb();
       return;
@@ -973,11 +1065,7 @@
       return;
     }
 
-    if (!running) {
-      const autoRun = $opt("auto-run");
-      if (autoRun && autoRun.checked) startSelectedActivity({ autoStarted: false });
-      else advanceToNextActivityOrWord({ autoStart: false });
-    }
+    if (!running) startSelectedActivity({ autoStarted: false });
   }
 
   function leftThumbAction() {
@@ -1099,10 +1187,13 @@
     const runBtn = $opt("run-activity-btn"); // OPTIONAL
     const toggleFieldsBtn = $opt("toggle-fields-btn");
     const fieldsPanel = $opt("fields-panel");
+    const autoRun = $opt("auto-run");
+    const autoRunBtn = $opt("auto-run-btn");
 
     // Sync language from Settings -> runner
     currentLang = resolveLang();
     applyLangToHtml(currentLang);
+    updateLangPill(currentLang);
     log("[runner] resolved lang", { lang: currentLang });
     ensureSoundsInit().catch((e) => {
       log("[lifecycle] sounds init failed", { error: String(e) });
@@ -1144,6 +1235,7 @@
 
       currentLang = next;
       applyLangToHtml(currentLang);
+      updateLangPill(currentLang);
       log("[runner] lang changed", { lang: currentLang, reason });
 
       if (brailleMonitor && typeof brailleMonitor.setLang === "function") {
@@ -1164,6 +1256,34 @@
     if (nextBtn) nextBtn.addEventListener("click", next);
     if (prevBtn) prevBtn.addEventListener("click", prev);
     if (runBtn) runBtn.addEventListener("click", toggleRun);
+
+    if (autoRun) {
+      const savedAutoRun = loadAutoRunSetting();
+      if (typeof savedAutoRun === "boolean") autoRun.checked = savedAutoRun;
+    }
+
+    function syncAutoRunButton() {
+      if (!autoRunBtn || !autoRun) return;
+      autoRunBtn.setAttribute("aria-pressed", autoRun.checked ? "true" : "false");
+      autoRunBtn.classList.toggle("is-on", autoRun.checked);
+    }
+
+    if (autoRunBtn && autoRun) {
+      syncAutoRunButton();
+      autoRunBtn.addEventListener("click", () => {
+        if (autoRun.disabled) return;
+        autoRun.checked = !autoRun.checked;
+        saveAutoRunSetting(autoRun.checked);
+        syncAutoRunButton();
+      });
+    }
+
+    if (autoRun) {
+      autoRun.addEventListener("change", () => {
+        saveAutoRunSetting(autoRun.checked);
+        syncAutoRunButton();
+      });
+    }
 
     function setFieldsPanelVisible(visible) {
       if (!toggleFieldsBtn || !fieldsPanel) return;

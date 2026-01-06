@@ -103,3 +103,35 @@ p {
 .list li.error .state {
   color: var(--error);
 }
+
+.bottom-nav {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+
+.nav-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--fg);
+  font-weight: 700;
+  text-decoration: none;
+  user-select: none;
+  min-height: 44px;
+}
+
+.nav-pill:hover {
+  background: var(--hover);
+}
+
+.nav-pill:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}

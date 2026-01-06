@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="nl" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <title>Verhalen (NL)</title>
@@ -198,9 +198,6 @@
   <nav>
     <div class="nav-header">
       <h2>Verhalen (NL)</h2>
-      <button id="themeToggle" class="theme-btn" type="button" aria-label="Wissel thema">
-        Thema
-      </button>
     </div>
     <div id="storyList">Laden…</div>
   </nav>
@@ -226,39 +223,7 @@ const INDEX_FILE = STORIES_BASE + "stories.json";
 ------------------------------------------------------- */
 const storyListEl = document.getElementById("storyList");
 const storyContentEl = document.getElementById("storyContent");
-const themeToggleEl = document.getElementById("themeToggle");
-
 let currentButton = null;
-
-/* -------------------------------------------------------
-   THEME (persist in localStorage)
-------------------------------------------------------- */
-const THEME_KEY = "storiesTheme"; // "light" | "dark"
-initTheme();
-
-themeToggleEl.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme") || "light";
-  const next = current === "dark" ? "light" : "dark";
-  setTheme(next);
-});
-
-function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  if (saved === "dark" || saved === "light") {
-    setTheme(saved);
-    return;
-  }
-  // Default: follow OS preference
-  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  setTheme(prefersDark ? "dark" : "light");
-}
-
-function setTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem(THEME_KEY, theme);
-  themeToggleEl.textContent = (theme === "dark") ? "Licht" : "Donker";
-  themeToggleEl.setAttribute("aria-label", (theme === "dark") ? "Schakel naar licht thema" : "Schakel naar donker thema");
-}
 
 /* -------------------------------------------------------
    LOAD stories.json
