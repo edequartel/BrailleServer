@@ -53,14 +53,9 @@ body{
   padding:0;
 }
 
-header{
-  border-bottom:1px solid var(--chip-border);
-  padding-bottom:8px;
-}
-
-h1{
+.page-title{
   font-size:18px;
-  margin:0;
+  margin:0 0 16px 0;
 }
 
 /* Card */
@@ -163,6 +158,7 @@ html.force-dark{
   display:flex;
   justify-content:flex-start;
   margin-top:16px;
+  gap:10px;
 }
 
 .home-link{
