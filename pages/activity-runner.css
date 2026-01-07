@@ -7,6 +7,30 @@
    - Keeps braille-panel navigation layout (.braille-nav)
 */
 
+@font-face {
+  font-family: "Noto Sans";
+  src: url("../assets/fonts/NotoSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans";
+  src: url("../assets/fonts/NotoSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans Symbols 2";
+  src: url("../fonts/NotoSansSymbols2-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #f3f4f6;
   --fg: #111827;
@@ -69,7 +93,7 @@ html[data-theme="dark"] {
    Layout
 ---------------------------- */
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "Noto Sans", Arial, sans-serif;
   margin: 0;
   padding: 20px;
   background: var(--bg);
@@ -194,7 +218,7 @@ button.secondary {
   gap: 8px;
   font-size: 1.1rem;
   line-height: 1;
-  font-family: "Segoe UI Symbol", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", inherit;
+  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", inherit;
 }
 
 .icon-button.is-on {

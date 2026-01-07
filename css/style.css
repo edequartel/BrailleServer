@@ -1,3 +1,19 @@
+@font-face {
+  font-family: "Noto Sans";
+  src: url("../assets/fonts/NotoSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans";
+  src: url("../assets/fonts/NotoSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* -------------------------------------------------------
    Global layout
 ------------------------------------------------------- */
@@ -15,8 +31,7 @@ body {
 
 /* Soft gradient background */
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Arial, sans-serif;
+  font-family: "Noto Sans", Arial, sans-serif;
   background: linear-gradient(135deg, #f0f4ff, #fdf7ff);
   color: #222;
   min-height: 100vh;

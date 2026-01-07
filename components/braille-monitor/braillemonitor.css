@@ -7,13 +7,21 @@
   color: #6b7280;
 }
 
+@font-face {
+  font-family: "Noto Sans Symbols 2";
+  src: url("../../fonts/NotoSansSymbols2-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* CHANGED: allow stacked (2-line) cells while keeping horizontal scroll */
 .mono-box.braille-monitor-cells {
   border: 1px solid #cfd6e4;
   border-radius: 10px;
   background: #ffffff;
   padding: 0.6rem 0.7rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+  font-family: "Noto Sans Symbols 2", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Cascadia Code", "Fira Code", monospace;
   font-size: 1.15rem;
 
