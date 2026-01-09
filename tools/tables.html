@@ -185,6 +185,24 @@
 
     .status.ok { color: var(--accent); }
     .status.err { color: #ff7b7b; }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .btn.small {
+      padding: 6px 10px;
+      font-size: 12px;
+      box-shadow: none;
+    }
+
+    .card.selected {
+      border-color: color-mix(in oklab, var(--accent-2) 60%, var(--border));
+      box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent-2) 50%, transparent), var(--shadow);
+    }
   </style>
 </head>
 <body>
@@ -309,11 +327,47 @@
           addIfArray(chips, "Dir", t.Metadata && t.Metadata.direction);
           addIfArray(chips, "Variant", t.Metadata && t.Metadata.variant);
 
+          const actions = document.createElement("div");
+          actions.className = "card-actions";
+          const useBtn = document.createElement("button");
+          useBtn.className = "btn small";
+          useBtn.textContent = "Use table";
+          useBtn.addEventListener("click", () => selectTable(t, card));
+          actions.appendChild(useBtn);
+
           card.appendChild(name);
           card.appendChild(desc);
           card.appendChild(chips);
+          card.appendChild(actions);
           tableList.appendChild(card);
         });
+      }
+
+      async function selectTable(table, cardEl) {
+        if (!table || !table.FileName) return;
+        const base = baseUrl.value.trim().replace(/\/$/, "");
+        if (!base) {
+          setStatus("missing base url", "err");
+          return;
+        }
+        setStatus(`setting ${table.FileName}...`, "");
+        try {
+          const resp = await fetch(base + "/brailletable", {
+            method: "POST",
+            headers: { "Content-Type": "text/plain; charset=utf-8" },
+            body: table.FileName
+          });
+          const ok = resp.ok;
+          setStatus(ok ? "table set" : `error ${resp.status}`, ok ? "ok" : "err");
+          if (ok) {
+            document.querySelectorAll(".card.selected").forEach((el) => {
+              el.classList.remove("selected");
+            });
+            if (cardEl) cardEl.classList.add("selected");
+          }
+        } catch (err) {
+          setStatus("error setting table", "err");
+        }
       }
 
       async function loadTables() {
