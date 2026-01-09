@@ -246,7 +246,8 @@
       font-family: var(--mono);
       font-size: 12px;
       line-height: 1.35;
-      max-height: 420px;
+      min-height: 220px;
+      max-height: 560px;
       overflow: auto;
       white-space: pre-wrap;
       word-break: break-word;
@@ -364,6 +365,7 @@
               <button class="btn danger" id="getClearBtn">GET /clear</button>
               <button class="btn" id="getDevicesBtn">GET /devices</button>
               <button class="btn" id="getBrailleTestBtn">GET /braille/test</button>
+              <button class="btn" id="getTablesBtn">GET /tables</button>
             </div>
 
             <div class="kpi">
@@ -441,6 +443,7 @@
       const getClearBtn = el("getClearBtn");
       const getDevicesBtn = el("getDevicesBtn");
       const getBrailleTestBtn = el("getBrailleTestBtn");
+      const getTablesBtn = el("getTablesBtn");
 
       const httpDot = el("httpDot");
       const httpStatusText = el("httpStatusText");
@@ -583,6 +586,7 @@
       getClearBtn.addEventListener("click", () => httpGet("/clear"));
       getDevicesBtn.addEventListener("click", () => httpGet("/devices"));
       getBrailleTestBtn.addEventListener("click", () => httpGet("/braille/test"));
+      getTablesBtn.addEventListener("click", () => httpGet("/tables"));
 
       // WebSocket
       let ws = null;
@@ -697,7 +701,7 @@
 
       // On load: show initial instruction in log
       appendLog("UI ready. Use HTTP buttons or connect WebSocket.");
-      appendLog("Spec: POST /braille (plain text), GET /clear, GET /ping, GET /devices, GET /braille/test, WS send text / receive JSON key events.");
+      appendLog("Spec: POST /braille (plain text), GET /clear, GET /ping, GET /devices, GET /braille/test, GET /tables, WS send text / receive JSON key events.");
     })();
   </script>
 </body>
