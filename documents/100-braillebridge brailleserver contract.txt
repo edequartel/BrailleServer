@@ -1,99 +1,219 @@
-braillebridge API documentation
+BRAILLEBRIDGE ↔ BRAILLESERVER API & WEBSOCKET CONTRACT
+(SSoC – BrailleBridge is authoritative)
 
-Host (HTTP API)
+====================================================
+WEBSOCKET
+====================================================
 
-Base address
-http://localhost:5000
-
-This is a local HTTP server running on the user’s machine. It is used to send commands to the braille display.
-
-Send text to the braille display
-Method: POST
-Path: /braille
-Full URL: http://localhost:5000/braille
-
-Request body (JSON):
-{
-“text”: “Hello braille”,
-“pad”: true
-}
-
-The field “text” contains the text to show on the braille display.
-The optional field “pad” pads the text to the display width (for example 40 cells).
-
-Clear the braille display
-Method: POST
-Path: /clear
-Full URL: http://localhost:5000/clear
-
-This clears all braille cells. No request body is required.
-
-Status / health check (if enabled)
-Method: GET
-Path: /status
-Full URL: http://localhost:5000/status
-
-Typical response contains whether the bridge is running, if a braille display is connected, the device name, and the number of cells.
-
-
-WebSocket
-
-WebSocket address
-
+Endpoint:
 ws://localhost:5000/ws
 
-This WebSocket is used to send braille key events from BrailleBridge to the client (browser or app). The client connects once and receives events as they occur.
+----------------------------------------------------
+SERVER → BROWSER (BrailleBridge → Client)
+----------------------------------------------------
 
-Message format (JSON)
+Message: brailleLine  (AUTHORITATIVE CONTENT)
 
-All messages are JSON objects and include a “kind” field that indicates the event type.
+Sent whenever the braille content changes.
 
-Thumb key event example:
+JSON:
 {
-“kind”: “Thumbkey”,
-“name”: “LeftThumb”,
-“press”: true
+  "Type": "brailleLine",
+  "Ok": true,
+  "TimestampUtc": "2026-01-19T10:15:12.123Z",
+  "SourceText": "",
+  "Braille": {
+    "UnicodeText": "⠓⠑⠇⠇⠕",
+    "Table": "nl-NL-g0.utb",
+    "ModeUsed": 999,
+    "CodeUnits": "U+2813 U+2811 U+2807 U+2807 U+2815"
+  }
 }
 
-Possible thumb key names:
-LeftThumb
-MiddleLeftThumb
-MiddleRightThumb
-RightThumb
+Rules:
+- Replace the entire rendered braille line
+- Never derive, merge, or modify locally
+- This message is the Single Source of Content snapshot
 
-The field “press” is true when the key is pressed and false when released.
+----------------------------------------------------
 
-Cursor routing event example:
+Message: cursorContext
+
+Sent when:
+- cursor routing key is pressed
+- editor caret moves
+
+JSON:
 {
-“kind”: “CursorRouting”,
-“index”: 12,
-“press”: true
+  "Type": "cursorContext",
+  "Ok": true,
+  "TimestampUtc": "2026-01-19T10:15:13.456Z",
+  "SourceText": "Hello",
+  "Table": "nl-NL-g0.utb",
+  "Cursor": {
+    "CellIndex": 2,
+    "TextIndex": 1,
+    "Character": "e",
+    "CharacterCodePoint": "U+0065",
+    "Word": "Hello"
+  },
+  "Braille": {
+    "CellChar": "⠑",
+    "CellCodePoint": "U+2811",
+    "IsCapitalSign": false
+  }
 }
 
-The field “index” is the braille cell index (0-based).
+Rules:
+- Highlight only the provided CellIndex
+- Never calculate cursor positions locally
 
-Raw / diagnostic event example:
+----------------------------------------------------
+
+Message: keyEvent  (DIAGNOSTIC ONLY)
+
+Sent for every physical key press.
+
+JSON:
 {
-“kind”: “Raw”,
-“msgType”: 8,
-“unit”: 1,
-“strip”: 0,
-“btn”: 2097152,
-“press”: true
+  "MsgType": 8,
+  "UnitId": 1,
+  "Strip": 0,
+  "ButtonIndex": 4,
+  "RawParam": 16,
+  "IsPress": true,
+  "Kind": 3,
+  "Name": "LeftThumb",
+  "DotsMask": 16,
+  "UnicodeCell": "⠐"
 }
 
+Rules:
+- Logging / debugging only
+- Must NOT modify editor or braille state
 
-Direction summary
+----------------------------------------------------
+BROWSER → SERVER (Client → BrailleBridge)
+----------------------------------------------------
 
-HTTP is used from client to BrailleBridge to send commands (text, clear, configuration).
-WebSocket is used from BrailleBridge to client to send key events.
+Message: editorInput  (INTENT ONLY)
 
+Send user intent. Always wait for updated brailleLine.
 
-Quick reference
+Text input:
+{
+  "type": "command",
+  "command": "editorInput",
+  "input": {
+    "kind": "text",
+    "text": "Hello"
+  }
+}
 
-HTTP base: http://localhost:5000
-WebSocket: ws://localhost:5000/ws
+Braille cell input:
+{
+  "type": "command",
+  "command": "editorInput",
+  "input": {
+    "kind": "braille",
+    "unicode": "⠁"
+  }
+}
 
-POST /braille
-POST /clear
-GET /status
+Editor key input:
+{
+  "type": "command",
+  "command": "editorInput",
+  "input": {
+    "kind": "key",
+    "key": "Backspace"
+  }
+}
+
+Rules:
+- Do NOT update UI optimistically
+- Always wait for brailleLine
+
+----------------------------------------------------
+
+Message: setEditorMode
+
+{
+  "type": "command",
+  "command": "setEditorMode",
+  "enabled": true
+}
+
+====================================================
+HTTP API
+====================================================
+
+Base URL:
+http://localhost:5000
+
+----------------------------------------------------
+
+POST /editor/enable
+Enables editor mode.
+
+----------------------------------------------------
+
+POST /editor/disable
+Disables editor mode.
+
+----------------------------------------------------
+
+GET /editor/status
+
+Response:
+{
+  "enabled": true
+}
+
+----------------------------------------------------
+
+POST /editor/input
+HTTP equivalent of WebSocket editorInput.
+Response is ACK only.
+
+Examples:
+
+Backspace:
+{ "kind":"key", "key":"Backspace" }
+
+Space:
+{ "kind":"key", "key":"Space" }
+
+Text:
+{ "kind":"text", "text":"Hello" }
+
+Braille cell:
+{ "kind":"braille", "unicode":"⠁" }
+
+Response:
+{ "ok": true }
+
+Rules:
+- HTTP never returns braille content
+- Updated state is always pushed via WebSocket
+
+----------------------------------------------------
+
+POST /braille  (LEGACY, NON-EDITOR MODE ONLY)
+
+Content-Type: text/plain
+
+Body:
+Hello
+
+Rules:
+- Only valid when editor mode is OFF
+- Translates text and sends brailleLine via WebSocket
+
+====================================================
+GOLDEN RULE
+====================================================
+
+BrailleBridge decides.
+BrailleServer mirrors.
+All UI updates come from WebSocket state.
