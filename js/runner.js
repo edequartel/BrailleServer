@@ -1211,6 +1211,7 @@
         const unicode = evt?.brailleUnicode ?? "";
         const sourceText = evt?.sourceText ?? "";
         if (!unicode) return;
+        log("[runner] brailleLine ws", { json: evt?.raw ?? null });
         brailleMonitor.setBrailleUnicode(unicode, sourceText);
       });
       BrailleBridge.on("connected", () => log("[runner] BrailleBridge connected"));
