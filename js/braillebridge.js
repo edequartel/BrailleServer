@@ -301,6 +301,20 @@
       // Fire generic 'message' event
       this.emit("message", normalBase);
 
+      // Braille line (SSoC) message
+      const msgTypeRaw = msg.type ?? msg.Type ?? "";
+      const msgType = String(msgTypeRaw).toLowerCase();
+      if (msgType === "brailleline") {
+        const evt = {
+          ...normalBase,
+          type: "brailleLine",
+          sourceText: msg.SourceText ?? msg.sourceText ?? "",
+          brailleUnicode: msg?.Braille?.UnicodeText ?? msg?.braille?.unicodeText ?? ""
+        };
+        this.emit("brailleline", evt);
+        return;
+      }
+
       if (!press) {
         // Only react on key down by default
         return;

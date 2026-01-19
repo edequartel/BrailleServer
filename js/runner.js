@@ -1206,6 +1206,13 @@
         if (typeof evt?.index !== "number") return;
         dispatchCursorSelection({ index: evt.index }, "bridge");
       });
+      BrailleBridge.on("brailleline", (evt) => {
+        if (!brailleMonitor || typeof brailleMonitor.setBrailleUnicode !== "function") return;
+        const unicode = evt?.brailleUnicode ?? "";
+        const sourceText = evt?.sourceText ?? "";
+        if (!unicode) return;
+        brailleMonitor.setBrailleUnicode(unicode, sourceText);
+      });
       BrailleBridge.on("connected", () => log("[runner] BrailleBridge connected"));
       BrailleBridge.on("disconnected", () => {});
     }
