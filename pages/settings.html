@@ -14,10 +14,37 @@
 </head>
 
 <body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1 data-i18n="settings.title">Settings</h1>
+        <div class="sub">BrailleBridge · Local preferences</div>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" href="../index.html" aria-label="Home">Home</a>
+        <a class="btn" href="../tools/braillebridge-com.html" aria-label="BrailleBridge COM">COM tool</a>
+        <a class="btn" href="../tools/tables.html" aria-label="Tables">Tables</a>
+      </div>
+    </div>
+  </div>
+</header>
+
 <main>
   <div class="wrap">
-    <h1 class="page-title" data-i18n="settings.title">Settings</h1>
     <div class="card">
+      <div class="hd">
+        <div>
+          <h2>Core settings</h2>
+          <div class="hint">Language, method, and simulator mode.</div>
+        </div>
+        <div class="pill">
+          <span>Profile</span>
+          <span class="dot ok"></span>
+          <span>active</span>
+        </div>
+      </div>
+      <div class="bd">
 
       <!-- Language -->
       <div class="row">
@@ -80,6 +107,7 @@
       <!-- Debug -->
       <div id="debugBox" class="debug">Debug: (loading…)</div>
 
+      </div>
     </div>
 
     <div class="bottom-nav">
